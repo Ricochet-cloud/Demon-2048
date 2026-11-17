@@ -72,6 +72,20 @@
     $('homeDex').textContent = `${got} / ${th.values.length}`;
     $('homeGold').textContent = G.gold;
     $('homeShopTag').hidden = G.claimable() === 0;
+    refreshHomeRank();
+  }
+
+  // 홈의 작은 '우리 기록' 카드 (로그인했고 기록을 받았을 때만)
+  let homeRankSeq = 0;
+  async function refreshHomeRank() {
+    const card = $('homeRank'), seq = ++homeRankSeq;
+    if (!(A.enabled && A.user && C.loaded && !C.failed)) { card.hidden = true; return; }
+    try {
+      const list = await C.loadAll();
+      if (seq !== homeRankSeq || effective() !== 'home') return;
+      renderRank(list, $('homeRankList'), true);
+      card.hidden = list.length === 0;
+    } catch (e) { card.hidden = true; }
   }
 
   // ---------- 도감 (만든 타일 모으기) ----------
@@ -374,8 +388,8 @@
     } catch (e) { return ''; }
   }
 
-  function renderRank(list) {
-    const box = $('rankList');
+  function renderRank(list, box, compact) {
+    box = box || $('rankList');
     box.textContent = '';
     list.sort((a, b) => (b.best || 0) - (a.best || 0)).forEach((u) => {
       const item = document.createElement('div');
@@ -395,8 +409,8 @@
       txt.appendChild(nm);
       const tt = titleOf(u.title);
       if (tt) { const e = document.createElement('span'); e.className = 'rank__title'; e.textContent = tt.name; txt.appendChild(e); }
-      if (u.bio) { const e = document.createElement('span'); e.className = 'rank__bio'; e.textContent = u.bio; txt.appendChild(e); }
-      txt.appendChild(sub);
+      if (u.bio && !compact) { const e = document.createElement('span'); e.className = 'rank__bio'; e.textContent = u.bio; txt.appendChild(e); }
+      if (!compact) txt.appendChild(sub);
       left.appendChild(txt);
       const right = document.createElement('div');
       right.className = 'rank__score';
@@ -411,7 +425,7 @@
     const msg = $('rankMsg');
     if (C.failed) { msg.textContent = '기록을 불러오지 못했어요. 인터넷 연결이나 보안 규칙을 확인해 주세요.'; return; }
     if (!C.loaded) { msg.textContent = '기록을 불러오는 중이에요...'; return; }
-    try { renderRank(await C.loadAll()); msg.textContent = ''; }
+    try { renderRank(await C.loadAll(), $('rankList')); msg.textContent = ''; }
     catch (e) { msg.textContent = '기록을 불러오지 못했어요. 인터넷 연결이나 보안 규칙을 확인해 주세요.'; }
   }
 
