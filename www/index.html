@@ -61,7 +61,7 @@
         <button class="menu__btn" data-go="profile"><span>프로필</span></button>
         <button class="menu__btn" data-go="shop"><span>꾸미기</span><em class="tag">준비 중</em></button>
       </nav>
-      <p class="foot" id="homeHint" hidden>프로필에서 닉네임을 정해 주세요</p>
+      <p class="foot" id="homeHint" hidden>프로필에서 닉네임과 사진을 정해 주세요</p>
     </div>
   </section>
 
@@ -113,13 +113,10 @@
       <div class="topbar__space"></div>
     </div>
     <div class="wrap">
-      <div class="card">
-        <h2>내 기록</h2>
-        <div class="rows">
-          <div class="row">최고 점수<b id="pfBest">-</b></div>
-          <div class="row">최고 타일<b id="pfTile">-</b></div>
-          <div class="row">플레이 횟수<b id="pfPlays">-</b></div>
-        </div>
+      <div class="card" id="avatarCard" hidden>
+        <h2>프로필 사진</h2>
+        <div class="pick" id="avatarPick"></div>
+        <p class="form-err" id="avatarMsg" role="status"></p>
       </div>
       <div class="card" id="nickCard" hidden>
         <h2>닉네임</h2>
@@ -128,6 +125,14 @@
           <p class="form-err" id="nickMsg" role="status"></p>
           <button class="btn btn--wide" id="nickBtn" type="submit">저장</button>
         </form>
+      </div>
+      <div class="card">
+        <h2>내 기록</h2>
+        <div class="rows">
+          <div class="row">최고 점수<b id="pfBest">-</b></div>
+          <div class="row">최고 타일<b id="pfTile">-</b></div>
+          <div class="row">플레이 횟수<b id="pfPlays">-</b></div>
+        </div>
       </div>
       <div class="card" id="boardCard" hidden>
         <h2>우리 기록</h2>

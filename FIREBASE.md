@@ -3,12 +3,12 @@
 ## 쓰는 것
 - Authentication: 이메일/비밀번호 (커플 사이트와 같은 계정)
 - Firestore: 컬렉션 `game2048_users` (문서 id = 로그인한 사람의 uid)
-  - 필드: `nickname`, `best`(최고 점수), `bestTile`(최고 타일), `plays`(끝낸 판 수), `updatedAt`
+  - 필드: `nickname`, `avatar`(프로필 사진 id), `best`(최고 점수), `bestTile`(최고 타일), `plays`(끝낸 판 수), `updatedAt`
   - 이메일은 저장하지 않아요. 서로에게는 닉네임과 기록만 보여요.
 
 ## 한 번만 하면 되는 설정
 1. Firebase 콘솔 > Firestore Database 가 만들어져 있어야 해요 (커플 사이트에서 이미 쓰고 있으면 그대로).
-2. Firestore Database > 규칙 탭에서 기존 규칙은 **그대로 두고**, `match /databases/{database}/documents { ... }` 안쪽에 아래 블록만 **추가**한 뒤 게시해요.
+2. Firestore Database > 규칙 탭에서 기존 규칙은 **그대로 두고**(5단계에서 이미 `game2048_users` 블록을 넣었다면 그 블록을 아래 내용으로 **교체**), `match /databases/{database}/documents { ... }` 안쪽에 아래 블록만 **추가**한 뒤 게시해요.
 
 ```
     // 2048 앱: 로그인한 사람은 서로의 기록을 읽고, 자기 문서만 쓸 수 있어요
@@ -16,8 +16,9 @@
       allow read: if request.auth != null;
       allow create, update: if request.auth != null
         && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['nickname', 'best', 'bestTile', 'plays', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['nickname', 'avatar', 'best', 'bestTile', 'plays', 'updatedAt'])
         && (!('nickname' in request.resource.data) || (request.resource.data.nickname is string && request.resource.data.nickname.size() <= 24))
+        && (!('avatar' in request.resource.data) || (request.resource.data.avatar is string && request.resource.data.avatar.size() <= 20))
         && (!('best' in request.resource.data) || (request.resource.data.best is int && request.resource.data.best >= 0))
         && (!('bestTile' in request.resource.data) || (request.resource.data.bestTile is int && request.resource.data.bestTile >= 0))
         && (!('plays' in request.resource.data) || (request.resource.data.plays is int && request.resource.data.plays >= 0));

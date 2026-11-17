@@ -6,6 +6,13 @@
   'use strict';
 
   const SCREENS = ['home', 'game', 'profile', 'shop', 'login'];
+  // 프로필 사진 목록 — images/avatars/<id>.webp. 사진을 늘리려면 여기에 한 줄 추가하고 파일을 넣어요
+  const AVATARS = [
+    { id: 'tanjiro', name: '탄지로' }, { id: 'nezuko', name: '네즈코' }, { id: 'zenitsu', name: '젠이츠' },
+    { id: 'inosuke', name: '이노스케' }, { id: 'mitsuri', name: '미츠리' }, { id: 'rengoku', name: '렌고쿠' }
+  ];
+  const avatarSrc = (id) => `./images/avatars/${id}.webp`;
+  const knownAvatar = (id) => AVATARS.some((a) => a.id === id);
   const STORE_KEY = 'game2048.v1';   // game.js 와 같은 키
   const $ = (id) => document.getElementById(id);
   const A = window.AppAuth;
@@ -31,7 +38,39 @@
     if (g && g.score > 0) { el.textContent = `진행 중인 판 이어하기 · ${g.score}점`; el.hidden = false; }
     else el.hidden = true;
     // 로그인했는데 닉네임이 아직 없으면 안내
-    $('homeHint').hidden = !(C.enabled && C.loaded && !C.nickname);
+    $('homeHint').hidden = !(C.enabled && C.loaded && (!C.nickname || !knownAvatar(C.avatar)));
+  }
+
+  // ---------- 프로필 사진 ----------
+  function avatarEl(id, nickname) {
+    const box = document.createElement('div');
+    box.className = 'avatar';
+    if (knownAvatar(id)) {
+      const img = document.createElement('img');
+      img.src = avatarSrc(id); img.alt = ''; img.draggable = false;
+      box.appendChild(img);
+    } else {
+      box.textContent = [...String(nickname || '?')][0];   // 사진을 안 골랐으면 닉네임 첫 글자
+    }
+    return box;
+  }
+
+  function renderAvatarPicker() {
+    const pick = $('avatarPick');
+    pick.textContent = '';
+    AVATARS.forEach((a) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.dataset.avatar = a.id;
+      b.className = a.id === C.avatar ? 'on' : '';
+      b.setAttribute('aria-label', a.name);
+      b.setAttribute('aria-pressed', a.id === C.avatar ? 'true' : 'false');
+      const img = document.createElement('img');
+      img.src = avatarSrc(a.id); img.alt = ''; img.draggable = false;
+      const label = document.createElement('span');
+      label.textContent = a.name;
+      b.appendChild(img); b.appendChild(label);
+      pick.appendChild(b);
+    });
   }
 
   // ---------- 우리 기록 (닉네임·점수 목록) ----------
@@ -52,13 +91,19 @@
       const item = document.createElement('div');
       item.className = 'rank__item' + (u.uid === C.uid ? ' rank__item--me' : '');
       const left = document.createElement('div');
-      left.className = 'rank__name';
-      left.textContent = u.nickname || '이름 없음';
-      if (u.uid === C.uid) { const t = document.createElement('small'); t.textContent = '나'; left.appendChild(t); }
+      left.className = 'rank__who';
+      left.appendChild(avatarEl(u.avatar, u.nickname));
+      const txt = document.createElement('div');
+      txt.className = 'rank__txt';
+      const nm = document.createElement('div');
+      nm.className = 'rank__name';
+      nm.textContent = u.nickname || '이름 없음';
+      if (u.uid === C.uid) { const t = document.createElement('small'); t.textContent = '나'; nm.appendChild(t); }
       const sub = document.createElement('span');
       sub.className = 'rank__sub';
       sub.textContent = `플레이 ${u.plays || 0}회${u.updatedAt ? ' · ' + ago(u.updatedAt) : ''}`;
-      left.appendChild(sub);
+      txt.appendChild(nm); txt.appendChild(sub);
+      left.appendChild(txt);
       const right = document.createElement('div');
       right.className = 'rank__score';
       const b = document.createElement('b'); b.textContent = u.best || 0;
@@ -83,8 +128,10 @@
     $('pfPlays').textContent = s.plays || '-';
     const online = A.enabled && !!A.user;
     $('nickCard').hidden = !online;
+    $('avatarCard').hidden = !online;
     $('boardCard').hidden = !online;
     if (online) {
+      renderAvatarPicker();
       if (document.activeElement !== $('nickInput')) $('nickInput').value = C.nickname;
       refreshRank();
     }
@@ -135,6 +182,21 @@
     try { await A.signIn(email, pw); $('loginPw').value = ''; }
     catch (err) { $('loginErr').textContent = err.message; }
     finally { $('loginBtn').disabled = false; }
+  });
+
+  // ---------- 프로필 사진 고르기 ----------
+  $('avatarPick').addEventListener('click', async (e) => {
+    const b = e.target.closest('button[data-avatar]');
+    if (!b) return;
+    const msg = $('avatarMsg');
+    msg.className = 'form-err'; msg.textContent = '';
+    try {
+      await C.saveAvatar(b.dataset.avatar);
+      renderAvatarPicker(); refreshRank();
+      msg.className = 'form-err form-ok'; msg.textContent = '바꿨어요.';
+    } catch (err) {
+      msg.textContent = '저장하지 못했어요. 인터넷 연결이나 보안 규칙을 확인해 주세요.';
+    }
   });
 
   // ---------- 닉네임 ----------

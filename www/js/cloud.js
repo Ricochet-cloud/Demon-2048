@@ -27,7 +27,7 @@
       { best: r.best, bestTile: r.bestTile, plays: r.plays, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
       extra || {}
     ), { merge: true });
-    if (extra && extra.nickname !== undefined) me.nickname = extra.nickname;
+    if (extra) Object.assign(me, extra);
   }
 
   // 로그인 직후: 클라우드 기록을 받아서 이 기기 기록과 합치고, 높은 쪽을 다시 올려요
@@ -65,6 +65,11 @@
     get failed() { return failed; },
     get uid() { return A.user ? A.user.uid : null; },
     get nickname() { return me.nickname || ''; },
+    get avatar() { return me.avatar || ''; },
+    async saveAvatar(id) {
+      if (!/^[a-z0-9_-]{1,20}$/.test(String(id))) throw new Error('사진을 고를 수 없어요.');
+      await push({ avatar: id });
+    },
     async loadAll() {
       const qs = await store().collection(COL).get();
       return qs.docs.map((d) => Object.assign({ uid: d.id }, d.data()));
