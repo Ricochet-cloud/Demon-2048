@@ -82,3 +82,17 @@
   background: linear-gradient(180deg, transparent 58%, rgba(10, 6, 4, .88) 100%), var(--img) center / 100% 100% no-repeat, #1a0f0a;
   padding-bottom: 2%; text-shadow: 0 1px 0 #000, 0 0 4px rgba(0, 0, 0, .9);
 }
+
+/* 기본 숫자 테마: 숫자마다 색이 뚜렷하게 달라요 (2048 은 금색 빛, 그 이상은 어두운 바탕에 금색 글자) */
+[data-theme="plain"] .tile[data-v="2"] span, .theme-card__prev .tilepv[data-v="2"] span { background: #6f7f8f; color: #f5efe0; }
+[data-theme="plain"] .tile[data-v="4"] span, .theme-card__prev .tilepv[data-v="4"] span { background: #3f9aa0; color: #0e1a1c; }
+[data-theme="plain"] .tile[data-v="8"] span, .theme-card__prev .tilepv[data-v="8"] span { background: #3f9e5a; color: #0b1a10; }
+[data-theme="plain"] .tile[data-v="16"] span, .theme-card__prev .tilepv[data-v="16"] span { background: #a3b52f; color: #1a1d08; }
+[data-theme="plain"] .tile[data-v="32"] span, .theme-card__prev .tilepv[data-v="32"] span { background: #e3c12e; color: #241c05; }
+[data-theme="plain"] .tile[data-v="64"] span, .theme-card__prev .tilepv[data-v="64"] span { background: #f08a24; color: #2a1604; }
+[data-theme="plain"] .tile[data-v="128"] span, .theme-card__prev .tilepv[data-v="128"] span { background: #e9532b; color: #fff3e6; }
+[data-theme="plain"] .tile[data-v="256"] span, .theme-card__prev .tilepv[data-v="256"] span { background: #c8232c; color: #fff3e6; }
+[data-theme="plain"] .tile[data-v="512"] span, .theme-card__prev .tilepv[data-v="512"] span { background: #d9408f; color: #fff0f7; }
+[data-theme="plain"] .tile[data-v="1024"] span, .theme-card__prev .tilepv[data-v="1024"] span { background: #8a4cc8; color: #f7eeff; }
+[data-theme="plain"] .tile[data-v="2048"] span, .theme-card__prev .tilepv[data-v="2048"] span { background: #3d72e6; color: #f4f8ff; box-shadow: 0 0 12px rgba(242, 180, 90, .95), 2px 2px 0 rgba(0, 0, 0, .45); border-color: var(--lantern); }
+[data-theme="plain"] .tile[data-v="big"] span { background: #120c0a; color: var(--lantern); border-color: var(--lantern); box-shadow: 0 0 10px rgba(242, 180, 90, .6), 2px 2px 0 rgba(0, 0, 0, .45); }
