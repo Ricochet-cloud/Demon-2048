@@ -187,3 +187,5 @@
 .rank__name small.rank__first { padding: 1px 5px; color: var(--ink, #14100e); background: var(--lantern); }
 #boardCard .chips { margin-bottom: 10px; }
 #weekNote:not([hidden]) { margin-top: 10px; }
+.homerank .rank__bio { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 52vw; }
+.homerank .rank__txt { min-width: 0; }

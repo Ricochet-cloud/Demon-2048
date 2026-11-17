@@ -414,7 +414,7 @@
       txt.appendChild(nm);
       const tt = titleOf(u.title);
       if (tt) { const e = document.createElement('span'); e.className = 'rank__title'; e.textContent = tt.name; txt.appendChild(e); }
-      if (u.bio && !compact) { const e = document.createElement('span'); e.className = 'rank__bio'; e.textContent = u.bio; txt.appendChild(e); }
+      if (u.bio) { const e = document.createElement('span'); e.className = 'rank__bio'; e.textContent = u.bio; txt.appendChild(e); }
       if (!compact) txt.appendChild(sub);
       left.appendChild(txt);
       const right = document.createElement('div');
