@@ -14,7 +14,12 @@
     { id: 'murata', name: '무라타', price: 50 }, { id: 'rui', name: '루이', price: 100 }, { id: 'enmu', name: '엔무', price: 100 },
     { id: 'daki', name: '다키', price: 120 }, { id: 'gyutaro', name: '규타로', price: 120 }, { id: 'tamayo', name: '타마요', price: 150 },
     { id: 'akaza', name: '아카자', price: 150 }, { id: 'douma', name: '도우마', price: 150 }, { id: 'kokushibo', name: '코쿠시보', price: 200 },
-    { id: 'muzan', name: '키부츠지 무잔', price: 300 }
+    { id: 'muzan', name: '키부츠지 무잔', price: 300 },
+    { id: 'shinobu', name: '시노부', price: 150 }, { id: 'muichiro', name: '무이치로', price: 150 }, { id: 'sanemi', name: '사네미', price: 200 },
+    { id: 'obanai', name: '오바나이', price: 200 }, { id: 'giyu', name: '기유', price: 200 }, { id: 'tengen', name: '텐겐', price: 250 },
+    { id: 'gyomei', name: '교메이', price: 300 },
+    { id: 'tanjiro-nezuko', name: '탄지로·네즈코', price: 150 }, { id: 'yushiro-tamayo', name: '유시로·타마요', price: 200 },
+    { id: 'hakuji-koyuki', name: '하쿠지·코유키', price: 200 }, { id: 'tengen-wives', name: '텐겐의 아내들', price: 250 }
   ];
   const avatarSrc = (id) => `./images/avatars/${id}.webp`;
   const knownAvatar = (id) => AVATARS.some((a) => a.id === id);
