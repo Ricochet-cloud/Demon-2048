@@ -61,6 +61,7 @@
         </button>
         <button class="menu__btn" data-go="profile"><span>프로필</span></button>
         <button class="menu__btn" data-go="shop"><span>꾸미기</span><em class="tag">준비 중</em></button>
+        <button class="menu__btn" data-go="settings"><span>설정</span></button>
       </nav>
       <p class="foot" id="homeHint" hidden>프로필에서 닉네임과 사진을 정해 주세요</p>
     </div>
@@ -140,6 +141,20 @@
         <div class="rank" id="rankList"></div>
         <p id="rankMsg"></p>
       </div>
+      <div class="card" id="guestCard">
+        <p>로그인하면 사진과 닉네임을 정하고 서로의 기록을 볼 수 있게 돼요. 지금 기록은 이 기기 안에만 저장돼요.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 설정 (소리, 계정) -->
+  <section class="screen screen--settings" data-screen="settings">
+    <div class="topbar">
+      <button class="topbar__back" data-back>홈</button>
+      <div class="topbar__title">설정</div>
+      <button class="sound-btn" data-sound-toggle aria-label="소리 켜기 끄기"></button>
+    </div>
+    <div class="wrap">
       <div class="card" id="soundCard">
         <h2>소리</h2>
         <label class="opt"><span>음악</span><input class="switch" id="optMusic" type="checkbox"></label>
@@ -151,7 +166,7 @@
       </div>
       <div class="card">
         <h2>계정</h2>
-        <p id="pfAccount">로그인하면 닉네임을 정하고 서로의 기록을 볼 수 있게 돼요. 지금 기록은 이 기기 안에만 저장돼요.</p>
+        <p id="stAccount">로그인 없이 이 기기에서만 쓰는 중이에요.</p>
         <button class="btn btn--sub btn--wide" id="logoutBtn" hidden>로그아웃</button>
       </div>
     </div>

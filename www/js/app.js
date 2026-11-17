@@ -5,7 +5,7 @@
 (() => {
   'use strict';
 
-  const SCREENS = ['home', 'game', 'profile', 'shop', 'login'];
+  const SCREENS = ['home', 'game', 'profile', 'shop', 'settings', 'login'];
   // 프로필 사진 목록 — images/avatars/<id>.webp. 사진을 늘리려면 여기에 한 줄 추가하고 파일을 넣어요
   const AVATARS = [
     { id: 'tanjiro', name: '탄지로' }, { id: 'nezuko', name: '네즈코' }, { id: 'zenitsu', name: '젠이츠' },
@@ -135,13 +135,13 @@
       if (document.activeElement !== $('nickInput')) $('nickInput').value = C.nickname;
       refreshRank();
     }
-    if (A.enabled && A.user) {
-      $('pfAccount').textContent = `로그인: ${A.user.email}`;
-      $('logoutBtn').hidden = false;
-    } else {
-      $('pfAccount').textContent = '로그인하면 닉네임을 정하고 서로의 기록을 볼 수 있게 돼요. 지금 기록은 이 기기 안에만 저장돼요.';
-      $('logoutBtn').hidden = true;
-    }
+    $('guestCard').hidden = online;   // 로그인 없이 쓰는 중일 때만 안내 문구
+  }
+
+  function refreshSettings() {
+    const online = A.enabled && !!A.user;
+    $('stAccount').textContent = online ? `로그인: ${A.user.email}` : '로그인 없이 이 기기에서만 쓰는 중이에요.';
+    $('logoutBtn').hidden = !online;
   }
 
   function render() {
@@ -151,6 +151,7 @@
     window.scrollTo(0, 0);
     if (name === 'home') refreshHome();
     if (name === 'profile') refreshProfile();
+    if (name === 'settings') refreshSettings();
     if (name === 'login') $('loginErr').textContent = '';
     window.dispatchEvent(new CustomEvent('screenchange', { detail: name }));   // 화면에 맞는 BGM 으로 바꿀 때 쓰여요
   }
