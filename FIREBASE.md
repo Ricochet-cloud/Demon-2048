@@ -16,7 +16,7 @@
       allow read: if request.auth != null;
       allow create, update: if request.auth != null
         && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['nickname', 'avatar', 'best', 'bestTile', 'plays', 'updatedAt', 'gold', 'daily', 'owned', 'frame', 'title', 'bio'])
+        && request.resource.data.keys().hasOnly(['nickname', 'avatar', 'best', 'bestTile', 'plays', 'updatedAt', 'gold', 'daily', 'owned', 'frame', 'title', 'bio', 'week', 'weekClaim'])
         && (!('nickname' in request.resource.data) || (request.resource.data.nickname is string && request.resource.data.nickname.size() <= 24))
         && (!('avatar' in request.resource.data) || (request.resource.data.avatar is string && request.resource.data.avatar.size() <= 20))
         && (!('best' in request.resource.data) || (request.resource.data.best is int && request.resource.data.best >= 0))
@@ -27,7 +27,9 @@
         && (!('owned' in request.resource.data) || (request.resource.data.owned is list && request.resource.data.owned.size() <= 100))
         && (!('frame' in request.resource.data) || (request.resource.data.frame is string && request.resource.data.frame.size() <= 20))
         && (!('title' in request.resource.data) || (request.resource.data.title is string && request.resource.data.title.size() <= 20))
-        && (!('bio' in request.resource.data) || (request.resource.data.bio is string && request.resource.data.bio.size() <= 40));
+        && (!('bio' in request.resource.data) || (request.resource.data.bio is string && request.resource.data.bio.size() <= 40))
+        && (!('week' in request.resource.data) || (request.resource.data.week is map && request.resource.data.week.keys().hasOnly(['k', 's', 'pk', 'ps'])))
+        && (!('weekClaim' in request.resource.data) || (request.resource.data.weekClaim is string && request.resource.data.weekClaim.size() <= 10));
       allow delete: if false;
     }
 ```

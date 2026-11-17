@@ -46,6 +46,7 @@
   const C = window.AppCloud;
   const T = window.AppThemes;
   const G = window.AppGold;
+  const W = window.AppWeekly;
 
   function readSaved() {
     try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}') || {}; } catch (e) { return {}; }
@@ -83,7 +84,7 @@
     try {
       const list = await C.loadAll();
       if (seq !== homeRankSeq || effective() !== 'home') return;
-      renderRank(list, $('homeRankList'), true);
+      renderRank(list.sort((a, b) => (b.best || 0) - (a.best || 0)).slice(0, 3), $('homeRankList'), true);
       card.hidden = list.length === 0;
     } catch (e) { card.hidden = true; }
   }
@@ -388,10 +389,13 @@
     } catch (e) { return ''; }
   }
 
-  function renderRank(list, box, compact) {
+  // mode: 'best'(최고 점수) | 'week'(이번 주 누적 점수)
+  function renderRank(list, box, compact, mode) {
     box = box || $('rankList');
     box.textContent = '';
-    list.sort((a, b) => (b.best || 0) - (a.best || 0)).forEach((u) => {
+    const week = mode === 'week', wk = week ? W.key() : '';
+    const val = (u) => (week ? W.scoreOf(u, wk) : (u.best || 0));
+    list.sort((a, b) => val(b) - val(a)).forEach((u, i) => {
       const item = document.createElement('div');
       item.className = 'rank__item' + (u.uid === C.uid ? ' rank__item--me' : '');
       const left = document.createElement('div');
@@ -403,6 +407,7 @@
       nm.className = 'rank__name';
       nm.textContent = u.nickname || '이름 없음';
       if (u.uid === C.uid) { const t = document.createElement('small'); t.textContent = '나'; nm.appendChild(t); }
+      if (week && i === 0 && val(u) > 0) { const t = document.createElement('small'); t.className = 'rank__first'; t.textContent = '1등'; nm.appendChild(t); }
       const sub = document.createElement('span');
       sub.className = 'rank__sub';
       sub.textContent = `플레이 ${u.plays || 0}회${u.updatedAt ? ' · ' + ago(u.updatedAt) : ''}`;
@@ -414,10 +419,22 @@
       left.appendChild(txt);
       const right = document.createElement('div');
       right.className = 'rank__score';
-      const b = document.createElement('b'); b.textContent = u.best || 0;
-      right.appendChild(b); right.appendChild(document.createTextNode(`최고 타일 ${u.bestTile || '-'}`));
+      const b = document.createElement('b'); b.textContent = val(u);
+      right.appendChild(b); right.appendChild(document.createTextNode(week ? '이번 주' : `최고 타일 ${u.bestTile || '-'}`));
       item.appendChild(left); item.appendChild(right);
       box.appendChild(item);
+    });
+  }
+
+  let rankTab = 'best';
+  function renderRankTabs() {
+    const box = $('rankTabs');
+    box.textContent = '';
+    [{ id: 'best', name: '최고 점수' }, { id: 'week', name: '주간 순위' }].forEach((t) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip' + (t.id === rankTab ? ' on' : ''); b.textContent = t.name;
+      b.addEventListener('click', () => { rankTab = t.id; refreshRank(); });
+      box.appendChild(b);
     });
   }
 
@@ -425,8 +442,21 @@
     const msg = $('rankMsg');
     if (C.failed) { msg.textContent = '기록을 불러오지 못했어요. 인터넷 연결이나 보안 규칙을 확인해 주세요.'; return; }
     if (!C.loaded) { msg.textContent = '기록을 불러오는 중이에요...'; return; }
-    try { renderRank(await C.loadAll(), $('rankList')); msg.textContent = ''; }
-    catch (e) { msg.textContent = '기록을 불러오지 못했어요. 인터넷 연결이나 보안 규칙을 확인해 주세요.'; }
+    renderRankTabs();
+    const note = $('weekNote');
+    try {
+      if (rankTab === 'week') await W.flush();   // 방금 얻은 점수까지 올린 뒤에 불러와요
+      const list = await C.loadAll();
+      renderRank(list, $('rankList'), false, rankTab);
+      msg.textContent = '';
+      note.hidden = rankTab !== 'week';
+      if (rankTab === 'week') {
+        const last = W.prevKey();
+        const top = list.map((u) => ({ n: u.nickname || '이름 없음', s: W.scoreOf(u, last) })).sort((a, b) => b.s - a.s)[0];
+        note.textContent = `매주 월요일 오전 6시에 새로 시작해요. 한 주 동안 모은 점수가 가장 높은 사람이 다음 주에 ${W.reward}골드를 받아요 (${W.minScore}점 이상).` +
+          (top && top.s >= W.minScore ? ` 지난주 1등: ${top.n} (${top.s}점)` : '');
+      }
+    } catch (e) { msg.textContent = '기록을 불러오지 못했어요. 인터넷 연결이나 보안 규칙을 확인해 주세요.'; }
   }
 
   function refreshProfile() {

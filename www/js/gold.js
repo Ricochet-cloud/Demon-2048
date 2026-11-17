@@ -65,10 +65,11 @@
         owned: Array.isArray(d.owned) ? d.owned : (guest ? S.owned : []),
         day,
         done: union(same ? d.daily.done : [], S.day === day ? S.done : []),
+        weekClaim: typeof d.weekClaim === 'string' ? d.weekClaim : '',
         claimed: same ? [...(d.daily.claimed || [])] : (guest && typeof d.gold !== 'number' && S.day === day ? S.claimed : [])
       };
       const nx = mutate(cur);
-      t.set(ref, { gold: nx.gold, owned: nx.owned, daily: { day, done: nx.done, claimed: nx.claimed } }, { merge: true });
+      t.set(ref, { gold: nx.gold, owned: nx.owned, weekClaim: nx.weekClaim || '', daily: { day, done: nx.done, claimed: nx.claimed } }, { merge: true });
       return nx;
     });
     S = Object.assign(S, next, { owner: C.uid });
@@ -147,6 +148,14 @@
         return Object.assign(cur, { gold: (cur.gold || 0) + m.reward, claimed: [...cur.claimed, id], owned });
       });
       return m.reward;
+    },
+    // 주간 1등 보상 (같은 주는 한 번만)
+    async claimWeekly(weekKey, reward) {
+      await update((cur) => {
+        if (cur.weekClaim === weekKey) throw userError('이미 받았어요.');
+        return Object.assign(cur, { gold: (cur.gold || 0) + reward, weekClaim: weekKey });
+      });
+      return reward;
     },
     // 상점에서 쓸 구매 (골드를 내고 itemId 를 가져요) — 아직 파는 물건은 없지만 구조만 만들어 둬요
     async spend(price, itemId) {

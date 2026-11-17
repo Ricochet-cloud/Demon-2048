@@ -184,3 +184,6 @@
 .homerank .avatar { width: 36px; height: 36px; font-size: 16px; }
 .homerank[hidden] { display: none; }
 .homerank:active { transform: translateY(2px); }
+.rank__name small.rank__first { padding: 1px 5px; color: var(--ink, #14100e); background: var(--lantern); }
+#boardCard .chips { margin-bottom: 10px; }
+#weekNote:not([hidden]) { margin-top: 10px; }
