@@ -141,3 +141,13 @@
 .mission--claimed .mission__txt b { color: var(--muted); text-decoration: line-through; }
 .mission .mission__btn { flex: none; width: 76px; min-height: 36px; padding: 0; }
 #missionList[hidden], #themeList[hidden] { display: none; }
+
+/* ---------- 상점: 프로필 사진 ---------- */
+.buys { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.buy { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px; background: rgba(20, 16, 14, .6); border: 1px solid rgba(201, 162, 75, .35); }
+.buy img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border: 2px solid var(--gold); background: var(--depth); }
+.buy b { font-size: 12px; color: var(--paper); text-align: center; word-break: keep-all; }
+.buy.own img { border-color: var(--lantern); }
+.buy .buy__btn { flex: none; width: 100%; min-height: 34px; padding: 0; }
+.gold--short { color: #ff8a7a; }
+#avatarShop[hidden] { display: none; }

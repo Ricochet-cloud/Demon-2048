@@ -6,13 +6,20 @@
   'use strict';
 
   const SCREENS = ['home', 'game', 'profile', 'dex', 'shop', 'settings', 'login'];
-  // 프로필 사진 목록 — images/avatars/<id>.webp. 사진을 늘리려면 여기에 한 줄 추가하고 파일을 넣어요
+  // 프로필 사진 목록 — images/avatars/<id>.webp. price 가 있으면 상점에서 골드로 사야 쓸 수 있어요 (없으면 처음부터 무료)
+  // 사진을 늘리려면 여기에 한 줄 추가하고 파일을 넣어요. 가격은 여기서만 바꾸면 돼요.
   const AVATARS = [
     { id: 'tanjiro', name: '탄지로' }, { id: 'nezuko', name: '네즈코' }, { id: 'zenitsu', name: '젠이츠' },
-    { id: 'inosuke', name: '이노스케' }, { id: 'mitsuri', name: '미츠리' }, { id: 'rengoku', name: '렌고쿠' }
+    { id: 'inosuke', name: '이노스케' }, { id: 'mitsuri', name: '미츠리' }, { id: 'rengoku', name: '렌고쿠' },
+    { id: 'murata', name: '무라타', price: 50 }, { id: 'rui', name: '루이', price: 100 }, { id: 'enmu', name: '엔무', price: 100 },
+    { id: 'daki', name: '다키', price: 120 }, { id: 'gyutaro', name: '규타로', price: 120 }, { id: 'tamayo', name: '타마요', price: 150 },
+    { id: 'akaza', name: '아카자', price: 150 }, { id: 'douma', name: '도우마', price: 150 }, { id: 'kokushibo', name: '코쿠시보', price: 200 },
+    { id: 'muzan', name: '키부츠지 무잔', price: 300 }
   ];
   const avatarSrc = (id) => `./images/avatars/${id}.webp`;
   const knownAvatar = (id) => AVATARS.some((a) => a.id === id);
+  // 쓸 수 있는 사진: 무료이거나, 샀거나, 이미 지금 쓰고 있는 사진 (이전에 고른 사진은 그대로 써요)
+  const ownsAvatar = (a) => !a.price || G.owns('avatar:' + a.id) || a.id === C.avatar;
   const STORE_KEY = 'game2048.v1';   // game.js 와 같은 키
   const $ = (id) => document.getElementById(id);
   const A = window.AppAuth;
@@ -83,7 +90,7 @@
 
   // ---------- 상점 (미션 · 테마) ----------
   let shopTab = 'mission';
-  const TABS = [{ id: 'mission', name: '오늘 미션' }, { id: 'theme', name: '타일 테마' }];
+  const TABS = [{ id: 'mission', name: '미션' }, { id: 'avatar', name: '프로필 사진' }, { id: 'theme', name: '타일 테마' }];
 
   function showMsg(msg) {
     const t = $('toast');
@@ -120,6 +127,37 @@
     });
     const note = document.createElement('p'); note.className = 'dex__note'; note.textContent = '미션은 매일 오전 6시에 새로 바뀌어요.';
     card.appendChild(note);
+    box.appendChild(card);
+  }
+
+  function renderAvatars() {
+    const box = $('avatarShop');
+    box.textContent = '';
+    const card = document.createElement('div'); card.className = 'card';
+    const h = document.createElement('h2'); h.textContent = '프로필 사진'; card.appendChild(h);
+    const grid = document.createElement('div'); grid.className = 'buys';
+    AVATARS.filter((a) => a.price).forEach((a) => {
+      const own = ownsAvatar(a);
+      const item = document.createElement('div'); item.className = 'buy' + (own ? ' own' : '');
+      const img = document.createElement('img'); img.src = avatarSrc(a.id); img.alt = ''; img.draggable = false;
+      const nm = document.createElement('b'); nm.textContent = a.name;
+      item.appendChild(img); item.appendChild(nm);
+      if (own) { const tag = document.createElement('em'); tag.className = 'tag'; tag.textContent = '보유'; item.appendChild(tag); }
+      else {
+        const price = document.createElement('span'); price.className = 'gold gold--sm' + (G.gold < a.price ? ' gold--short' : ''); price.textContent = a.price;
+        const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn buy__btn'; btn.textContent = '구매';
+        btn.addEventListener('click', async () => {
+          if (!window.confirm(`${a.name} 사진을 ${a.price}골드에 살까요?`)) return;
+          btn.disabled = true;
+          try { await G.spend(a.price, 'avatar:' + a.id); showMsg(`${a.name} 사진을 얻었어요! 프로필에서 고를 수 있어요.`); }
+          catch (err) { showMsg(err.user ? err.message : '사지 못했어요. 잠시 뒤에 다시 눌러 주세요.'); }
+          if (effective() === 'shop') refreshShop();
+        });
+        item.appendChild(price); item.appendChild(btn);
+      }
+      grid.appendChild(item);
+    });
+    card.appendChild(grid);
     box.appendChild(card);
   }
 
@@ -161,8 +199,9 @@
       tabs.appendChild(b);
     });
     $('missionList').hidden = shopTab !== 'mission';
+    $('avatarShop').hidden = shopTab !== 'avatar';
     $('themeList').hidden = shopTab !== 'theme';
-    if (shopTab === 'mission') renderMissions(); else renderThemes();
+    if (shopTab === 'mission') renderMissions(); else if (shopTab === 'avatar') renderAvatars(); else renderThemes();
   }
 
   // ---------- 프로필 사진 ----------
@@ -182,7 +221,7 @@
   function renderAvatarPicker() {
     const pick = $('avatarPick');
     pick.textContent = '';
-    AVATARS.forEach((a) => {
+    AVATARS.filter(ownsAvatar).forEach((a) => {
       const b = document.createElement('button');
       b.type = 'button'; b.dataset.avatar = a.id;
       b.className = a.id === C.avatar ? 'on' : '';
@@ -321,6 +360,8 @@
     const msg = $('avatarMsg');
     msg.className = 'form-err'; msg.textContent = '';
     try {
+      const a = AVATARS.find((x) => x.id === b.dataset.avatar);
+      if (!a || !ownsAvatar(a)) throw new Error('상점에서 먼저 사야 해요.');
       await C.saveAvatar(b.dataset.avatar);
       renderAvatarPicker(); refreshRank();
       msg.className = 'form-err form-ok'; msg.textContent = '바꿨어요.';
