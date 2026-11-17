@@ -5,3 +5,9 @@
 4. `npx cap open android` → Android Studio 에서 Build > Build APK(s)
    (또는 `cd android && ./gradlew assembleDebug` → `android/app/build/outputs/apk/debug/app-debug.apk`)
 5. APK 를 폰으로 옮겨 설치 (설정에서 '출처를 알 수 없는 앱' 허용)
+
+# GitHub Actions 로 자동 빌드 (컴퓨터에 아무것도 안 깔아도 돼요)
+1. GitHub 에 새 저장소를 만들고 이 폴더를 push (main 브랜치)
+2. 저장소의 Actions 탭 → "Build APK" 실행이 끝날 때까지 기다리기 (처음엔 3~5분)
+3. 완료된 실행을 열고 맨 아래 Artifacts 의 `2048-debug-apk` 다운로드 → 압축 풀면 app-debug.apk
+4. 폰으로 옮겨 설치. 이후 push 할 때마다 새 APK 가 만들어져요.
