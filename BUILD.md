@@ -11,3 +11,9 @@
 2. 저장소의 Actions 탭 → "Build APK" 실행이 끝날 때까지 기다리기 (처음엔 3~5분)
 3. 완료된 실행을 열고 맨 아래 Artifacts 의 `2048-debug-apk` 다운로드 → 압축 풀면 app-debug.apk
 4. 폰으로 옮겨 설치. 이후 push 할 때마다 새 APK 가 만들어져요.
+
+# 웹 배포 (GitHub Pages) — 아이폰/PC 용
+1. 저장소 Settings > Pages > Source 를 **GitHub Actions** 로 설정 (한 번만)
+2. push 하면 `www/` 가 자동 배포돼요. 주소: https://<계정>.github.io/<저장소이름>/
+3. 아이폰: Safari 로 주소를 열고 공유 버튼 > **홈 화면에 추가**
+   PC: 주소를 북마크하거나 Chrome/Edge 주소창의 '앱 설치'
