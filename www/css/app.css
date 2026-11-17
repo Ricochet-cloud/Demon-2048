@@ -83,3 +83,18 @@
 .pick button.on { border-color: var(--lantern); box-shadow: 0 0 12px rgba(242, 180, 90, .55); }
 .pick button.on span { color: var(--lantern); }
 .pick button:active { transform: translateY(2px); }
+
+/* ---------- 소리 ---------- */
+.sound-btn { display: flex; align-items: center; justify-content: center; flex: none; width: 40px; height: 40px; padding: 0; color: var(--gold); background: none; border: 0; cursor: pointer; }
+.sound-btn--float { position: absolute; top: 12px; right: 12px; z-index: 2; background: rgba(20, 16, 14, .6); border: 1px solid rgba(201, 162, 75, .5); }
+.sound-btn.off { color: var(--muted); }
+.sound-btn.off .wave, .sound-btn:not(.off) .slash { display: none; }
+.opt { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 0; font-size: 13px; color: var(--paper); border-bottom: 1px dashed rgba(201, 162, 75, .3); cursor: pointer; }
+.switch { -webkit-appearance: none; appearance: none; position: relative; flex: none; width: 46px; height: 26px; margin: 0; background: var(--depth); border: 2px solid rgba(201, 162, 75, .6); cursor: pointer; }
+.switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: var(--muted); transition: transform .15s; }
+.switch:checked { border-color: var(--lantern); }
+.switch:checked::after { transform: translateX(20px); background: var(--lantern); }
+.range { -webkit-appearance: none; appearance: none; width: 52%; height: 6px; margin: 0; background: rgba(201, 162, 75, .35); outline: none; cursor: pointer; }
+.range::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: var(--lantern); border: 2px solid var(--gold); }
+.range::-moz-range-thumb { width: 16px; height: 16px; background: var(--lantern); border: 2px solid var(--gold); border-radius: 0; }
+#soundCard p { margin-top: 10px; }

@@ -21,7 +21,7 @@
   // ============ 저장 ============
   let saved = { best: 0, bestTile: 0, plays: 0, game: null };
   // 기록이 바뀌면 알려줘요 (클라우드 저장 쪽에서 이 이벤트를 들어요)
-  const emit = (name) => { try { window.dispatchEvent(new Event(name)); } catch (e) { /* 무시 */ } };
+  const emit = (name, detail) => { try { window.dispatchEvent(new CustomEvent(name, { detail })); } catch (e) { /* 무시 */ } };
   try { saved = Object.assign(saved, JSON.parse(localStorage.getItem(STORE_KEY) || '{}')); } catch (e) { /* 저장소를 못 써도 게임은 돼요 */ }
   function save() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(saved)); } catch (e) { /* 무시 */ }
@@ -133,6 +133,7 @@
 
     if (!moved) return;
     undoSnap = before; locked = true;
+    emit('game2048:move');
     tiles.forEach(setPos);
     updateHud();
 
@@ -144,6 +145,7 @@
         if (t.v > maxTile) maxTile = t.v;
         t.el.classList.remove('is-pop'); void t.el.offsetWidth; t.el.classList.add('is-pop');
       });
+      if (grown.length) emit('game2048:merge', { values: grown.map((t) => t.v) });
       addRandomTile();
       locked = false;
       afterMove();
@@ -152,10 +154,10 @@
 
   function afterMove() {
     recordBest();
-    if (maxTile >= WIN_TILE && !winShown) { winShown = true; saveGame(); updateHud(); showModal('🎉 2048 달성!', true); return; }
+    if (maxTile >= WIN_TILE && !winShown) { winShown = true; saveGame(); updateHud(); showModal('🎉 2048 달성!', true); emit('game2048:win'); return; }
     if (!canMove()) {
       over = true; saved.plays = (saved.plays || 0) + 1;
-      saveGame(); updateHud(); showModal('게임 오버', false); emit('game2048:record'); return;
+      saveGame(); updateHud(); showModal('게임 오버', false); emit('game2048:over'); emit('game2048:record'); return;
     }
     saveGame(); updateHud();
   }
@@ -203,6 +205,7 @@
   function undo() {
     if (locked || over || undoLeft <= 0 || !undoSnap) return;
     restore(undoSnap); undoSnap = null; undoLeft--;
+    emit('game2048:undo');
     saveGame(); updateHud();
   }
 

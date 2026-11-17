@@ -152,6 +152,7 @@
     if (name === 'home') refreshHome();
     if (name === 'profile') refreshProfile();
     if (name === 'login') $('loginErr').textContent = '';
+    window.dispatchEvent(new CustomEvent('screenchange', { detail: name }));   // 화면에 맞는 BGM 으로 바꿀 때 쓰여요
   }
 
   function go(name) {
