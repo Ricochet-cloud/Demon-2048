@@ -70,6 +70,8 @@
       if (!/^[a-z0-9_-]{1,20}$/.test(String(id))) throw new Error('사진을 고를 수 없어요.');
       await push({ avatar: id });
     },
+    // 내 문서를 읽고 고치는 트랜잭션 (골드 받기·구매처럼 한 번만 반영돼야 할 때 써요)
+    async tx(fn) { return store().runTransaction((t) => fn(t, mine())); },
     async loadAll() {
       const qs = await store().collection(COL).get();
       return qs.docs.map((d) => Object.assign({ uid: d.id }, d.data()));

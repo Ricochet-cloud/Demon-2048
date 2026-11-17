@@ -159,6 +159,7 @@
   }
 
   function afterMove() {
+    emit('game2048:score', { score });
     recordBest();
     if (maxTile >= WIN_TILE && !winShown) { winShown = true; saveGame(); updateHud(); showModal('🎉 2048 달성!', true); emit('game2048:win'); return; }
     if (!canMove()) {

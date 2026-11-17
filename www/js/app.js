@@ -1,4 +1,4 @@
-// 화면 전환 (홈 / 게임 / 프로필 / 꾸미기 / 로그인)
+// 화면 전환 (홈 / 게임 / 프로필 / 도감 / 상점 / 설정 / 로그인)
 // - 주소의 #이름 으로 화면을 구분해서 안드로이드 뒤로가기 버튼도 자연스럽게 동작해요
 // - 새 화면을 만들면 index.html 에 <section data-screen="이름"> 을 추가하고 아래 SCREENS 에 이름만 넣어요
 // - 로그인이 켜져 있으면(firebase-config.js 에 값이 있으면) 로그인 전에는 로그인 화면만 보여요
@@ -18,6 +18,7 @@
   const A = window.AppAuth;
   const C = window.AppCloud;
   const T = window.AppThemes;
+  const G = window.AppGold;
 
   function readSaved() {
     try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}') || {}; } catch (e) { return {}; }
@@ -42,6 +43,8 @@
     $('homeHint').hidden = !(C.enabled && C.loaded && (!C.nickname || !knownAvatar(C.avatar)));
     const th = T.get(), got = T.discovered(readSaved().bestTile, th).length;
     $('homeDex').textContent = `${got} / ${th.values.length}`;
+    $('homeGold').textContent = G.gold;
+    $('homeShopTag').hidden = G.claimable() === 0;
   }
 
   // ---------- 도감 (만든 타일 모으기) ----------
@@ -78,8 +81,49 @@
     });
   }
 
-  // ---------- 꾸미기 (타일 테마 고르기) ----------
-  function refreshShop() {
+  // ---------- 상점 (미션 · 테마) ----------
+  let shopTab = 'mission';
+  const TABS = [{ id: 'mission', name: '오늘 미션' }, { id: 'theme', name: '타일 테마' }];
+
+  function showMsg(msg) {
+    const t = $('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(showMsg.t); showMsg.t = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  function renderMissions() {
+    const box = $('missionList');
+    box.textContent = '';
+    const card = document.createElement('div'); card.className = 'card';
+    const h = document.createElement('h2'); h.textContent = '오늘 미션'; card.appendChild(h);
+    G.missions().forEach((m) => {
+      const row = document.createElement('div'); row.className = 'mission mission--' + m.state;
+      const txt = document.createElement('div'); txt.className = 'mission__txt';
+      const nm = document.createElement('b'); nm.textContent = m.name;
+      const rw = document.createElement('span'); rw.className = 'gold gold--sm'; rw.textContent = '+' + m.reward;
+      txt.appendChild(nm); txt.appendChild(rw);
+      row.appendChild(txt);
+      if (m.state === 'ready') {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'btn mission__btn'; b.textContent = '받기';
+        b.addEventListener('click', async () => {
+          b.disabled = true;
+          try { const got = await G.claim(m.id); showMsg(`골드 ${got}을 받았어요!`); }
+          catch (err) { showMsg(err.user ? err.message : '받지 못했어요. 잠시 뒤에 다시 눌러 주세요.'); }
+          if (effective() === 'shop') refreshShop();
+        });
+        row.appendChild(b);
+      } else {
+        const tag = document.createElement('em'); tag.className = 'tag'; tag.textContent = m.state === 'claimed' ? '받음' : '진행 중';
+        row.appendChild(tag);
+      }
+      card.appendChild(row);
+    });
+    const note = document.createElement('p'); note.className = 'dex__note'; note.textContent = '미션은 매일 오전 6시에 새로 바뀌어요.';
+    card.appendChild(note);
+    box.appendChild(card);
+  }
+
+  function renderThemes() {
     const box = $('themeList');
     box.textContent = '';
     const cur = T.get().id;
@@ -104,6 +148,21 @@
       }
       box.appendChild(card);
     });
+  }
+
+  function refreshShop() {
+    $('shopGold').textContent = G.gold;
+    const tabs = $('shopTabs');
+    tabs.textContent = '';
+    TABS.forEach((t) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip' + (t.id === shopTab ? ' on' : ''); b.textContent = t.name;
+      b.addEventListener('click', () => { shopTab = t.id; refreshShop(); });
+      tabs.appendChild(b);
+    });
+    $('missionList').hidden = shopTab !== 'mission';
+    $('themeList').hidden = shopTab !== 'theme';
+    if (shopTab === 'mission') renderMissions(); else renderThemes();
   }
 
   // ---------- 프로필 사진 ----------
@@ -240,6 +299,8 @@
     if (e.target.closest('[data-back]')) back();
   });
   window.addEventListener('popstate', render);
+  // 골드·미션이 바뀌면 지금 보는 화면을 새로 그려요
+  window.addEventListener('gold:change', () => { const n = effective(); if (n === 'home') refreshHome(); if (n === 'shop') refreshShop(); });
   A.onChange(render);
 
   // ---------- 로그인 / 로그아웃 ----------

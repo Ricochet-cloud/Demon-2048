@@ -48,6 +48,7 @@
 
   <!-- 홈 -->
   <section class="screen screen--home" data-screen="home">
+    <div class="gold gold--float" aria-label="보유 골드"><b id="homeGold">0</b></div>
     <button class="sound-btn sound-btn--float" data-sound-toggle aria-label="소리 켜기 끄기"></button>
     <div class="wrap home">
       <header class="brand">
@@ -61,7 +62,7 @@
         </button>
         <button class="menu__btn" data-go="profile"><span>프로필</span></button>
         <button class="menu__btn" data-go="dex"><span>도감<small class="menu__sub" id="homeDex"></small></span></button>
-        <button class="menu__btn" data-go="shop"><span>꾸미기</span></button>
+        <button class="menu__btn" data-go="shop"><span>상점</span><em class="tag tag--alert" id="homeShopTag" hidden>보상 받기</em></button>
         <button class="menu__btn" data-go="settings"><span>설정</span></button>
       </nav>
       <p class="foot" id="homeHint" hidden>프로필에서 닉네임과 사진을 정해 주세요</p>
@@ -190,14 +191,17 @@
     </div>
   </section>
 
-  <!-- 꾸미기 (타일 테마) -->
+  <!-- 상점 (미션 · 타일 테마) -->
   <section class="screen screen--shop" data-screen="shop">
     <div class="topbar">
       <button class="topbar__back" data-back>홈</button>
-      <div class="topbar__title">꾸미기</div>
+      <div class="topbar__title">상점</div>
       <button class="sound-btn" data-sound-toggle aria-label="소리 켜기 끄기"></button>
     </div>
     <div class="wrap">
+      <div class="card wallet"><span>보유 골드</span><div class="gold"><b id="shopGold">0</b></div></div>
+      <div class="chips" id="shopTabs"></div>
+      <div id="missionList"></div>
       <div id="themeList"></div>
     </div>
   </section>
@@ -213,6 +217,7 @@
   <script src="./js/themes.js"></script>
   <script src="./js/game.js"></script>
   <script src="./js/cloud.js"></script>
+  <script src="./js/gold.js"></script>
   <script src="./js/sound.js"></script>
   <script src="./js/app.js"></script>
 </body>
