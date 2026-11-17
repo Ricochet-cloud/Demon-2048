@@ -117,10 +117,30 @@
       <button class="sound-btn" data-sound-toggle aria-label="소리 켜기 끄기"></button>
     </div>
     <div class="wrap">
+      <div class="card" id="meCard" hidden>
+        <div class="me">
+          <div id="meAvatar"></div>
+          <div class="me__txt">
+            <div class="me__name" id="meName"></div>
+            <div class="me__title" id="meTitle"></div>
+            <div class="me__bio" id="meBio"></div>
+          </div>
+        </div>
+      </div>
       <div class="card" id="avatarCard" hidden>
         <h2>프로필 사진</h2>
         <div class="pick" id="avatarPick"></div>
         <p class="form-err" id="avatarMsg" role="status"></p>
+      </div>
+      <div class="card" id="frameCard" hidden>
+        <h2>프레임</h2>
+        <div class="framepick" id="framePick"></div>
+        <p class="form-err" id="frameMsg" role="status"></p>
+      </div>
+      <div class="card" id="titleCard" hidden>
+        <h2>칭호</h2>
+        <div class="titlepick" id="titlePick"></div>
+        <p class="form-err" id="titleMsg" role="status"></p>
       </div>
       <div class="card" id="nickCard" hidden>
         <h2>닉네임</h2>
@@ -128,6 +148,14 @@
           <input class="field" id="nickInput" type="text" maxlength="24" autocomplete="off" placeholder="서로에게 보일 이름 (12글자까지)">
           <p class="form-err" id="nickMsg" role="status"></p>
           <button class="btn btn--wide" id="nickBtn" type="submit">저장</button>
+        </form>
+      </div>
+      <div class="card" id="bioCard" hidden>
+        <h2>상태 메시지</h2>
+        <form id="bioForm" novalidate>
+          <input class="field" id="bioInput" type="text" maxlength="20" autocomplete="off" placeholder="한 줄로 남겨 보세요 (20글자까지)">
+          <p class="form-err" id="bioMsg" role="status"></p>
+          <button class="btn btn--wide" id="bioBtn" type="submit">저장</button>
         </form>
       </div>
       <div class="card">
@@ -202,7 +230,7 @@
       <div class="card wallet"><span>보유 골드</span><div class="gold"><b id="shopGold">0</b></div></div>
       <div class="chips" id="shopTabs"></div>
       <div id="missionList"></div>
-      <div id="avatarShop"></div>
+      <div id="decoPane"><div class="chips" id="decoTabs"></div><div id="decoShop"></div></div>
       <div id="themeList"></div>
     </div>
   </section>

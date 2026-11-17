@@ -153,3 +153,26 @@
 #avatarShop[hidden] { display: none; }
 .theme-card__prev .tilepv { position: relative; left: auto; top: auto; z-index: auto; width: 100%; height: auto; aspect-ratio: 1; transform: none; transition: none; }
 .theme-card__prev .tilepv span { font-size: 18px; }
+
+/* 프로필 꾸미기: 프레임(사진 테두리) · 칭호 · 상태 메시지 */
+.fr-silver { border-color: #d3dae2; box-shadow: 0 0 6px rgba(211, 218, 226, .7); }
+.fr-gold { border-color: #f6cf62; box-shadow: 0 0 0 2px #6e4f10, 0 0 12px rgba(246, 207, 98, .85); }
+.fr-sakura { border: 3px dotted #f6a9c4; box-shadow: 0 0 0 1px #7a2f4c, 0 0 10px rgba(246, 169, 196, .8); }
+.fr-wave { border-style: double; border-width: 4px; border-color: #5bb4e8; box-shadow: 0 0 10px rgba(91, 180, 232, .8); }
+.fr-flame { border-color: #ff7a1f; box-shadow: 0 0 0 2px #7d1d05, 0 0 12px #ff5a1f; animation: frflame 1.4s ease-in-out infinite alternate; }
+@keyframes frflame { from { box-shadow: 0 0 0 2px #7d1d05, 0 0 6px #ff5a1f; } to { box-shadow: 0 0 0 2px #7d1d05, 0 0 16px #ffb02e; } }
+@media (prefers-reduced-motion: reduce) { .fr-flame { animation: none; } }
+.buy .avatar { width: 64px; height: 64px; }
+.buy .avatar img { border: 0; aspect-ratio: auto; }
+.framepick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.framepick button { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0; cursor: pointer; background: transparent; border: 1px solid transparent; font: 700 10px 'Galmuri', sans-serif; color: var(--paper); }
+.framepick button.on { border-color: var(--lantern); color: var(--lantern); }
+.framepick .avatar { width: 56px; height: 56px; }
+.titlepick { display: flex; flex-wrap: wrap; gap: 8px; }
+.me { display: flex; align-items: center; gap: 14px; }
+.me .avatar { width: 64px; height: 64px; font-size: 26px; }
+.me__txt { min-width: 0; }
+.me__name { font-size: 18px; color: var(--paper); }
+.me__title, .rank__title { display: block; margin-top: 3px; font-size: 11px; color: var(--lantern); }
+.me__bio, .rank__bio { display: block; margin-top: 3px; font-size: 11px; color: var(--muted); word-break: break-all; }
+.me__title[hidden], .me__bio[hidden] { display: none; }

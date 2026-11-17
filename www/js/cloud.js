@@ -8,6 +8,8 @@
   const A = window.AppAuth, G = window.Game2048;
   const COL = 'game2048_users';
   const NICK_MAX = 12;
+  const BIO_MAX = 20;
+  const idOk = (id) => id === '' || /^[a-z0-9_-]{1,20}$/.test(String(id));
   let db = null, me = {}, loaded = false, failed = false, timer = null;
   const readyListeners = [];
 
@@ -66,6 +68,16 @@
     get uid() { return A.user ? A.user.uid : null; },
     get nickname() { return me.nickname || ''; },
     get avatar() { return me.avatar || ''; },
+    get frame() { return me.frame || ''; },
+    get title() { return me.title || ''; },
+    get bio() { return me.bio || ''; },
+    async saveFrame(id) { if (!idOk(id)) throw new Error('프레임을 고를 수 없어요.'); await push({ frame: id }); },
+    async saveTitle(id) { if (!idOk(id)) throw new Error('칭호를 고를 수 없어요.'); await push({ title: id }); },
+    async saveBio(text) {
+      const n = String(text || '').trim();
+      if ([...n].length > BIO_MAX) throw new Error(`상태 메시지는 ${BIO_MAX}글자까지 쓸 수 있어요.`);
+      await push({ bio: n });
+    },
     async saveAvatar(id) {
       if (!/^[a-z0-9_-]{1,20}$/.test(String(id))) throw new Error('사진을 고를 수 없어요.');
       await push({ avatar: id });

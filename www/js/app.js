@@ -20,6 +20,26 @@
   const knownAvatar = (id) => AVATARS.some((a) => a.id === id);
   // 쓸 수 있는 사진: 무료이거나, 샀거나, 이미 지금 쓰고 있는 사진 (이전에 고른 사진은 그대로 써요)
   const ownsAvatar = (a) => !a.price || G.owns('avatar:' + a.id) || a.id === C.avatar;
+  // 프레임(사진 테두리) — CSS 는 app.css 의 .fr-<id>. price 없으면 무료
+  const FRAMES = [
+    { id: 'silver', name: '은색' }, { id: 'gold', name: '금색', price: 80 }, { id: 'sakura', name: '벚꽃', price: 120 },
+    { id: 'wave', name: '물결', price: 120 }, { id: 'flame', name: '불꽃', price: 200 }
+  ];
+  // 칭호 — price 가 있으면 상점에서 사고, when 이 있으면 조건을 채우면 저절로 얻어요 (diligent 는 미션을 다 받을 때 gold.js 가 줘요)
+  const best = () => readSaved().bestTile || 0;
+  const dexHalf = () => best() >= 128;      // 도감 절반 (가장 긴 도감 14칸 중 7칸 = 128 타일)
+  const dexFull = () => best() >= 8192;     // 그림 있는 도감 하나를 다 채움
+  const TITLES = [
+    { id: 'beginner', name: '귀살대 신입', price: 50 }, { id: 'hashira', name: '주 보좌', price: 100 }, { id: 'flame', name: '불꽃의 후예', price: 150 },
+    { id: 'win2048', name: '2048 달성자', when: () => best() >= 2048, how: '2048 타일 만들기' },
+    { id: 'collector', name: '수집가', when: dexHalf, how: '도감 절반 채우기' },
+    { id: 'master', name: '도감 마스터', when: dexFull, how: '도감 전부 채우기' },
+    { id: 'diligent', name: '성실한 대원', how: '하루 미션 전부 받기' }
+  ];
+  const frameOf = (id) => FRAMES.find((f) => f.id === id);
+  const titleOf = (id) => TITLES.find((t) => t.id === id);
+  const ownsFrame = (f) => !f.price || G.owns('frame:' + f.id) || f.id === C.frame;
+  const ownsTitle = (t) => (t.when ? t.when() : false) || G.owns('title:' + t.id) || t.id === C.title;
   const STORE_KEY = 'game2048.v1';   // game.js 와 같은 키
   const $ = (id) => document.getElementById(id);
   const A = window.AppAuth;
@@ -90,7 +110,9 @@
 
   // ---------- 상점 (미션 · 테마) ----------
   let shopTab = 'mission';
-  const TABS = [{ id: 'mission', name: '미션' }, { id: 'avatar', name: '프로필 사진' }, { id: 'theme', name: '타일 테마' }];
+  const TABS = [{ id: 'mission', name: '미션' }, { id: 'deco', name: '꾸미기' }, { id: 'theme', name: '타일 테마' }];
+  let decoTab = 'avatar';
+  const DECO = [{ id: 'avatar', name: '사진' }, { id: 'frame', name: '프레임' }, { id: 'title', name: '칭호' }];
 
   function showMsg(msg) {
     const t = $('toast');
@@ -130,8 +152,71 @@
     box.appendChild(card);
   }
 
+  async function buy(label, price, itemId, done) {
+    if (!window.confirm(`${label} — ${price}골드에 살까요?`)) return;
+    try { await G.spend(price, itemId); showMsg(`${label} 구매 완료! 프로필에서 고를 수 있어요.`); }
+    catch (err) { showMsg(err.user ? err.message : '사지 못했어요. 잠시 뒤에 다시 눌러 주세요.'); }
+    if (effective() === 'shop') refreshShop();
+  }
+  function buyTag(own, price, onBuy) {
+    const frag = document.createDocumentFragment();
+    if (own) { const tag = document.createElement('em'); tag.className = 'tag'; tag.textContent = '보유'; frag.appendChild(tag); return frag; }
+    const pr = document.createElement('span'); pr.className = 'gold gold--sm' + (G.gold < price ? ' gold--short' : ''); pr.textContent = price;
+    const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn buy__btn'; btn.textContent = '구매';
+    btn.addEventListener('click', () => { btn.disabled = true; onBuy(); });
+    frag.appendChild(pr); frag.appendChild(btn);
+    return frag;
+  }
+
+  function renderFrames() {
+    const box = $('decoShop');
+    const card = document.createElement('div'); card.className = 'card';
+    const h = document.createElement('h2'); h.textContent = '프레임'; card.appendChild(h);
+    const grid = document.createElement('div'); grid.className = 'buys';
+    FRAMES.filter((f) => f.price).forEach((f) => {
+      const own = ownsFrame(f);
+      const item = document.createElement('div'); item.className = 'buy' + (own ? ' own' : '');
+      item.appendChild(avatarEl(C.avatar, C.nickname, f.id));
+      const nm = document.createElement('b'); nm.textContent = f.name; item.appendChild(nm);
+      item.appendChild(buyTag(own, f.price, () => buy(`${f.name} 프레임`, f.price, 'frame:' + f.id)));
+      grid.appendChild(item);
+    });
+    card.appendChild(grid); box.appendChild(card);
+  }
+
+  function renderTitles() {
+    const box = $('decoShop');
+    const card = document.createElement('div'); card.className = 'card';
+    const h = document.createElement('h2'); h.textContent = '칭호'; card.appendChild(h);
+    TITLES.forEach((t) => {
+      const own = ownsTitle(t);
+      const row = document.createElement('div'); row.className = 'mission' + (own ? ' mission--claimed' : '');
+      const txt = document.createElement('div'); txt.className = 'mission__txt';
+      const nm = document.createElement('b'); nm.textContent = t.name; txt.appendChild(nm);
+      if (!t.price) { const how = document.createElement('span'); how.className = 'dex__note'; how.textContent = '얻는 법 · ' + t.how; txt.appendChild(how); }
+      row.appendChild(txt);
+      if (t.price) row.appendChild(buyTag(own, t.price, () => buy(`${t.name} 칭호`, t.price, 'title:' + t.id)));
+      else { const tag = document.createElement('em'); tag.className = 'tag'; tag.textContent = own ? '보유' : '잠김'; row.appendChild(tag); }
+      card.appendChild(row);
+    });
+    box.appendChild(card);
+  }
+
+  function renderDeco() {
+    const tabs = $('decoTabs');
+    tabs.textContent = '';
+    DECO.forEach((t) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip' + (t.id === decoTab ? ' on' : ''); b.textContent = t.name;
+      b.addEventListener('click', () => { decoTab = t.id; refreshShop(); });
+      tabs.appendChild(b);
+    });
+    $('decoShop').textContent = '';
+    if (decoTab === 'avatar') renderAvatars(); else if (decoTab === 'frame') renderFrames(); else renderTitles();
+  }
+
   function renderAvatars() {
-    const box = $('avatarShop');
+    const box = $('decoShop');
     box.textContent = '';
     const card = document.createElement('div'); card.className = 'card';
     const h = document.createElement('h2'); h.textContent = '프로필 사진'; card.appendChild(h);
@@ -205,15 +290,15 @@
       tabs.appendChild(b);
     });
     $('missionList').hidden = shopTab !== 'mission';
-    $('avatarShop').hidden = shopTab !== 'avatar';
+    $('decoPane').hidden = shopTab !== 'deco';
     $('themeList').hidden = shopTab !== 'theme';
-    if (shopTab === 'mission') renderMissions(); else if (shopTab === 'avatar') renderAvatars(); else renderThemes();
+    if (shopTab === 'mission') renderMissions(); else if (shopTab === 'deco') renderDeco(); else renderThemes();
   }
 
   // ---------- 프로필 사진 ----------
-  function avatarEl(id, nickname) {
+  function avatarEl(id, nickname, frame) {
     const box = document.createElement('div');
-    box.className = 'avatar';
+    box.className = 'avatar' + (frameOf(frame) ? ' fr-' + frame : '');
     if (knownAvatar(id)) {
       const img = document.createElement('img');
       img.src = avatarSrc(id); img.alt = ''; img.draggable = false;
@@ -242,6 +327,42 @@
     });
   }
 
+  function renderFramePicker() {
+    const pick = $('framePick');
+    pick.textContent = '';
+    const none = document.createElement('button');
+    none.type = 'button'; none.dataset.frame = ''; none.className = C.frame ? '' : 'on';
+    none.setAttribute('aria-pressed', C.frame ? 'false' : 'true');
+    none.appendChild(avatarEl(C.avatar, C.nickname)); none.appendChild(document.createElement('span')).textContent = '없음';
+    pick.appendChild(none);
+    FRAMES.filter(ownsFrame).forEach((f) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.dataset.frame = f.id; b.className = f.id === C.frame ? 'on' : '';
+      b.setAttribute('aria-pressed', f.id === C.frame ? 'true' : 'false');
+      b.appendChild(avatarEl(C.avatar, C.nickname, f.id)); b.appendChild(document.createElement('span')).textContent = f.name;
+      pick.appendChild(b);
+    });
+  }
+
+  function renderTitlePicker() {
+    const pick = $('titlePick');
+    pick.textContent = '';
+    const opts = [{ id: '', name: '없음' }].concat(TITLES.filter(ownsTitle));
+    opts.forEach((t) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.dataset.title = t.id; b.className = 'chip' + (t.id === C.title ? ' on' : '');
+      b.setAttribute('aria-pressed', t.id === C.title ? 'true' : 'false'); b.textContent = t.name;
+      pick.appendChild(b);
+    });
+  }
+
+  function renderMe() {
+    const av = $('meAvatar'); av.textContent = ''; av.appendChild(avatarEl(C.avatar, C.nickname, C.frame));
+    $('meName').textContent = C.nickname || '이름 없음';
+    const t = titleOf(C.title); $('meTitle').textContent = t ? t.name : ''; $('meTitle').hidden = !t;
+    $('meBio').textContent = C.bio; $('meBio').hidden = !C.bio;
+  }
+
   // ---------- 우리 기록 (닉네임·점수 목록) ----------
   function ago(ts) {
     try {
@@ -261,7 +382,7 @@
       item.className = 'rank__item' + (u.uid === C.uid ? ' rank__item--me' : '');
       const left = document.createElement('div');
       left.className = 'rank__who';
-      left.appendChild(avatarEl(u.avatar, u.nickname));
+      left.appendChild(avatarEl(u.avatar, u.nickname, u.frame));
       const txt = document.createElement('div');
       txt.className = 'rank__txt';
       const nm = document.createElement('div');
@@ -271,7 +392,11 @@
       const sub = document.createElement('span');
       sub.className = 'rank__sub';
       sub.textContent = `플레이 ${u.plays || 0}회${u.updatedAt ? ' · ' + ago(u.updatedAt) : ''}`;
-      txt.appendChild(nm); txt.appendChild(sub);
+      txt.appendChild(nm);
+      const tt = titleOf(u.title);
+      if (tt) { const e = document.createElement('span'); e.className = 'rank__title'; e.textContent = tt.name; txt.appendChild(e); }
+      if (u.bio) { const e = document.createElement('span'); e.className = 'rank__bio'; e.textContent = u.bio; txt.appendChild(e); }
+      txt.appendChild(sub);
       left.appendChild(txt);
       const right = document.createElement('div');
       right.className = 'rank__score';
@@ -299,7 +424,10 @@
     $('nickCard').hidden = !online;
     $('avatarCard').hidden = !online;
     $('boardCard').hidden = !online;
+    ['meCard', 'frameCard', 'titleCard', 'bioCard'].forEach((id) => { $(id).hidden = !online; });
     if (online) {
+      renderMe(); renderFramePicker(); renderTitlePicker();
+      if (document.activeElement !== $('bioInput')) $('bioInput').value = C.bio;
       renderAvatarPicker();
       if (document.activeElement !== $('nickInput')) $('nickInput').value = C.nickname;
       refreshRank();
@@ -369,11 +497,38 @@
       const a = AVATARS.find((x) => x.id === b.dataset.avatar);
       if (!a || !ownsAvatar(a)) throw new Error('상점에서 먼저 사야 해요.');
       await C.saveAvatar(b.dataset.avatar);
-      renderAvatarPicker(); refreshRank();
+      renderAvatarPicker(); renderFramePicker(); renderMe(); refreshRank();
       msg.className = 'form-err form-ok'; msg.textContent = '바꿨어요.';
     } catch (err) {
       msg.textContent = '저장하지 못했어요. 인터넷 연결이나 보안 규칙을 확인해 주세요.';
     }
+  });
+
+  // ---------- 프레임 · 칭호 · 상태 메시지 고르기 ----------
+  function picker(boxId, msgId, attr, check, save) {
+    $(boxId).addEventListener('click', async (e) => {
+      const b = e.target.closest('button[data-' + attr + ']');
+      if (!b) return;
+      const msg = $(msgId); msg.className = 'form-err'; msg.textContent = '';
+      const id = b.dataset[attr];
+      try {
+        if (id && !check(id)) throw new Error('상점에서 먼저 사야 해요.');
+        await save(id);
+        refreshProfile();
+        msg.className = 'form-err form-ok'; msg.textContent = '바꿨어요.';
+      } catch (err) { msg.textContent = err.message && !/permission|insufficient/i.test(err.message) ? err.message : '저장하지 못했어요. 인터넷 연결이나 보안 규칙을 확인해 주세요.'; }
+    });
+  }
+  picker('framePick', 'frameMsg', 'frame', (id) => { const f = frameOf(id); return f && ownsFrame(f); }, (id) => C.saveFrame(id));
+  picker('titlePick', 'titleMsg', 'title', (id) => { const t = titleOf(id); return t && ownsTitle(t); }, (id) => C.saveTitle(id));
+
+  $('bioForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = $('bioMsg'); msg.className = 'form-err'; msg.textContent = '';
+    $('bioBtn').disabled = true;
+    try { await C.saveBio($('bioInput').value); msg.className = 'form-err form-ok'; msg.textContent = '저장했어요.'; renderMe(); refreshRank(); }
+    catch (err) { msg.textContent = err.message && !/permission|insufficient/i.test(err.message) ? err.message : '저장하지 못했어요. 인터넷 연결이나 보안 규칙을 확인해 주세요.'; }
+    finally { $('bioBtn').disabled = false; }
   });
 
   // ---------- 닉네임 ----------
@@ -385,7 +540,7 @@
     try {
       await C.saveNickname($('nickInput').value);
       msg.className = 'form-err form-ok'; msg.textContent = '저장했어요.';
-      refreshRank();
+      renderMe(); refreshRank();
     } catch (err) {
       msg.textContent = err.message && !/permission|insufficient/i.test(err.message) ? err.message : '저장하지 못했어요. 인터넷 연결이나 보안 규칙을 확인해 주세요.';
     } finally { $('nickBtn').disabled = false; }

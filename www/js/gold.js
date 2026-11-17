@@ -143,7 +143,8 @@
       await update((cur) => {
         if (!cur.done.includes(id)) throw userError('아직 달성하지 못했어요.');
         if (cur.claimed.includes(id)) throw userError('이미 받았어요.');
-        return Object.assign(cur, { gold: (cur.gold || 0) + m.reward, claimed: [...cur.claimed, id] });
+        const owned = id === 'all' && !cur.owned.includes('title:diligent') ? [...cur.owned, 'title:diligent'] : cur.owned;   // 업적 칭호
+        return Object.assign(cur, { gold: (cur.gold || 0) + m.reward, claimed: [...cur.claimed, id], owned });
       });
       return m.reward;
     },
