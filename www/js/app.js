@@ -23,14 +23,25 @@
   // 프레임(사진 테두리) — CSS 는 app.css 의 .fr-<id>. price 없으면 무료
   const FRAMES = [
     { id: 'silver', name: '은색' }, { id: 'gold', name: '금색', price: 80 }, { id: 'sakura', name: '벚꽃', price: 120 },
-    { id: 'wave', name: '물결', price: 120 }, { id: 'flame', name: '불꽃', price: 200 }
+    { id: 'wave', name: '물결', price: 120 }, { id: 'flame', name: '불꽃', price: 200 },
+    { id: 'ice', name: '서리', price: 120 }, { id: 'wisteria', name: '등꽃', price: 130 }, { id: 'rainbow', name: '무지개', price: 150 },
+    { id: 'moon', name: '달빛', price: 160 }, { id: 'thunder', name: '번개', price: 180 }, { id: 'blood', name: '혈귀', price: 220 },
+    { id: 'sun', name: '일륜', price: 350 }
   ];
   // 칭호 — price 가 있으면 상점에서 사고, when 이 있으면 조건을 채우면 저절로 얻어요 (diligent 는 미션을 다 받을 때 gold.js 가 줘요)
   const best = () => readSaved().bestTile || 0;
   const dexHalf = () => best() >= 128;      // 도감 절반 (가장 긴 도감 14칸 중 7칸 = 128 타일)
   const dexFull = () => best() >= 8192;     // 그림 있는 도감 하나를 다 채움
   const TITLES = [
-    { id: 'beginner', name: '귀살대 신입', price: 50 }, { id: 'hashira', name: '주 보좌', price: 100 }, { id: 'flame', name: '불꽃의 후예', price: 150 },
+    { id: 'beginner', name: '귀살대 신입', price: 50, group: '일반' }, { id: 'hashira', name: '주 보좌', price: 100, group: '일반' }, { id: 'flame', name: '불꽃의 후예', price: 150, group: '일반' },
+    { id: 'p-mushi', name: '蟲柱 충주', price: 200, group: '주(柱)' }, { id: 'p-kasumi', name: '霞柱 하주', price: 250, group: '주(柱)' },
+    { id: 'p-sound', name: '音柱 음주', price: 250, group: '주(柱)' }, { id: 'p-stone', name: '岩柱 암주', price: 300, group: '주(柱)' },
+    { id: 'p-flame', name: '炎柱 염주', price: 300, group: '주(柱)' }, { id: 'p-water', name: '水柱 수주', price: 300, group: '주(柱)' },
+    { id: 'p-wind', name: '風柱 풍주', price: 350, group: '주(柱)' }, { id: 'p-love', name: '戀柱 연주', price: 350, group: '주(柱)' },
+    { id: 'p-snake', name: '蛇柱 사주', price: 350, group: '주(柱)' },
+    { id: 'u6', name: '上弦 陸 상현6', price: 500, group: '상현(上弦)' }, { id: 'u5', name: '上弦 伍 상현5', price: 600, group: '상현(上弦)' },
+    { id: 'u4', name: '上弦 肆 상현4', price: 700, group: '상현(上弦)' }, { id: 'u3', name: '上弦 參 상현3', price: 800, group: '상현(上弦)' },
+    { id: 'u2', name: '上弦 貳 상현2', price: 1000, group: '상현(上弦)' }, { id: 'u1', name: '上弦 壹 상현1', price: 1500, group: '상현(上弦)' },
     { id: 'win2048', name: '2048 달성자', when: () => best() >= 2048, how: '2048 타일 만들기' },
     { id: 'collector', name: '수집가', when: dexHalf, how: '도감 절반 채우기' },
     { id: 'master', name: '도감 마스터', when: dexFull, how: '도감 전부 채우기' },
@@ -203,9 +214,12 @@
     const box = $('decoShop');
     const card = document.createElement('div'); card.className = 'card';
     const h = document.createElement('h2'); h.textContent = '칭호'; card.appendChild(h);
-    TITLES.forEach((t) => {
+    let grp = null;
+    TITLES.filter((t) => t.price).concat(TITLES.filter((t) => !t.price)).forEach((t) => {
+      const g = t.group || '업적';
+      if (g !== grp) { grp = g; const hh = document.createElement('h3'); hh.className = 'shop__group'; hh.textContent = g; card.appendChild(hh); }
       const own = ownsTitle(t);
-      const row = document.createElement('div'); row.className = 'mission' + (own ? ' mission--claimed' : '');
+      const row = document.createElement('div'); row.className = 'mission titlerow';
       const txt = document.createElement('div'); txt.className = 'mission__txt';
       const nm = document.createElement('b'); nm.textContent = t.name; txt.appendChild(nm);
       if (!t.price) { const how = document.createElement('span'); how.className = 'dex__note'; how.textContent = '얻는 법 · ' + t.how; txt.appendChild(how); }
