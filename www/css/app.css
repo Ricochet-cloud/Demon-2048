@@ -58,3 +58,15 @@
 .btn--wide { width: 100%; flex: none; min-height: 48px; margin-top: 4px; }
 .btn[hidden] { display: none; }
 .card .btn--wide { margin-top: 14px; }
+
+/* ---------- 우리 기록 ---------- */
+.rank { display: grid; gap: 8px; }
+.rank__item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(20, 16, 14, .6); border: 1px solid rgba(201, 162, 75, .35); }
+.rank__item--me { border-color: var(--lantern); box-shadow: 0 0 10px rgba(242, 180, 90, .2); }
+.rank__name { min-width: 0; font-size: 14px; color: var(--paper); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank__name small { margin-left: 6px; font-size: 10px; color: var(--lantern); }
+.rank__sub { display: block; margin-top: 3px; font-size: 10px; color: var(--muted); }
+.rank__score { flex: none; text-align: right; font-size: 11px; color: var(--muted); }
+.rank__score b { display: block; font-size: 18px; color: var(--lantern); }
+#rankMsg:not(:empty) { margin-top: 10px; }
+.form-ok { color: var(--lantern) !important; }

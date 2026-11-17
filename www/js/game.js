@@ -19,7 +19,9 @@
   const $ = (id) => document.getElementById(id);
 
   // ============ 저장 ============
-  let saved = { best: 0, bestTile: 0, game: null };
+  let saved = { best: 0, bestTile: 0, plays: 0, game: null };
+  // 기록이 바뀌면 알려줘요 (클라우드 저장 쪽에서 이 이벤트를 들어요)
+  const emit = (name) => { try { window.dispatchEvent(new Event(name)); } catch (e) { /* 무시 */ } };
   try { saved = Object.assign(saved, JSON.parse(localStorage.getItem(STORE_KEY) || '{}')); } catch (e) { /* 저장소를 못 써도 게임은 돼요 */ }
   function save() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(saved)); } catch (e) { /* 무시 */ }
@@ -151,7 +153,10 @@
   function afterMove() {
     recordBest();
     if (maxTile >= WIN_TILE && !winShown) { winShown = true; saveGame(); updateHud(); showModal('🎉 2048 달성!', true); return; }
-    if (!canMove()) { over = true; saveGame(); updateHud(); showModal('게임 오버', false); return; }
+    if (!canMove()) {
+      over = true; saved.plays = (saved.plays || 0) + 1;
+      saveGame(); updateHud(); showModal('게임 오버', false); emit('game2048:record'); return;
+    }
     saveGame(); updateHud();
   }
 
@@ -160,7 +165,7 @@
     let changed = false;
     if (score > saved.best) { saved.best = score; changed = true; }
     if (maxTile > saved.bestTile) { saved.bestTile = maxTile; changed = true; }
-    if (changed) save();
+    if (changed) { save(); emit('game2048:record'); }
   }
 
   function saveGame() {
@@ -245,6 +250,17 @@
     $('againBtn').addEventListener('click', newGame);
     $('continueBtn').addEventListener('click', () => $('modal').classList.remove('show'));
   }
+
+  // 다른 파일(cloud.js)이 기록을 읽고 합칠 수 있게 열어 둬요 — 기록은 올라가기만 해요
+  window.Game2048 = {
+    records() { return { best: saved.best || 0, bestTile: saved.bestTile || 0, plays: saved.plays || 0 }; },
+    apply(r) {
+      saved.best = Math.max(saved.best || 0, r.best || 0);
+      saved.bestTile = Math.max(saved.bestTile || 0, r.bestTile || 0);
+      saved.plays = Math.max(saved.plays || 0, r.plays || 0);
+      save(); updateHud();
+    }
+  };
 
   start();
 })();

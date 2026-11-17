@@ -61,6 +61,7 @@
         <button class="menu__btn" data-go="profile"><span>프로필</span></button>
         <button class="menu__btn" data-go="shop"><span>꾸미기</span><em class="tag">준비 중</em></button>
       </nav>
+      <p class="foot" id="homeHint" hidden>프로필에서 닉네임을 정해 주세요</p>
     </div>
   </section>
 
@@ -117,7 +118,21 @@
         <div class="rows">
           <div class="row">최고 점수<b id="pfBest">-</b></div>
           <div class="row">최고 타일<b id="pfTile">-</b></div>
+          <div class="row">플레이 횟수<b id="pfPlays">-</b></div>
         </div>
+      </div>
+      <div class="card" id="nickCard" hidden>
+        <h2>닉네임</h2>
+        <form id="nickForm" novalidate>
+          <input class="field" id="nickInput" type="text" maxlength="24" autocomplete="off" placeholder="서로에게 보일 이름 (12글자까지)">
+          <p class="form-err" id="nickMsg" role="status"></p>
+          <button class="btn btn--wide" id="nickBtn" type="submit">저장</button>
+        </form>
+      </div>
+      <div class="card" id="boardCard" hidden>
+        <h2>우리 기록</h2>
+        <div class="rank" id="rankList"></div>
+        <p id="rankMsg"></p>
       </div>
       <div class="card">
         <h2>계정</h2>
@@ -147,9 +162,11 @@
   <!-- file:// / Android WebView 에서도 열리도록 ES module 을 쓰지 않아요 -->
   <script src="./vendor/firebase/firebase-app-compat.js"></script>
   <script src="./vendor/firebase/firebase-auth-compat.js"></script>
+  <script src="./vendor/firebase/firebase-firestore-compat.js"></script>
   <script src="./js/firebase-config.js"></script>
   <script src="./js/auth.js"></script>
   <script src="./js/game.js"></script>
+  <script src="./js/cloud.js"></script>
   <script src="./js/app.js"></script>
 </body>
 </html>

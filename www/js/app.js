@@ -9,6 +9,7 @@
   const STORE_KEY = 'game2048.v1';   // game.js 와 같은 키
   const $ = (id) => document.getElementById(id);
   const A = window.AppAuth;
+  const C = window.AppCloud;
 
   function readSaved() {
     try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}') || {}; } catch (e) { return {}; }
@@ -29,12 +30,64 @@
     const el = $('homeResume');
     if (g && g.score > 0) { el.textContent = `진행 중인 판 이어하기 · ${g.score}점`; el.hidden = false; }
     else el.hidden = true;
+    // 로그인했는데 닉네임이 아직 없으면 안내
+    $('homeHint').hidden = !(C.enabled && C.loaded && !C.nickname);
+  }
+
+  // ---------- 우리 기록 (닉네임·점수 목록) ----------
+  function ago(ts) {
+    try {
+      const sec = Math.max(0, (Date.now() - ts.toDate().getTime()) / 1000);
+      if (sec < 60) return '방금 전';
+      if (sec < 3600) return `${Math.floor(sec / 60)}분 전`;
+      if (sec < 86400) return `${Math.floor(sec / 3600)}시간 전`;
+      return `${Math.floor(sec / 86400)}일 전`;
+    } catch (e) { return ''; }
+  }
+
+  function renderRank(list) {
+    const box = $('rankList');
+    box.textContent = '';
+    list.sort((a, b) => (b.best || 0) - (a.best || 0)).forEach((u) => {
+      const item = document.createElement('div');
+      item.className = 'rank__item' + (u.uid === C.uid ? ' rank__item--me' : '');
+      const left = document.createElement('div');
+      left.className = 'rank__name';
+      left.textContent = u.nickname || '이름 없음';
+      if (u.uid === C.uid) { const t = document.createElement('small'); t.textContent = '나'; left.appendChild(t); }
+      const sub = document.createElement('span');
+      sub.className = 'rank__sub';
+      sub.textContent = `플레이 ${u.plays || 0}회${u.updatedAt ? ' · ' + ago(u.updatedAt) : ''}`;
+      left.appendChild(sub);
+      const right = document.createElement('div');
+      right.className = 'rank__score';
+      const b = document.createElement('b'); b.textContent = u.best || 0;
+      right.appendChild(b); right.appendChild(document.createTextNode(`최고 타일 ${u.bestTile || '-'}`));
+      item.appendChild(left); item.appendChild(right);
+      box.appendChild(item);
+    });
+  }
+
+  async function refreshRank() {
+    const msg = $('rankMsg');
+    if (C.failed) { msg.textContent = '기록을 불러오지 못했어요. 인터넷 연결이나 보안 규칙을 확인해 주세요.'; return; }
+    if (!C.loaded) { msg.textContent = '기록을 불러오는 중이에요...'; return; }
+    try { renderRank(await C.loadAll()); msg.textContent = ''; }
+    catch (e) { msg.textContent = '기록을 불러오지 못했어요. 인터넷 연결이나 보안 규칙을 확인해 주세요.'; }
   }
 
   function refreshProfile() {
     const s = readSaved();
     $('pfBest').textContent = s.best || '-';
     $('pfTile').textContent = s.bestTile || '-';
+    $('pfPlays').textContent = s.plays || '-';
+    const online = A.enabled && !!A.user;
+    $('nickCard').hidden = !online;
+    $('boardCard').hidden = !online;
+    if (online) {
+      if (document.activeElement !== $('nickInput')) $('nickInput').value = C.nickname;
+      refreshRank();
+    }
     if (A.enabled && A.user) {
       $('pfAccount').textContent = `로그인: ${A.user.email}`;
       $('logoutBtn').hidden = false;
@@ -83,6 +136,25 @@
     catch (err) { $('loginErr').textContent = err.message; }
     finally { $('loginBtn').disabled = false; }
   });
+
+  // ---------- 닉네임 ----------
+  $('nickForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = $('nickMsg');
+    msg.className = 'form-err'; msg.textContent = '';
+    $('nickBtn').disabled = true;
+    try {
+      await C.saveNickname($('nickInput').value);
+      msg.className = 'form-err form-ok'; msg.textContent = '저장했어요.';
+      refreshRank();
+    } catch (err) {
+      msg.textContent = err.message && !/permission|insufficient/i.test(err.message) ? err.message : '저장하지 못했어요. 인터넷 연결이나 보안 규칙을 확인해 주세요.';
+    } finally { $('nickBtn').disabled = false; }
+  });
+
+  // 클라우드 기록을 다 받아오면 지금 보고 있는 화면을 새로 그려요
+  window.addEventListener('cloud:failed', () => { if (effective() === 'profile') refreshProfile(); });
+  window.addEventListener('cloud:ready', () => { const n = effective(); if (n === 'home') refreshHome(); if (n === 'profile') refreshProfile(); });
 
   $('logoutBtn').addEventListener('click', async () => {
     if (!window.confirm('로그아웃할까요?')) return;
