@@ -5,7 +5,7 @@
 (() => {
   'use strict';
 
-  const SCREENS = ['home', 'game', 'profile', 'shop', 'settings', 'login'];
+  const SCREENS = ['home', 'game', 'profile', 'dex', 'shop', 'settings', 'login'];
   // 프로필 사진 목록 — images/avatars/<id>.webp. 사진을 늘리려면 여기에 한 줄 추가하고 파일을 넣어요
   const AVATARS = [
     { id: 'tanjiro', name: '탄지로' }, { id: 'nezuko', name: '네즈코' }, { id: 'zenitsu', name: '젠이츠' },
@@ -17,6 +17,7 @@
   const $ = (id) => document.getElementById(id);
   const A = window.AppAuth;
   const C = window.AppCloud;
+  const T = window.AppThemes;
 
   function readSaved() {
     try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}') || {}; } catch (e) { return {}; }
@@ -39,6 +40,70 @@
     else el.hidden = true;
     // 로그인했는데 닉네임이 아직 없으면 안내
     $('homeHint').hidden = !(C.enabled && C.loaded && (!C.nickname || !knownAvatar(C.avatar)));
+    const th = T.get(), got = T.discovered(readSaved().bestTile, th).length;
+    $('homeDex').textContent = `${got} / ${th.values.length}`;
+  }
+
+  // ---------- 도감 (만든 타일 모으기) ----------
+  let dexThemeId = null;   // 도감에서 보고 있는 테마 (지금 쓰는 테마가 기본)
+
+  function refreshDex() {
+    const th = T.byId(dexThemeId || T.get().id);
+    const best = readSaved().bestTile || 0;
+    const got = T.discovered(best, th);
+    const chips = $('dexThemes');
+    chips.textContent = '';
+    T.list.forEach((t) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip' + (t.id === th.id ? ' on' : ''); b.textContent = t.name;
+      b.addEventListener('click', () => { dexThemeId = t.id; refreshDex(); });
+      chips.appendChild(b);
+    });
+    $('dexCount').textContent = `${got.length} / ${th.values.length}`;
+    const grid = $('dexGrid');
+    grid.textContent = '';
+    const cells = th.values.map((v) => ({ v, label: th.names[v] || '', img: T.imgOf(v, th), on: v <= best }));
+    const bigFrom = th.values[th.values.length - 1] * 2;
+    cells.push({ v: bigFrom + '+', label: th.bigName, img: th.dir + 'big.webp', on: best >= bigFrom });
+    cells.forEach((c) => {
+      const f = document.createElement('figure');
+      f.className = 'dex__cell' + (c.on ? '' : ' locked');
+      const img = document.createElement('img');
+      img.src = c.img; img.alt = ''; img.draggable = false;
+      const cap = document.createElement('figcaption');
+      const num = document.createElement('b'); num.textContent = c.v;
+      cap.appendChild(num); cap.appendChild(document.createTextNode(c.on ? c.label : '???'));
+      f.appendChild(img); f.appendChild(cap);
+      grid.appendChild(f);
+    });
+  }
+
+  // ---------- 꾸미기 (타일 테마 고르기) ----------
+  function refreshShop() {
+    const box = $('themeList');
+    box.textContent = '';
+    const cur = T.get().id;
+    T.list.forEach((t) => {
+      const card = document.createElement('div');
+      card.className = 'card theme-card' + (t.id === cur ? ' on' : '');
+      const head = document.createElement('div'); head.className = 'theme-card__head';
+      const h = document.createElement('h2'); h.textContent = t.name;
+      head.appendChild(h);
+      if (t.id === cur) { const tag = document.createElement('em'); tag.className = 'tag'; tag.textContent = '사용 중'; head.appendChild(tag); }
+      const desc = document.createElement('p'); desc.className = 'theme-card__desc'; desc.textContent = t.desc;
+      const prev = document.createElement('div'); prev.className = 'theme-card__prev';
+      [2, 32, 512, 2048].forEach((v) => {
+        const i = document.createElement('img'); i.src = T.imgOf(v, t); i.alt = ''; i.draggable = false; prev.appendChild(i);
+      });
+      card.appendChild(head); card.appendChild(desc); card.appendChild(prev);
+      if (t.id !== cur) {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'btn btn--wide'; b.textContent = '이 테마로 바꾸기';
+        b.addEventListener('click', () => { T.set(t.id); dexThemeId = null; refreshShop(); });
+        card.appendChild(b);
+      }
+      box.appendChild(card);
+    });
   }
 
   // ---------- 프로필 사진 ----------
@@ -152,6 +217,8 @@
     if (name === 'home') refreshHome();
     if (name === 'profile') refreshProfile();
     if (name === 'settings') refreshSettings();
+    if (name === 'dex') { dexThemeId = null; refreshDex(); }
+    if (name === 'shop') refreshShop();
     if (name === 'login') $('loginErr').textContent = '';
     window.dispatchEvent(new CustomEvent('screenchange', { detail: name }));   // 화면에 맞는 BGM 으로 바꿀 때 쓰여요
   }
@@ -218,7 +285,7 @@
 
   // 클라우드 기록을 다 받아오면 지금 보고 있는 화면을 새로 그려요
   window.addEventListener('cloud:failed', () => { if (effective() === 'profile') refreshProfile(); });
-  window.addEventListener('cloud:ready', () => { const n = effective(); if (n === 'home') refreshHome(); if (n === 'profile') refreshProfile(); });
+  window.addEventListener('cloud:ready', () => { const n = effective(); if (n === 'home') refreshHome(); if (n === 'profile') refreshProfile(); if (n === 'dex') refreshDex(); });
 
   $('logoutBtn').addEventListener('click', async () => {
     if (!window.confirm('로그아웃할까요?')) return;

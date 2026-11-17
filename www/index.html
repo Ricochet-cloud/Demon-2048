@@ -60,7 +60,8 @@
           <span>게임 시작<small class="menu__sub" id="homeResume" hidden></small></span>
         </button>
         <button class="menu__btn" data-go="profile"><span>프로필</span></button>
-        <button class="menu__btn" data-go="shop"><span>꾸미기</span><em class="tag">준비 중</em></button>
+        <button class="menu__btn" data-go="dex"><span>도감<small class="menu__sub" id="homeDex"></small></span></button>
+        <button class="menu__btn" data-go="shop"><span>꾸미기</span></button>
         <button class="menu__btn" data-go="settings"><span>설정</span></button>
       </nav>
       <p class="foot" id="homeHint" hidden>프로필에서 닉네임과 사진을 정해 주세요</p>
@@ -172,7 +173,24 @@
     </div>
   </section>
 
-  <!-- 꾸미기 -->
+  <!-- 도감 -->
+  <section class="screen screen--dex" data-screen="dex">
+    <div class="topbar">
+      <button class="topbar__back" data-back>홈</button>
+      <div class="topbar__title">도감</div>
+      <button class="sound-btn" data-sound-toggle aria-label="소리 켜기 끄기"></button>
+    </div>
+    <div class="wrap">
+      <div class="chips" id="dexThemes"></div>
+      <div class="card">
+        <h2>타일 도감 <span class="dex__count" id="dexCount"></span></h2>
+        <div class="dex" id="dexGrid"></div>
+        <p class="dex__note">처음 만든 타일이 여기에 등록돼요.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 꾸미기 (타일 테마) -->
   <section class="screen screen--shop" data-screen="shop">
     <div class="topbar">
       <button class="topbar__back" data-back>홈</button>
@@ -180,10 +198,7 @@
       <button class="sound-btn" data-sound-toggle aria-label="소리 켜기 끄기"></button>
     </div>
     <div class="wrap">
-      <div class="card empty">
-        <b>준비 중이에요</b>
-        <p>타일 모양과 배경을 고를 수 있게 만들 예정이에요.</p>
-      </div>
+      <div id="themeList"></div>
     </div>
   </section>
 
@@ -195,6 +210,7 @@
   <script src="./vendor/firebase/firebase-firestore-compat.js"></script>
   <script src="./js/firebase-config.js"></script>
   <script src="./js/auth.js"></script>
+  <script src="./js/themes.js"></script>
   <script src="./js/game.js"></script>
   <script src="./js/cloud.js"></script>
   <script src="./js/sound.js"></script>

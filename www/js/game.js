@@ -11,10 +11,7 @@
   const ANIM_MS = 110;      // 타일 이동 시간
   const FOUR_RATE = 0.1;    // 새 타일이 4 로 나올 확률
   const STORE_KEY = 'game2048.v1';
-  // 타일 이미지 (파일 이름이 타일 숫자예요. 2048 을 넘는 타일은 big). 없으면 색깔 타일로 나와요.
-  const IMG = {};
-  [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384].forEach((n) => { IMG[n] = `./images/${n}.webp`; });
-  IMG.big = './images/big.webp';
+  // 타일 이미지는 js/themes.js 의 테마가 정해요 (파일 이름이 타일 숫자, 범위를 넘으면 big). 없으면 색깔 타일로 나와요.
 
   const $ = (id) => document.getElementById(id);
 
@@ -48,7 +45,7 @@
     t.el.dataset.v = t.v > WIN_TILE ? 'big' : String(t.v);
     t.el.firstChild.textContent = t.v;
     t.el.classList.toggle('long', String(t.v).length >= 4);
-    const img = IMG[t.v] || (t.v > WIN_TILE ? IMG.big : null);
+    const img = window.AppThemes.imgOf(t.v);
     t.el.classList.toggle('has-img', !!img);
     // CSS 변수 안의 url() 은 CSS 파일 위치 기준이라, 페이지 기준 절대 주소로 바꿔 넣어요
     if (img) t.el.style.setProperty('--img', `url("${new URL(img, document.baseURI).href}")`);
@@ -145,7 +142,16 @@
         if (t.v > maxTile) maxTile = t.v;
         t.el.classList.remove('is-pop'); void t.el.offsetWidth; t.el.classList.add('is-pop');
       });
-      if (grown.length) emit('game2048:merge', { values: grown.map((t) => t.v) });
+      if (grown.length) {
+        emit('game2048:merge', { values: grown.map((t) => t.v) });
+        // 처음 만든 타일이면 도감에 새로 등록돼요 (최고 타일은 이 다음에 기록돼요)
+        const top = Math.max(...grown.map((t) => t.v));
+        if (top > (saved.bestTile || 0)) {
+          const th = window.AppThemes.get(), nm = th.names[top];
+          toast(nm ? `새 타일 발견! ${top} · ${nm}` : `새 타일 발견! ${top}`);
+          emit('game2048:discover', { value: top });
+        }
+      }
       addRandomTile();
       locked = false;
       afterMove();
@@ -262,8 +268,10 @@
       saved.bestTile = Math.max(saved.bestTile || 0, r.bestTile || 0);
       saved.plays = Math.max(saved.plays || 0, r.plays || 0);
       save(); updateHud();
-    }
+    },
+    repaint() { tiles.forEach(paint); }   // 테마를 바꾸면 보드 위 타일 그림도 바꿔요
   };
+  window.addEventListener('themechange', () => window.Game2048.repaint());
 
   start();
 })();

@@ -98,3 +98,28 @@
 .range::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: var(--lantern); border: 2px solid var(--gold); }
 .range::-moz-range-thumb { width: 16px; height: 16px; background: var(--lantern); border: 2px solid var(--gold); border-radius: 0; }
 #soundCard p { margin-top: 10px; }
+
+/* ---------- 도감 / 꾸미기 ---------- */
+.chips { display: flex; gap: 8px; margin-top: 16px; }
+.chip { flex: 1; min-height: 40px; padding: 0 8px; font: 700 13px 'Galmuri', sans-serif; color: var(--muted); cursor: pointer; background: rgba(20, 16, 14, .8); border: 2px solid rgba(201, 162, 75, .4); }
+.chip.on { color: var(--lantern); border-color: var(--lantern); box-shadow: 0 0 10px rgba(242, 180, 90, .3); }
+.dex__count { margin-left: 6px; font-size: 12px; color: var(--lantern); letter-spacing: 0; }
+.dex { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.dex__cell { position: relative; margin: 0; aspect-ratio: 1; overflow: hidden; background: var(--depth); border: 2px solid var(--gold); }
+.dex__cell img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.dex__cell.locked { border-color: rgba(201, 162, 75, .25); }
+.dex__cell.locked img { filter: grayscale(1) brightness(.22) blur(3px); transform: scale(1.1); }
+.dex__cell figcaption { position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 2px 5px; font-size: 10px; line-height: 1.3; color: var(--paper); text-align: center; background: linear-gradient(180deg, transparent, rgba(10, 7, 6, .96) 70%); }
+.dex__cell figcaption b { display: block; font-size: 13px; color: var(--lantern); }
+.dex__cell.locked figcaption { color: var(--muted); }
+.dex__cell.locked figcaption b { color: var(--muted); }
+.dex__note { margin-top: 12px !important; }
+
+.theme-card { margin-top: 16px; }
+.theme-card.on { border-color: var(--lantern); box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .35), 0 0 14px rgba(242, 180, 90, .3), 3px 3px 0 rgba(0, 0, 0, .4); }
+.theme-card__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.theme-card__head h2 { margin: 0; }
+.theme-card__desc { margin-bottom: 12px !important; }
+.theme-card__prev { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.theme-card__prev img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border: 2px solid rgba(201, 162, 75, .6); background: var(--depth); }
+.theme-card .btn--wide { margin-top: 14px; }
