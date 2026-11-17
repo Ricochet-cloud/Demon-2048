@@ -224,6 +224,7 @@
       const map = { ArrowLeft: 'left', ArrowUp: 'up', ArrowRight: 'right', ArrowDown: 'down', a: 'left', w: 'up', d: 'right', s: 'down' };
       const d = map[e.key];
       if (!d || $('modal').classList.contains('show')) return;
+      if (!$('screen-game').classList.contains('active')) return;   // 게임 화면일 때만 키 입력 받기
       e.preventDefault(); move(d);
     });
 

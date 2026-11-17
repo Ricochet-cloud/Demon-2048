@@ -1,0 +1,47 @@
+/* 무한성 테마 — 색과 배경은 전부 여기서 바꿔요 */
+@font-face { font-family: 'Galmuri'; src: url('../fonts/Galmuri-11.subset.ttf') format('truetype'); }
+
+:root {
+  --bg: #14100e;          /* 먹갈색 밤 */
+  --depth: #1f1a2e;       /* 복도 끝 남보라 어둠 */
+  --wood-d: #2b1d16;      /* 검은 목재 */
+  --wood-m: #4a2e22;      /* 마루·기둥 */
+  --lacquer: #a3261f;     /* 붉은 옻칠 */
+  --lacquer-d: #7a1b16;
+  --gold: #c9a24b;        /* 낡은 금박 */
+  --lantern: #f2b45a;     /* 등불 호박색 */
+  --paper: #e8dcc0;       /* 장지문 종이 */
+  --muted: #9a8a6c;
+  --line: rgba(201, 162, 75, .08);   /* 장지문 격자선 */
+}
+
+/* ---------- 화면별 배경 ----------
+   내가 만든 이미지를 넣으려면 images/bg/ 에 파일을 두고, 아래 블록 앞뒤의 주석 기호를 지워요.
+   --veil 은 이미지 위에 깔리는 어두운 막(0~1)이라 글자가 잘 보이게 해줘요.
+.screen--home    { --bg-img: url("../images/bg/home.webp");    --veil: .45; }
+.screen--game    { --bg-img: url("../images/bg/game.webp");    --veil: .55; }
+.screen--profile { --bg-img: url("../images/bg/profile.webp"); --veil: .55; }
+.screen--shop    { --bg-img: url("../images/bg/shop.webp");    --veil: .55; }
+*/
+
+html, body { margin: 0; min-height: 100%; background: var(--bg); overscroll-behavior: none; }
+body {
+  font-family: 'Galmuri', sans-serif; color: var(--paper);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+.screen { display: none; position: relative; isolation: isolate; min-height: 100vh; min-height: 100dvh; }
+.screen.active { display: block; }
+.screen::before {
+  content: ''; position: fixed; inset: 0; z-index: -1;
+  background:
+    linear-gradient(rgba(10, 7, 6, var(--veil, 0)), rgba(10, 7, 6, var(--veil, 0))),
+    var(--bg-img, none) center / cover no-repeat,
+    radial-gradient(ellipse 90% 45% at 50% -8%, rgba(242, 180, 90, .24), transparent 70%),
+    linear-gradient(180deg, transparent 45%, rgba(31, 26, 46, .85) 100%),
+    linear-gradient(var(--line) 1px, transparent 1px) 0 0 / 44px 44px,
+    linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0 / 44px 44px,
+    var(--bg);
+}
