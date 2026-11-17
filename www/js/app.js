@@ -52,6 +52,24 @@
     { id: 'master', name: '도감 마스터', when: dexFull, how: '도감 전부 채우기' },
     { id: 'diligent', name: '성실한 대원', how: '하루 미션 전부 받기' }
   ];
+  // 카드 배경 (우리 기록의 내 줄과 프로필 카드) — CSS 는 app.css 의 .bg-<id>
+  const BGS = [
+    { id: 'check', name: '이치마쓰', price: 80 }, { id: 'asanoha', name: '삼베잎', price: 80 }, { id: 'sakura', name: '벚꽃', price: 100 },
+    { id: 'butterfly', name: '나비 저택', price: 100 }, { id: 'water', name: '물의 호흡', price: 120 }, { id: 'flame', name: '불의 호흡', price: 150 },
+    { id: 'thunder', name: '천둥의 호흡', price: 150 }, { id: 'infinity', name: '무한성', price: 200 }, { id: 'moon', name: '상현의 밤', price: 200 },
+    { id: 'blood', name: '혈귀', price: 250 }, { id: 'sun', name: '일륜도', price: 300 }
+  ];
+  // 이름 꾸미기 (닉네임 색과 효과) — CSS 는 app.css 의 .nm-<id>
+  const NAMEFX = [
+    { id: 'gold', name: '금빛', price: 80 }, { id: 'sakura', name: '벚꽃빛', price: 80 }, { id: 'water', name: '물빛', price: 80 },
+    { id: 'wisteria', name: '등꽃빛', price: 80 }, { id: 'red', name: '핏빛', price: 100 }, { id: 'flame', name: '불꽃', price: 200 },
+    { id: 'thunder', name: '번개', price: 200 }, { id: 'rainbow', name: '무지개', price: 250 }, { id: 'moon', name: '달빛', price: 250 },
+    { id: 'sun', name: '일륜', price: 300 }
+  ];
+  const bgOf = (id) => BGS.find((b) => b.id === id);
+  const fxOf = (id) => NAMEFX.find((b) => b.id === id);
+  const ownsBg = (b) => G.owns('bg:' + b.id) || b.id === C.bg;
+  const ownsFx = (b) => G.owns('name:' + b.id) || b.id === C.nameFx;
   const frameOf = (id) => FRAMES.find((f) => f.id === id);
   const titleOf = (id) => TITLES.find((t) => t.id === id);
   const ownsFrame = (f) => !f.price || G.owns('frame:' + f.id) || f.id === C.frame;
@@ -143,7 +161,7 @@
   let shopTab = 'mission';
   const TABS = [{ id: 'mission', name: '미션' }, { id: 'deco', name: '꾸미기' }, { id: 'theme', name: '타일 테마' }];
   let decoTab = 'avatar';
-  const DECO = [{ id: 'avatar', name: '사진' }, { id: 'frame', name: '프레임' }, { id: 'title', name: '칭호' }];
+  const DECO = [{ id: 'avatar', name: '사진' }, { id: 'frame', name: '프레임' }, { id: 'title', name: '칭호' }, { id: 'bg', name: '배경' }, { id: 'name', name: '이름' }];
 
   function showMsg(msg) {
     const t = $('toast');
@@ -215,6 +233,32 @@
     card.appendChild(grid); box.appendChild(card);
   }
 
+  // 배경·이름 꾸미기 미리보기 한 칸
+  function bgPreview(bgId, fxId) {
+    const d = document.createElement('div');
+    d.className = 'bgpv' + (bgOf(bgId) ? ' bg-' + bgId : '');
+    const n = document.createElement('span');
+    n.className = fxOf(fxId) ? 'nm-' + fxId : '';
+    n.textContent = C.nickname || '닉네임';
+    d.appendChild(n);
+    return d;
+  }
+  function renderBuyGrid(title, list, prefix, ownFn, preview) {
+    const box = $('decoShop');
+    const card = document.createElement('div'); card.className = 'card';
+    const h = document.createElement('h2'); h.textContent = title; card.appendChild(h);
+    const grid = document.createElement('div'); grid.className = 'buys buys--wide';
+    list.forEach((x) => {
+      const own = ownFn(x);
+      const item = document.createElement('div'); item.className = 'buy' + (own ? ' own' : '');
+      item.appendChild(preview(x));
+      const nm = document.createElement('b'); nm.textContent = x.name; item.appendChild(nm);
+      item.appendChild(buyTag(own, x.price, () => buy(`${x.name} ${title}`, x.price, prefix + x.id)));
+      grid.appendChild(item);
+    });
+    card.appendChild(grid); box.appendChild(card);
+  }
+
   function renderTitles() {
     const box = $('decoShop');
     const card = document.createElement('div'); card.className = 'card';
@@ -246,7 +290,11 @@
       tabs.appendChild(b);
     });
     $('decoShop').textContent = '';
-    if (decoTab === 'avatar') renderAvatars(); else if (decoTab === 'frame') renderFrames(); else renderTitles();
+    if (decoTab === 'avatar') renderAvatars();
+    else if (decoTab === 'frame') renderFrames();
+    else if (decoTab === 'bg') renderBuyGrid('카드 배경', BGS, 'bg:', ownsBg, (x) => bgPreview(x.id, ''));
+    else if (decoTab === 'name') renderBuyGrid('이름 꾸미기', NAMEFX, 'name:', ownsFx, (x) => bgPreview('', x.id));
+    else renderTitles();
   }
 
   function renderAvatars() {
@@ -390,9 +438,26 @@
     });
   }
 
+  function renderStylePicker(boxId, list, own, cur, attr, usesBg) {
+    const pick = $(boxId);
+    pick.textContent = '';
+    const mk = (id, name) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.dataset[attr] = id; b.className = id === cur ? 'on' : '';
+      b.setAttribute('aria-pressed', id === cur ? 'true' : 'false');
+      b.appendChild(bgPreview(usesBg ? id : '', usesBg ? '' : id));
+      b.appendChild(document.createElement('span')).textContent = name;
+      pick.appendChild(b);
+    };
+    mk('', '없음');
+    list.filter(own).forEach((x) => mk(x.id, x.name));
+  }
+
   function renderMe() {
     const av = $('meAvatar'); av.textContent = ''; av.appendChild(avatarEl(C.avatar, C.nickname, C.frame));
     $('meName').textContent = C.nickname || '이름 없음';
+    $('meName').className = 'me__name' + (fxOf(C.nameFx) ? ' nm-' + C.nameFx : '');
+    $('meCard').className = 'card' + (bgOf(C.bg) ? ' bg-' + C.bg : '');
     const t = titleOf(C.title); $('meTitle').textContent = t ? t.name : ''; $('meTitle').hidden = !t;
     $('meBio').textContent = C.bio; $('meBio').hidden = !C.bio;
   }
@@ -416,7 +481,7 @@
     const val = (u) => (week ? W.scoreOf(u, wk) : (u.best || 0));
     list.sort((a, b) => val(b) - val(a)).forEach((u, i) => {
       const item = document.createElement('div');
-      item.className = 'rank__item' + (u.uid === C.uid ? ' rank__item--me' : '');
+      item.className = 'rank__item' + (u.uid === C.uid ? ' rank__item--me' : '') + (bgOf(u.bg) ? ' bg-' + u.bg : '');
       const left = document.createElement('div');
       left.className = 'rank__who';
       left.appendChild(avatarEl(u.avatar, u.nickname, u.frame));
@@ -424,7 +489,9 @@
       txt.className = 'rank__txt';
       const nm = document.createElement('div');
       nm.className = 'rank__name';
-      nm.textContent = u.nickname || '이름 없음';
+      const nmt = document.createElement('span');
+      nmt.className = fxOf(u.nameFx) ? 'nm-' + u.nameFx : '';
+      nmt.textContent = u.nickname || '이름 없음'; nm.appendChild(nmt);
       if (u.uid === C.uid) { const t = document.createElement('small'); t.textContent = '나'; nm.appendChild(t); }
       if (week && i === 0 && val(u) > 0) { const t = document.createElement('small'); t.className = 'rank__first'; t.textContent = '1등'; nm.appendChild(t); }
       const sub = document.createElement('span');
@@ -487,9 +554,10 @@
     $('nickCard').hidden = !online;
     $('avatarCard').hidden = !online;
     $('boardCard').hidden = !online;
-    ['meCard', 'frameCard', 'titleCard', 'bioCard'].forEach((id) => { $(id).hidden = !online; });
+    ['meCard', 'frameCard', 'titleCard', 'bioCard', 'bgCard', 'nameCard'].forEach((id) => { $(id).hidden = !online; });
     if (online) {
       renderMe(); renderFramePicker(); renderTitlePicker();
+      renderStylePicker('bgPick', BGS, ownsBg, C.bg, 'bg', true); renderStylePicker('namePick', NAMEFX, ownsFx, C.nameFx, 'fx', false);
       if (document.activeElement !== $('bioInput')) $('bioInput').value = C.bio;
       renderAvatarPicker();
       if (document.activeElement !== $('nickInput')) $('nickInput').value = C.nickname;
@@ -584,6 +652,9 @@
   }
   picker('framePick', 'frameMsg', 'frame', (id) => { const f = frameOf(id); return f && ownsFrame(f); }, (id) => C.saveFrame(id));
   picker('titlePick', 'titleMsg', 'title', (id) => { const t = titleOf(id); return t && ownsTitle(t); }, (id) => C.saveTitle(id));
+
+  picker('bgPick', 'bgMsg', 'bg', (id) => { const b = bgOf(id); return b && ownsBg(b); }, (id) => C.saveBg(id));
+  picker('namePick', 'nameMsg', 'fx', (id) => { const b = fxOf(id); return b && ownsFx(b); }, (id) => C.saveNameFx(id));
 
   $('bioForm').addEventListener('submit', async (e) => {
     e.preventDefault();

@@ -210,3 +210,47 @@
 .titlerow .mission__txt { flex: 1; min-width: 0; }
 .titlerow > .gold { margin: 0 10px 0 auto; }
 .titlerow .mission__txt + .gold { margin-left: 8px; }
+
+/* 카드 배경 (귀멸의 칼날 느낌) — 어두운 바탕에 무늬만 살짝 */
+.bg-check { background: repeating-conic-gradient(#12392f 0 25%, #0a1d19 0 50%) 0 0 / 22px 22px; }
+.bg-asanoha { background: repeating-linear-gradient(60deg, rgba(255, 160, 190, .17) 0 1px, transparent 1px 12px), repeating-linear-gradient(-60deg, rgba(255, 160, 190, .17) 0 1px, transparent 1px 12px), linear-gradient(135deg, #4d2036, #2b1220); }
+.bg-sakura { background: radial-gradient(circle at 20% 30%, rgba(255, 190, 215, .35) 0 2px, transparent 3px) 0 0 / 34px 28px, radial-gradient(circle at 70% 70%, rgba(255, 190, 215, .25) 0 2px, transparent 3px) 0 0 / 40px 34px, linear-gradient(135deg, #4a1d33, #2a1020); }
+.bg-butterfly { background: radial-gradient(ellipse at 30% 40%, rgba(220, 190, 255, .3) 0 3px, transparent 4px) 0 0 / 30px 26px, linear-gradient(135deg, #43297a, #1c1238); }
+.bg-water { background: repeating-radial-gradient(circle at 0 100%, transparent 0 9px, rgba(120, 200, 255, .22) 9px 11px) 0 0 / 40px 24px, linear-gradient(180deg, #11426a, #08213a); }
+.bg-flame { background: radial-gradient(ellipse at 50% 130%, rgba(255, 170, 40, .75), transparent 60%), linear-gradient(0deg, #7d1d05, #b03208 45%, #2a0d05); }
+.bg-thunder { background: repeating-linear-gradient(115deg, transparent 0 14px, rgba(255, 232, 80, .24) 14px 16px), linear-gradient(135deg, #34290a, #14110a); }
+.bg-infinity { background: linear-gradient(rgba(201, 162, 75, .28) 1px, transparent 1px) 0 0 / 18px 18px, linear-gradient(90deg, rgba(201, 162, 75, .28) 1px, transparent 1px) 0 0 / 18px 18px, radial-gradient(circle at 50% 130%, #5a2b12, #140a08 70%); }
+.bg-moon { background: radial-gradient(circle at 58% 28%, rgba(235, 242, 255, .95) 0 4px, rgba(160, 190, 255, .4) 5px 12px, transparent 13px), linear-gradient(160deg, #0b1636, #1d2f66); }
+.bg-blood { background: repeating-linear-gradient(80deg, transparent 0 18px, rgba(205, 20, 46, .4) 18px 19px), linear-gradient(135deg, #1d060a, #060203); }
+.bg-sun { background: radial-gradient(circle at 58% 28%, rgba(255, 220, 120, .85) 0 4px, rgba(255, 150, 40, .35) 5px 14px, transparent 15px), linear-gradient(135deg, #5d2a05, #b86c10 55%, #5d2a05); }
+.rank__item[class*='bg-'], .card[class*='bg-'] { text-shadow: 0 1px 2px rgba(0, 0, 0, .85); }
+.card[class*='bg-'] { border-color: rgba(201, 162, 75, .6); }
+
+/* 이름 꾸미기 */
+.nm-gold { color: #f6cf62; }
+.nm-sakura { color: #ff9fc2; }
+.nm-water { color: #6cc4ff; }
+.nm-wisteria { color: #c79bff; }
+.nm-red { color: #ff4d5e; }
+.nm-thunder { color: #fff27a; animation: nmthunder 1.2s steps(2, end) infinite; }
+@keyframes nmthunder { 0%, 70% { text-shadow: 0 0 4px #ffe433; } 80% { text-shadow: 0 0 10px #fff, 0 0 16px #fff6a0; } 100% { text-shadow: 0 0 5px #ffe433; } }
+.nm-moon { color: #eaf2ff; text-shadow: 0 0 6px #9fb8ff, 0 0 12px #5d7be0 !important; }
+.nm-flame, .nm-rainbow, .nm-sun { -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; text-shadow: none !important; }
+.nm-flame { background-image: linear-gradient(180deg, #fff2a0, #ff8a1f 55%, #e8330a); filter: drop-shadow(0 0 4px rgba(255, 120, 30, .8)); animation: nmflame 1.4s ease-in-out infinite alternate; }
+@keyframes nmflame { from { filter: drop-shadow(0 0 2px rgba(255, 120, 30, .6)); } to { filter: drop-shadow(0 0 7px rgba(255, 170, 40, .95)); } }
+.nm-rainbow { background-image: linear-gradient(90deg, #ff5b5b, #ffb84d, #f4e85a, #62d97a, #4fb3ff, #a77bff, #ff5b5b); background-size: 200% 100%; animation: nmrainbow 4s linear infinite; }
+@keyframes nmrainbow { to { background-position: 200% 0; } }
+.nm-sun { background-image: linear-gradient(90deg, #ffe58a, #ff9a2e, #fff3a0, #ff9a2e, #ffe58a); background-size: 200% 100%; animation: nmrainbow 3s linear infinite; filter: drop-shadow(0 0 4px rgba(255, 170, 60, .8)); }
+@media (prefers-reduced-motion: reduce) { .nm-thunder, .nm-flame, .nm-rainbow, .nm-sun { animation: none; } }
+.rank__name .nm-flame, .rank__name .nm-rainbow, .rank__name .nm-sun { display: inline-block; }
+
+/* 미리보기 / 고르기 */
+.bgpv { display: flex; align-items: center; justify-content: center; width: 100%; height: 46px; padding: 0 6px; overflow: hidden; font-size: 14px; color: var(--paper); border: 1px solid rgba(201, 162, 75, .45); white-space: nowrap; }
+.bgpv:not([class*='bg-']) { background: rgba(20, 16, 14, .6); }
+.bgpv span { overflow: hidden; text-overflow: ellipsis; }
+.buys--wide { grid-template-columns: repeat(2, 1fr); }
+.bgpick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.bgpick button { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 6px 4px; cursor: pointer; background: transparent; border: 1px solid transparent; font: 700 10px 'Galmuri', sans-serif; color: var(--paper); }
+.bgpick button.on { border-color: var(--lantern); color: var(--lantern); }
+.bgpick .bgpv { height: 38px; font-size: 12px; }
+#decoTabs .chip { padding: 0 2px; font-size: 12px; }

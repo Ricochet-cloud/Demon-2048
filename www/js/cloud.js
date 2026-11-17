@@ -72,6 +72,10 @@
     get title() { return me.title || ''; },
     get bio() { return me.bio || ''; },
     async saveFrame(id) { if (!idOk(id)) throw new Error('프레임을 고를 수 없어요.'); await push({ frame: id }); },
+    get bg() { return me.bg || ''; },
+    get nameFx() { return me.nameFx || ''; },
+    async saveBg(id) { if (!idOk(id)) throw new Error('배경을 고를 수 없어요.'); await push({ bg: id }); },
+    async saveNameFx(id) { if (!idOk(id)) throw new Error('이름 꾸미기를 고를 수 없어요.'); await push({ nameFx: id }); },
     async saveTitle(id) { if (!idOk(id)) throw new Error('칭호를 고를 수 없어요.'); await push({ title: id }); },
     async saveBio(text) {
       const n = String(text || '').trim();

@@ -3,7 +3,7 @@
 ## 쓰는 것
 - Authentication: 이메일/비밀번호 (커플 사이트와 같은 계정)
 - Firestore: 컬렉션 `game2048_users` (문서 id = 로그인한 사람의 uid)
-  - 필드: `nickname`, `avatar`(프로필 사진 id), `best`(최고 점수), `bestTile`(최고 타일), `plays`(끝낸 판 수), `updatedAt`, `gold`(보유 골드), `daily`(오늘 미션 상태 {day, done, claimed}), `owned`(상점에서 산 물건 id 목록), `frame`(고른 사진 테두리), `title`(고른 칭호), `bio`(상태 메시지)
+  - 필드: `nickname`, `avatar`(프로필 사진 id), `best`(최고 점수), `bestTile`(최고 타일), `plays`(끝낸 판 수), `updatedAt`, `gold`(보유 골드), `daily`(오늘 미션 상태 {day, done, claimed}), `owned`(상점에서 산 물건 id 목록), `frame`(고른 사진 테두리), `title`(고른 칭호), `bio`(상태 메시지), `week`·`weekClaim`(주간 순위), `bg`(카드 배경), `nameFx`(이름 꾸미기)
   - 이메일은 저장하지 않아요. 서로에게는 닉네임과 기록만 보여요.
 
 ## 한 번만 하면 되는 설정
@@ -16,7 +16,7 @@
       allow read: if request.auth != null;
       allow create, update: if request.auth != null
         && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['nickname', 'avatar', 'best', 'bestTile', 'plays', 'updatedAt', 'gold', 'daily', 'owned', 'frame', 'title', 'bio', 'week', 'weekClaim'])
+        && request.resource.data.keys().hasOnly(['nickname', 'avatar', 'best', 'bestTile', 'plays', 'updatedAt', 'gold', 'daily', 'owned', 'frame', 'title', 'bio', 'week', 'weekClaim', 'bg', 'nameFx'])
         && (!('nickname' in request.resource.data) || (request.resource.data.nickname is string && request.resource.data.nickname.size() <= 24))
         && (!('avatar' in request.resource.data) || (request.resource.data.avatar is string && request.resource.data.avatar.size() <= 20))
         && (!('best' in request.resource.data) || (request.resource.data.best is int && request.resource.data.best >= 0))
@@ -29,7 +29,9 @@
         && (!('title' in request.resource.data) || (request.resource.data.title is string && request.resource.data.title.size() <= 20))
         && (!('bio' in request.resource.data) || (request.resource.data.bio is string && request.resource.data.bio.size() <= 40))
         && (!('week' in request.resource.data) || (request.resource.data.week is map && request.resource.data.week.keys().hasOnly(['k', 's', 'pk', 'ps'])))
-        && (!('weekClaim' in request.resource.data) || (request.resource.data.weekClaim is string && request.resource.data.weekClaim.size() <= 10));
+        && (!('weekClaim' in request.resource.data) || (request.resource.data.weekClaim is string && request.resource.data.weekClaim.size() <= 10))
+        && (!('bg' in request.resource.data) || (request.resource.data.bg is string && request.resource.data.bg.size() <= 20))
+        && (!('nameFx' in request.resource.data) || (request.resource.data.nameFx is string && request.resource.data.nameFx.size() <= 20));
       allow delete: if false;
     }
 ```
