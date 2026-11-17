@@ -151,3 +151,5 @@
 .buy .buy__btn { flex: none; width: 100%; min-height: 34px; padding: 0; }
 .gold--short { color: #ff8a7a; }
 #avatarShop[hidden] { display: none; }
+.theme-card__prev .tilepv { position: relative; left: auto; top: auto; z-index: auto; width: 100%; height: auto; aspect-ratio: 1; transform: none; transition: none; }
+.theme-card__prev .tilepv span { font-size: 18px; }

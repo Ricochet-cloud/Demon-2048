@@ -2,6 +2,7 @@
 // - values: 이 테마에 그림이 있는 타일 숫자 (이 범위를 넘는 타일은 big.webp)
 // - full: true 면 그림이 타일 전체를 채우고 숫자는 아래쪽에 겹쳐서 나와요 (false 는 아래 띠에 숫자가 있는 그림)
 // - names: 도감에 보이는 이름 (없으면 숫자만)
+// - plain: true 면 그림 없이 숫자만 있는 색깔 타일 (도감에는 나오지 않아요)
 // 도감은 따로 저장하지 않고 '최고 타일' 에서 계산해요 (큰 타일을 만들려면 작은 타일을 모두 거쳐야 하니까요)
 (() => {
   'use strict';
@@ -21,6 +22,8 @@
       bigName: '귀살대'
     }
   ];
+
+  LIST.push({ id: 'plain', name: '기본 숫자', desc: '그림 없이 숫자만 보이는 깔끔한 타일이에요', dir: '', full: false, values: [], names: {}, bigName: '', plain: true });
 
   const byId = (id) => LIST.find((t) => t.id === id) || LIST[0];
   let currentId = 'default';
@@ -46,6 +49,8 @@
       if (v > t.values[t.values.length - 1]) return t.dir + 'big.webp';
       return null;
     },
+    // 도감에 보여 줄 테마 (그림 없는 테마를 쓰고 있으면 그림이 있는 첫 테마)
+    dexTheme() { const t = byId(currentId); return t.plain ? LIST.find((x) => !x.plain) : t; },
     // 지금까지 만든 타일들 (최고 타일 이하의 2의 거듭제곱은 전부 만든 것)
     discovered(bestTile, theme) {
       const t = theme || byId(currentId);

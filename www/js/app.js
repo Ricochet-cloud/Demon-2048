@@ -48,7 +48,7 @@
     else el.hidden = true;
     // 로그인했는데 닉네임이 아직 없으면 안내
     $('homeHint').hidden = !(C.enabled && C.loaded && (!C.nickname || !knownAvatar(C.avatar)));
-    const th = T.get(), got = T.discovered(readSaved().bestTile, th).length;
+    const th = T.dexTheme(), got = T.discovered(readSaved().bestTile, th).length;
     $('homeDex').textContent = `${got} / ${th.values.length}`;
     $('homeGold').textContent = G.gold;
     $('homeShopTag').hidden = G.claimable() === 0;
@@ -58,12 +58,12 @@
   let dexThemeId = null;   // 도감에서 보고 있는 테마 (지금 쓰는 테마가 기본)
 
   function refreshDex() {
-    const th = T.byId(dexThemeId || T.get().id);
+    const th = T.byId(dexThemeId || T.dexTheme().id);
     const best = readSaved().bestTile || 0;
     const got = T.discovered(best, th);
     const chips = $('dexThemes');
     chips.textContent = '';
-    T.list.forEach((t) => {
+    T.list.filter((t) => !t.plain).forEach((t) => {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'chip' + (t.id === th.id ? ' on' : ''); b.textContent = t.name;
       b.addEventListener('click', () => { dexThemeId = t.id; refreshDex(); });
@@ -175,7 +175,13 @@
       const desc = document.createElement('p'); desc.className = 'theme-card__desc'; desc.textContent = t.desc;
       const prev = document.createElement('div'); prev.className = 'theme-card__prev';
       [2, 32, 512, 2048].forEach((v) => {
-        const i = document.createElement('img'); i.src = T.imgOf(v, t); i.alt = ''; i.draggable = false; prev.appendChild(i);
+        if (t.plain) {   // 그림이 없는 테마는 실제 게임과 같은 색깔 타일로 미리보기
+          const n = document.createElement('div'); n.className = 'tile tilepv'; n.dataset.v = v;
+          n.appendChild(document.createElement('span')).textContent = v;
+          prev.appendChild(n);
+        } else {
+          const i = document.createElement('img'); i.src = T.imgOf(v, t); i.alt = ''; i.draggable = false; prev.appendChild(i);
+        }
       });
       card.appendChild(head); card.appendChild(desc); card.appendChild(prev);
       if (t.id !== cur) {
