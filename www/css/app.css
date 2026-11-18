@@ -281,3 +281,13 @@
 .jkrow .mission__txt b { font-size: 13px; }
 .jkrow .buy__btn { flex: none; width: 56px; min-height: 36px; padding: 0; white-space: nowrap; }
 .jkrow .mission__txt { flex: 1; min-width: 0; text-align: left; }
+
+/* 상점 테마 탭: 분류 칩 + 두 줄 격자 */
+.themechips { margin-bottom: 0; }
+.themechips .chip { padding: 0 2px; }
+.themegrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
+.themegrid > p { grid-column: 1 / -1; }
+.themecell { margin: 0 !important; padding: 10px !important; display: flex; flex-direction: column; gap: 8px; }
+.themecell .theme-card__prev { grid-template-columns: repeat(2, 1fr); }
+.themecell b { font-size: 13px; text-align: center; }
+.themecell__btn { min-height: 36px; padding: 0; flex: none; width: 100%; }

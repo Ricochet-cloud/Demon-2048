@@ -431,37 +431,58 @@
     box.appendChild(card);
   }
 
+  // 테마 분류 (상점 테마 탭의 칩) — 새 테마는 CORP/기본 에 없으면 '일본' 으로 들어가요
+  const THEME_CATS = ['전체', '귀멸', '일본', '기본'];
+  const themeCat = (id) => (['corps', 'school', 'items'].includes(id) ? '귀멸' : ['default', 'plain'].includes(id) ? '기본' : '일본');
+  let themeFilter = '전체';
+
+  function themePreview(t, vals) {
+    const prev = document.createElement('div'); prev.className = 'theme-card__prev';
+    vals.forEach((v) => {
+      if (t.plain) {   // 그림이 없는 테마는 실제 게임과 같은 색깔 타일로 미리보기
+        const n = document.createElement('div'); n.className = 'tile tilepv'; n.dataset.v = v;
+        n.appendChild(document.createElement('span')).textContent = v;
+        prev.appendChild(n);
+      } else {
+        const i = document.createElement('img'); i.src = T.imgOf(v, t); i.alt = ''; i.draggable = false; prev.appendChild(i);
+      }
+    });
+    return prev;
+  }
+  function useTheme(id) { T.set(id); dexThemeId = null; refreshShop(); }
+
   function renderThemes() {
     const box = $('themeList');
     box.textContent = '';
-    const cur = T.get().id;
-    T.list.forEach((t) => {
-      const card = document.createElement('div');
-      card.className = 'card theme-card' + (t.id === cur ? ' on' : '');
-      const head = document.createElement('div'); head.className = 'theme-card__head';
-      const h = document.createElement('h2'); h.textContent = t.name;
-      head.appendChild(h);
-      if (t.id === cur) { const tag = document.createElement('em'); tag.className = 'tag'; tag.textContent = '사용 중'; head.appendChild(tag); }
-      const desc = document.createElement('p'); desc.className = 'theme-card__desc'; desc.textContent = t.desc;
-      const prev = document.createElement('div'); prev.className = 'theme-card__prev';
-      [2, 32, 512, 2048].forEach((v) => {
-        if (t.plain) {   // 그림이 없는 테마는 실제 게임과 같은 색깔 타일로 미리보기
-          const n = document.createElement('div'); n.className = 'tile tilepv'; n.dataset.v = v;
-          n.appendChild(document.createElement('span')).textContent = v;
-          prev.appendChild(n);
-        } else {
-          const i = document.createElement('img'); i.src = T.imgOf(v, t); i.alt = ''; i.draggable = false; prev.appendChild(i);
-        }
-      });
-      card.appendChild(head); card.appendChild(desc); card.appendChild(prev);
-      if (t.id !== cur) {
-        const b = document.createElement('button');
-        b.type = 'button'; b.className = 'btn btn--wide'; b.textContent = '이 테마로 바꾸기';
-        b.addEventListener('click', () => { T.set(t.id); dexThemeId = null; refreshShop(); });
-        card.appendChild(b);
-      }
-      box.appendChild(card);
+    const cur = T.get();
+    // 1) 지금 쓰는 테마는 맨 위에 크게
+    const top = document.createElement('div'); top.className = 'card theme-card on';
+    const head = document.createElement('div'); head.className = 'theme-card__head';
+    const h = document.createElement('h2'); h.textContent = cur.name; head.appendChild(h);
+    const tag = document.createElement('em'); tag.className = 'tag'; tag.textContent = '사용 중'; head.appendChild(tag);
+    const desc = document.createElement('p'); desc.className = 'theme-card__desc'; desc.textContent = cur.desc;
+    top.appendChild(head); top.appendChild(desc); top.appendChild(themePreview(cur, [2, 32, 512, 2048]));
+    box.appendChild(top);
+    // 3) 분류 칩
+    const chips = document.createElement('div'); chips.className = 'chips themechips';
+    THEME_CATS.forEach((c) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'chip' + (c === themeFilter ? ' on' : ''); b.textContent = c;
+      b.addEventListener('click', () => { themeFilter = c; renderThemes(); });
+      chips.appendChild(b);
     });
+    box.appendChild(chips);
+    // 2) 나머지는 두 줄 격자 (미리보기 2장)
+    const grid = document.createElement('div'); grid.className = 'themegrid';
+    T.list.filter((t) => t.id !== cur.id && (themeFilter === '전체' || themeCat(t.id) === themeFilter)).forEach((t) => {
+      const card = document.createElement('div'); card.className = 'card themecell';
+      const nm = document.createElement('b'); nm.textContent = t.name;
+      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn themecell__btn'; btn.textContent = '바꾸기';
+      btn.addEventListener('click', () => useTheme(t.id));
+      card.appendChild(themePreview(t, [2, 512])); card.appendChild(nm); card.appendChild(btn);
+      grid.appendChild(card);
+    });
+    if (!grid.children.length) { const e = document.createElement('p'); e.className = 'dex__note'; e.textContent = '이 분류에는 바꿀 수 있는 테마가 없어요.'; grid.appendChild(e); }
+    box.appendChild(grid);
   }
 
   function refreshShop() {
