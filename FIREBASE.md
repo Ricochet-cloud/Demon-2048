@@ -3,7 +3,7 @@
 ## 쓰는 것
 - Authentication: 이메일/비밀번호 (커플 사이트와 같은 계정)
 - Firestore: 컬렉션 `game2048_users` (문서 id = 로그인한 사람의 uid), `game2048_cheers` (응원, 문서 id = 보낸이_받는이_날짜)
-  - 필드: `nickname`, `avatar`(프로필 사진 id), `best`(최고 점수), `bestTile`(최고 타일), `plays`(끝낸 판 수), `updatedAt`, `gold`(보유 골드), `daily`(오늘 미션 상태 {day, done, claimed}), `owned`(상점에서 산 물건 id 목록), `frame`(고른 사진 테두리), `title`(고른 칭호), `bio`(상태 메시지), `week`·`weekClaim`(주간 순위), `bg`(카드 배경), `nameFx`(이름 꾸미기), `streak`(연속 출석 {last, n, claimed}), `challenge`·`chDone`·`chClaim`(오늘의 도전)
+  - 필드: `nickname`, `avatar`(프로필 사진 id), `photo`(직접 올린 프로필 사진 — 작게 줄인 data URL, 60000자 이하), `best`(최고 점수), `bestTile`(최고 타일), `plays`(끝낸 판 수), `updatedAt`, `gold`(보유 골드), `daily`(오늘 미션 상태 {day, done, claimed}), `owned`(상점에서 산 물건 id 목록), `frame`(고른 사진 테두리), `title`(고른 칭호), `bio`(상태 메시지), `week`·`weekClaim`(주간 순위), `bg`(카드 배경), `nameFx`(이름 꾸미기), `streak`(연속 출석 {last, n, claimed}), `challenge`·`chDone`·`chClaim`(오늘의 도전)
   - 이메일은 저장하지 않아요. 서로에게는 닉네임과 기록만 보여요.
 
 ## 한 번만 하면 되는 설정
@@ -16,9 +16,10 @@
       allow read: if request.auth != null;
       allow create, update: if request.auth != null
         && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['nickname', 'avatar', 'best', 'bestTile', 'plays', 'updatedAt', 'gold', 'daily', 'owned', 'frame', 'title', 'bio', 'week', 'weekClaim', 'bg', 'nameFx', 'streak', 'chDone', 'chClaim', 'challenge', 'jokers', 'bestJk'])
+        && request.resource.data.keys().hasOnly(['nickname', 'avatar', 'best', 'bestTile', 'plays', 'updatedAt', 'gold', 'daily', 'owned', 'frame', 'title', 'bio', 'week', 'weekClaim', 'bg', 'nameFx', 'streak', 'chDone', 'chClaim', 'challenge', 'jokers', 'bestJk', 'photo'])
         && (!('nickname' in request.resource.data) || (request.resource.data.nickname is string && request.resource.data.nickname.size() <= 24))
         && (!('avatar' in request.resource.data) || (request.resource.data.avatar is string && request.resource.data.avatar.size() <= 20))
+        && (!('photo' in request.resource.data) || (request.resource.data.photo is string && request.resource.data.photo.size() <= 60000))
         && (!('best' in request.resource.data) || (request.resource.data.best is int && request.resource.data.best >= 0))
         && (!('bestTile' in request.resource.data) || (request.resource.data.bestTile is int && request.resource.data.bestTile >= 0))
         && (!('plays' in request.resource.data) || (request.resource.data.plays is int && request.resource.data.plays >= 0))

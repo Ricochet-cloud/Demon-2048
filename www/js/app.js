@@ -59,7 +59,7 @@
 
   function refreshHome() {
     // 로그인했는데 닉네임이 아직 없으면 안내
-    $('homeHint').hidden = !(C.enabled && C.loaded && (!C.nickname || !knownAvatar(C.avatar)));
+    $('homeHint').hidden = !(C.enabled && C.loaded && (!C.nickname || !(knownAvatar(C.avatar) || C.photo)));
     const th = T.dexTheme(), got = T.discovered(readSaved().bestTile, th).length;
     $('homeDex').textContent = `${got} / ${th.values.length}`;
     $('homeGold').textContent = G.gold;
@@ -86,7 +86,7 @@
       cheers.forEach((c) => {
         const u = list.find((x) => x.uid === c.from) || {};
         const row = document.createElement('div'); row.className = 'cheer';
-        row.appendChild(avatarEl(u.avatar, u.nickname, u.frame));
+        row.appendChild(avatarEl(u.avatar, u.nickname, u.frame, u.photo));
         const t = document.createElement('div'); t.className = 'cheer__txt';
         const n = document.createElement('b'); n.textContent = u.nickname || '이름 없음';
         t.appendChild(n); t.appendChild(document.createTextNode(c.msg || '화이팅!'));
@@ -263,7 +263,7 @@
     FRAMES.filter((f) => f.price && !f.off).forEach((f) => {
       const own = ownsFrame(f);
       const item = document.createElement('div'); item.className = 'buy' + (own ? ' own' : '');
-      item.appendChild(avatarEl(C.avatar, C.nickname, f.id));
+      item.appendChild(avatarEl(C.avatar, C.nickname, f.id, C.photo));
       const nm = document.createElement('b'); nm.textContent = f.name; item.appendChild(nm);
       item.appendChild(buyTag(own, f.price, () => buy(`${f.name} 프레임`, f.price, 'frame:' + f.id)));
       grid.appendChild(item);
@@ -486,10 +486,16 @@
   }
 
   // ---------- 프로필 사진 ----------
-  function avatarEl(id, nickname, frame) {
+  // 직접 올린 사진(data URL)이 있으면 그걸 먼저 보여줘요. 형식을 확인해서 이상한 값은 무시해요
+  const PHOTO_RE = /^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/;
+  function avatarEl(id, nickname, frame, photo) {
     const box = document.createElement('div');
     box.className = 'avatar' + (frameOf(frame) ? ' fr-' + frame : '');
-    if (knownAvatar(id)) {
+    if (photo && PHOTO_RE.test(photo)) {
+      const img = document.createElement('img');
+      img.src = photo; img.alt = ''; img.draggable = false;
+      box.appendChild(img);
+    } else if (knownAvatar(id)) {
       const img = document.createElement('img');
       img.src = avatarSrc(id); img.alt = ''; img.draggable = false;
       box.appendChild(img);
@@ -502,12 +508,16 @@
   function renderAvatarPicker() {
     const pick = $('avatarPick');
     pick.textContent = '';
+    const prev = $('photoPrev'); prev.textContent = '';
+    prev.appendChild(avatarEl(C.avatar, C.nickname, C.frame, C.photo));
+    $('photoClear').hidden = !C.photo;
     AVATARS.filter(ownsAvatar).forEach((a) => {
+      const sel = a.id === C.avatar && !C.photo;   // 내 사진이 설정돼 있으면 상점 사진은 선택 표시를 빼요
       const b = document.createElement('button');
       b.type = 'button'; b.dataset.avatar = a.id;
-      b.className = a.id === C.avatar ? 'on' : '';
+      b.className = sel ? 'on' : '';
       b.setAttribute('aria-label', a.name);
-      b.setAttribute('aria-pressed', a.id === C.avatar ? 'true' : 'false');
+      b.setAttribute('aria-pressed', sel ? 'true' : 'false');
       const img = document.createElement('img');
       img.src = avatarSrc(a.id); img.alt = ''; img.draggable = false;
       const label = document.createElement('span');
@@ -523,13 +533,13 @@
     const none = document.createElement('button');
     none.type = 'button'; none.dataset.frame = ''; none.className = C.frame ? '' : 'on';
     none.setAttribute('aria-pressed', C.frame ? 'false' : 'true');
-    none.appendChild(avatarEl(C.avatar, C.nickname)); none.appendChild(document.createElement('span')).textContent = '없음';
+    none.appendChild(avatarEl(C.avatar, C.nickname, '', C.photo)); none.appendChild(document.createElement('span')).textContent = '없음';
     pick.appendChild(none);
     FRAMES.filter(ownsFrame).forEach((f) => {
       const b = document.createElement('button');
       b.type = 'button'; b.dataset.frame = f.id; b.className = f.id === C.frame ? 'on' : '';
       b.setAttribute('aria-pressed', f.id === C.frame ? 'true' : 'false');
-      b.appendChild(avatarEl(C.avatar, C.nickname, f.id)); b.appendChild(document.createElement('span')).textContent = f.name;
+      b.appendChild(avatarEl(C.avatar, C.nickname, f.id, C.photo)); b.appendChild(document.createElement('span')).textContent = f.name;
       pick.appendChild(b);
     });
   }
@@ -562,7 +572,7 @@
   }
 
   function renderMe() {
-    const av = $('meAvatar'); av.textContent = ''; av.appendChild(avatarEl(C.avatar, C.nickname, C.frame));
+    const av = $('meAvatar'); av.textContent = ''; av.appendChild(avatarEl(C.avatar, C.nickname, C.frame, C.photo));
     $('meName').textContent = C.nickname || '이름 없음';
     $('meName').className = 'me__name' + (fxOf(C.nameFx) ? ' nm-' + C.nameFx : '');
     $('meCard').className = 'card' + (bgOf(C.bg) ? ' bg-' + C.bg : '');
@@ -616,7 +626,7 @@
       item.className = 'rank__item' + (u.uid === C.uid ? ' rank__item--me' : '') + (bgOf(u.bg) ? ' bg-' + u.bg : '');
       const left = document.createElement('div');
       left.className = 'rank__who';
-      left.appendChild(avatarEl(u.avatar, u.nickname, u.frame));
+      left.appendChild(avatarEl(u.avatar, u.nickname, u.frame, u.photo));
       const txt = document.createElement('div');
       txt.className = 'rank__txt';
       const nm = document.createElement('div');
@@ -806,6 +816,81 @@
       msg.textContent = '저장하지 못했어요. 인터넷 연결이나 보안 규칙을 확인해 주세요.';
     }
   });
+
+  // ---------- 내 사진 올리기 (정사각형으로 자르고 작게 줄여서 내 문서에 저장) ----------
+  const PHOTO_MAX = 60000;   // cloud.js · 보안 규칙의 글자 수 상한과 같아요
+  const CROP = 280;
+  const crop = { img: null, zoom: 1, ox: 0, oy: 0, base: 1, drag: null };
+  function cropDraw() {
+    const cv = $('cropCanvas'), g = cv.getContext('2d'), im = crop.img;
+    g.fillStyle = '#0c0806'; g.fillRect(0, 0, CROP, CROP);
+    if (!im) return;
+    const s = crop.base * crop.zoom, w = im.width * s, h = im.height * s;
+    g.drawImage(im, CROP / 2 - w / 2 + crop.ox, CROP / 2 - h / 2 + crop.oy, w, h);
+  }
+  function cropClamp() {   // 사진이 칸을 항상 가득 채우게
+    const s = crop.base * crop.zoom, mx = Math.max(0, (crop.img.width * s - CROP) / 2), my = Math.max(0, (crop.img.height * s - CROP) / 2);
+    crop.ox = Math.max(-mx, Math.min(mx, crop.ox)); crop.oy = Math.max(-my, Math.min(my, crop.oy));
+  }
+  function cropOpen(file) {
+    const url = URL.createObjectURL(file), im = new Image();
+    im.onload = () => {
+      URL.revokeObjectURL(url);
+      crop.img = im; crop.base = Math.max(CROP / im.width, CROP / im.height); crop.zoom = 1; crop.ox = 0; crop.oy = 0;
+      $('cropZoom').value = 100; $('cropNote').textContent = '끌어서 위치를 맞추세요';
+      $('cropOk').disabled = false; $('cropper').classList.add('show'); cropDraw();
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); const m = $('avatarMsg'); m.className = 'form-err'; m.textContent = '이 사진은 열 수 없어요. 다른 사진을 골라 주세요.'; };
+    im.src = url;
+  }
+  function cropEncode() {   // 정사각형으로 잘라서 256px, 글자 수가 상한을 넘으면 품질 → 크기를 낮춰요
+    const im = crop.img, k = crop.base * crop.zoom;
+    for (const px of [256, 192, 128]) {
+      const cv = document.createElement('canvas'); cv.width = cv.height = px;
+      const g = cv.getContext('2d'), r = px / CROP, w = im.width * k * r, h = im.height * k * r;
+      g.imageSmoothingQuality = 'high';
+      g.drawImage(im, px / 2 - w / 2 + crop.ox * r, px / 2 - h / 2 + crop.oy * r, w, h);
+      for (const q of [0.86, 0.74, 0.62, 0.5]) {
+        let d = cv.toDataURL('image/webp', q);
+        if (!d.startsWith('data:image/webp')) d = cv.toDataURL('image/jpeg', q);   // webp 를 못 만드는 기기
+        if (d.length <= PHOTO_MAX) return d;
+      }
+    }
+    return '';
+  }
+  async function photoSet(d) {
+    const msg = $('avatarMsg'); msg.className = 'form-err'; msg.textContent = '';
+    try {
+      await C.savePhoto(d);
+      renderAvatarPicker(); renderFramePicker(); renderMe(); refreshRank(); refreshHome();
+      msg.className = 'form-err form-ok'; msg.textContent = d ? '내 사진으로 바꿨어요.' : '내 사진을 내렸어요.';
+    } catch (err) {
+      msg.textContent = '저장하지 못했어요. 인터넷 연결이나 보안 규칙(photo 필드)을 확인해 주세요.';
+    }
+  }
+  (() => {
+    const cv = $('cropCanvas');
+    cv.addEventListener('pointerdown', (e) => { crop.drag = { x: e.clientX, y: e.clientY, ox: crop.ox, oy: crop.oy }; cv.setPointerCapture(e.pointerId); cv.style.cursor = 'grabbing'; });
+    cv.addEventListener('pointermove', (e) => {
+      if (!crop.drag || !crop.img) return;
+      const sc = CROP / cv.getBoundingClientRect().width;
+      crop.ox = crop.drag.ox + (e.clientX - crop.drag.x) * sc; crop.oy = crop.drag.oy + (e.clientY - crop.drag.y) * sc;
+      cropClamp(); cropDraw();
+    });
+    const end = () => { crop.drag = null; cv.style.cursor = 'grab'; };
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+    $('cropZoom').addEventListener('input', (e) => { crop.zoom = Number(e.target.value) / 100; if (crop.img) { cropClamp(); cropDraw(); } });
+    $('photoFile').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) cropOpen(f); });
+    $('cropCancel').addEventListener('click', () => { $('cropper').classList.remove('show'); crop.img = null; });
+    $('cropOk').addEventListener('click', async () => {
+      const d = cropEncode();
+      if (!d) { $('cropNote').textContent = '사진을 작게 만들지 못했어요. 다른 사진으로 해 보세요.'; return; }
+      $('cropOk').disabled = true;
+      await photoSet(d);
+      $('cropper').classList.remove('show'); crop.img = null;
+    });
+    $('photoClear').addEventListener('click', () => { if (window.confirm('내 사진을 내리고 상점 사진으로 돌아갈까요?')) photoSet(''); });
+  })();
 
   // ---------- 프레임 · 칭호 · 상태 메시지 고르기 ----------
   function picker(boxId, msgId, attr, check, save) {

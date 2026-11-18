@@ -72,6 +72,16 @@
 .form-ok { color: var(--lantern) !important; }
 
 /* ---------- 프로필 사진 ---------- */
+.photorow { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.photorow .avatar { width: 72px; height: 72px; font-size: 28px; }
+.photoact { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.photobtn { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 14px; cursor: pointer; font-size: 13px; }
+.photobtn[hidden] { display: none; }
+.photohint { font-size: 11px; color: var(--paper); opacity: .7; }
+.cropcard { max-width: 340px; }
+#cropCanvas { display: block; width: 280px; height: 280px; margin: 0 auto 12px; background: #0c0806; border: 2px solid var(--gold); touch-action: none; cursor: grab; }
+.cropzoom { display: flex; align-items: center; gap: 10px; margin: 0 4px 10px; font-size: 12px; color: var(--paper); }
+.cropzoom input { flex: 1; }
 .avatar { display: flex; flex: none; align-items: center; justify-content: center; width: 46px; height: 46px; overflow: hidden; background: var(--depth); border: 2px solid var(--gold); font-size: 20px; color: var(--gold); }
 .avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .rank__who { display: flex; align-items: center; gap: 10px; min-width: 0; }

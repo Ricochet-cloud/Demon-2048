@@ -9,6 +9,8 @@
   const COL = 'game2048_users';
   const NICK_MAX = 12;
   const BIO_MAX = 20;
+  const PHOTO_MAX = 60000;   // 직접 올린 사진(작게 줄인 data URL) 글자 수 상한 — 규칙과 같아야 해요
+  const PHOTO_RE = /^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/;
   const idOk = (id) => id === '' || /^[a-z0-9_-]{1,20}$/.test(String(id));
   let db = null, me = {}, loaded = false, failed = false, timer = null;
   const readyListeners = [];
@@ -68,6 +70,7 @@
     get uid() { return A.user ? A.user.uid : null; },
     get nickname() { return me.nickname || ''; },
     get avatar() { return me.avatar || ''; },
+    get photo() { return PHOTO_RE.test(me.photo || '') ? me.photo : ''; },
     get frame() { return me.frame || ''; },
     get title() { return me.title || ''; },
     get bio() { return me.bio || ''; },
@@ -94,7 +97,13 @@
     },
     async saveAvatar(id) {
       if (!/^[a-z0-9_-]{1,20}$/.test(String(id))) throw new Error('사진을 고를 수 없어요.');
-      await push({ avatar: id });
+      await push({ avatar: id, photo: '' });   // 상점 사진을 고르면 직접 올린 사진은 내려가요
+    },
+    // 직접 올린 사진 (같은 자리에 덮어써요). dataUrl 이 '' 이면 지워요
+    async savePhoto(dataUrl) {
+      const d = String(dataUrl || '');
+      if (d && (!PHOTO_RE.test(d) || d.length > PHOTO_MAX)) throw new Error('사진이 너무 크거나 형식이 달라요.');
+      await push({ photo: d });
     },
     // 내 문서를 읽고 고치는 트랜잭션 (골드 받기·구매처럼 한 번만 반영돼야 할 때 써요)
     async tx(fn) { return store().runTransaction((t) => fn(t, mine())); },

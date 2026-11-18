@@ -157,6 +157,14 @@
       </div>
       <div class="card" id="avatarCard" hidden>
         <h2>프로필 사진</h2>
+        <div class="photorow">
+          <div id="photoPrev"></div>
+          <div class="photoact">
+            <label class="btn btn--sub photobtn">내 사진 올리기<input type="file" id="photoFile" accept="image/*" hidden></label>
+            <button type="button" class="btn btn--sub photobtn" id="photoClear" hidden>내 사진 내리기</button>
+            <span class="photohint">내가 고른 사진으로 바로 설정돼요</span>
+          </div>
+        </div>
         <div class="pick" id="avatarPick"></div>
         <p class="form-err" id="avatarMsg" role="status"></p>
       </div>
@@ -279,7 +287,18 @@
   <div id="toast"></div>
 
   <!-- file:// / Android WebView 에서도 열리도록 ES module 을 쓰지 않아요 -->
-  <script src="./vendor/firebase/firebase-app-compat.js"></script>
+  <div class="modal" id="cropper" role="dialog" aria-modal="true" aria-labelledby="cropTitle">
+  <div class="modal__card cropcard">
+    <h2 id="cropTitle">사진 자르기</h2>
+    <canvas id="cropCanvas" width="280" height="280"></canvas>
+    <label class="cropzoom"><span>확대</span><input type="range" id="cropZoom" min="100" max="400" value="100"></label>
+    <p class="modal__note" id="cropNote">끌어서 위치를 맞추세요</p>
+    <button class="btn" id="cropOk" type="button">이 사진으로 설정</button>
+    <button class="btn btn--sub" id="cropCancel" type="button" style="margin-top:8px">취소</button>
+  </div>
+</div>
+
+<script src="./vendor/firebase/firebase-app-compat.js"></script>
   <script src="./vendor/firebase/firebase-auth-compat.js"></script>
   <script src="./vendor/firebase/firebase-firestore-compat.js"></script>
   <script src="./js/firebase-config.js"></script>
