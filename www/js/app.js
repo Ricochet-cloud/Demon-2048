@@ -152,6 +152,7 @@
 
   // ---------- 도감 (만든 타일 모으기) ----------
   let dexThemeId = null;   // 도감에서 보고 있는 테마 (지금 쓰는 테마가 기본)
+  let dexCat = null, dexCatAuto = true;   // 도감 분류 칩 (처음엔 보고 있는 테마의 분류, 직접 고르면 그대로 유지)
 
   function refreshDex() {
     const th = T.byId(dexThemeId || T.dexTheme().id);
@@ -159,12 +160,24 @@
     const got = T.discovered(best, th);
     const chips = $('dexThemes');
     chips.textContent = '';
-    T.list.filter((t) => !t.plain).forEach((t) => {
+    if (dexCat === null || themeCat(th.id) !== dexCat && dexCatAuto) dexCat = themeCat(th.id);
+    const cats = THEME_CATS.filter((c) => c !== '기본');   // 도감에서는 기본 숫자 테마가 없어서 12귀월은 '귀멸' 쪽에 넣어요
+    const catOf = (id) => (themeCat(id) === '기본' ? '귀멸' : themeCat(id));
+    const row1 = document.createElement('div'); row1.className = 'chips dexcats';
+    cats.forEach((c) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'chip' + (c === (dexCat === '기본' ? '귀멸' : dexCat) ? ' on' : ''); b.textContent = c;
+      b.addEventListener('click', () => { dexCat = c; dexCatAuto = false; refreshDex(); });
+      row1.appendChild(b);
+    });
+    const row2 = document.createElement('div'); row2.className = 'dexthemes';
+    const curCat = dexCat === '기본' ? '귀멸' : dexCat;
+    T.list.filter((t) => !t.plain && (curCat === '전체' || catOf(t.id) === curCat)).forEach((t) => {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'chip' + (t.id === th.id ? ' on' : ''); b.textContent = t.name;
       b.addEventListener('click', () => { dexThemeId = t.id; refreshDex(); });
-      chips.appendChild(b);
+      row2.appendChild(b);
     });
+    chips.appendChild(row1); chips.appendChild(row2);
     $('dexCount').textContent = `${got.length} / ${th.values.length}`;
     const grid = $('dexGrid');
     grid.textContent = '';
@@ -767,7 +780,7 @@
     if (name === 'modes') refreshModes();
     if (name === 'profile') refreshProfile();
     if (name === 'settings') refreshSettings();
-    if (name === 'dex') { dexThemeId = null; refreshDex(); }
+    if (name === 'dex') { dexThemeId = null; dexCat = null; dexCatAuto = true; refreshDex(); }
     if (name === 'shop') refreshShop();
     if (name === 'login') $('loginErr').textContent = '';
     window.dispatchEvent(new CustomEvent('screenchange', { detail: name }));   // 화면에 맞는 BGM 으로 바꿀 때 쓰여요

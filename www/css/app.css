@@ -291,3 +291,10 @@
 .themecell .theme-card__prev { grid-template-columns: repeat(2, 1fr); }
 .themecell b { font-size: 13px; text-align: center; }
 .themecell__btn { min-height: 36px; padding: 0; flex: none; width: 100%; }
+
+/* 도감 테마 선택: 분류 칩 + 줄바꿈되는 테마 칩 */
+#dexThemes .dexcats { margin-top: 0; }
+#dexThemes .dexcats .chip { padding: 0 2px; }
+.dexthemes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.dexthemes .chip { flex: 0 0 auto; min-height: 34px; padding: 0 10px; font-size: 12px; }
+#dexThemes { display: block; }
