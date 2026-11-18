@@ -16,7 +16,7 @@
       allow read: if request.auth != null;
       allow create, update: if request.auth != null
         && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['nickname', 'avatar', 'best', 'bestTile', 'plays', 'updatedAt', 'gold', 'daily', 'owned', 'frame', 'title', 'bio', 'week', 'weekClaim', 'bg', 'nameFx'])
+        && request.resource.data.keys().hasOnly(['nickname', 'avatar', 'best', 'bestTile', 'plays', 'updatedAt', 'gold', 'daily', 'owned', 'frame', 'title', 'bio', 'week', 'weekClaim', 'bg', 'nameFx', 'streak', 'chDone', 'chClaim', 'challenge'])
         && (!('nickname' in request.resource.data) || (request.resource.data.nickname is string && request.resource.data.nickname.size() <= 24))
         && (!('avatar' in request.resource.data) || (request.resource.data.avatar is string && request.resource.data.avatar.size() <= 20))
         && (!('best' in request.resource.data) || (request.resource.data.best is int && request.resource.data.best >= 0))
@@ -31,7 +31,11 @@
         && (!('week' in request.resource.data) || (request.resource.data.week is map && request.resource.data.week.keys().hasOnly(['k', 's', 'pk', 'ps'])))
         && (!('weekClaim' in request.resource.data) || (request.resource.data.weekClaim is string && request.resource.data.weekClaim.size() <= 10))
         && (!('bg' in request.resource.data) || (request.resource.data.bg is string && request.resource.data.bg.size() <= 20))
-        && (!('nameFx' in request.resource.data) || (request.resource.data.nameFx is string && request.resource.data.nameFx.size() <= 20));
+        && (!('nameFx' in request.resource.data) || (request.resource.data.nameFx is string && request.resource.data.nameFx.size() <= 20))
+        && (!('streak' in request.resource.data) || (request.resource.data.streak is map && request.resource.data.streak.keys().hasOnly(['last', 'n', 'claimed'])))
+        && (!('chDone' in request.resource.data) || (request.resource.data.chDone is string && request.resource.data.chDone.size() <= 10))
+        && (!('chClaim' in request.resource.data) || (request.resource.data.chClaim is string && request.resource.data.chClaim.size() <= 10))
+        && (!('challenge' in request.resource.data) || (request.resource.data.challenge is map && request.resource.data.challenge.keys().hasOnly(['day', 'score', 'tile', 'pd', 'ps'])));
       allow delete: if false;
     }
 ```

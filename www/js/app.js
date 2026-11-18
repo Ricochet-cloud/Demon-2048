@@ -169,6 +169,42 @@
     clearTimeout(showMsg.t); showMsg.t = setTimeout(() => t.classList.remove('show'), 2200);
   }
 
+  // 연속 출석 카드 (하루에 한 판 이상 끝내면 출석)
+  function renderStreak() {
+    const st = G.streak();
+    const card = document.createElement('div'); card.className = 'card';
+    const h = document.createElement('h2'); h.textContent = '연속 출석'; card.appendChild(h);
+    const big = document.createElement('p'); big.className = 'streak__n';
+    big.textContent = st.n > 0 ? `${st.n}일째` : '아직 이어진 출석이 없어요';
+    const sub = document.createElement('span'); sub.className = 'streak__sub'; sub.textContent = st.today ? '오늘 출석 완료' : '오늘 한 판을 끝내면 출석돼요';
+    big.appendChild(sub); card.appendChild(big);
+    Object.keys(st.rewards).map(Number).forEach((m) => {
+      const state = m <= st.claimed ? 'claimed' : (st.n >= m && m === st.next ? 'ready' : 'doing');
+      const row = document.createElement('div'); row.className = 'mission mission--' + state;
+      const txt = document.createElement('div'); txt.className = 'mission__txt';
+      const nm = document.createElement('b'); nm.textContent = `${m}일 연속`;
+      const rw = document.createElement('span'); rw.className = 'gold gold--sm'; rw.textContent = '+' + st.rewards[m];
+      txt.appendChild(nm); txt.appendChild(rw); row.appendChild(txt);
+      if (state === 'ready') {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'btn mission__btn'; b.textContent = '받기';
+        b.addEventListener('click', async () => {
+          b.disabled = true;
+          try { const got = await G.claimStreak(); showMsg(`골드 ${got}을 받았어요!`); }
+          catch (err) { showMsg(err.user ? err.message : '받지 못했어요. 잠시 뒤에 다시 눌러 주세요.'); }
+          if (effective() === 'shop') refreshShop();
+        });
+        row.appendChild(b);
+      } else {
+        const tag = document.createElement('em'); tag.className = 'tag'; tag.textContent = state === 'claimed' ? '받음' : `${Math.max(0, m - st.n)}일 남음`;
+        row.appendChild(tag);
+      }
+      card.appendChild(row);
+    });
+    const note = document.createElement('p'); note.className = 'dex__note'; note.textContent = '하루라도 건너뛰면 1일부터 다시 시작해요.';
+    card.appendChild(note);
+    return card;
+  }
+
   function renderMissions() {
     const box = $('missionList');
     box.textContent = '';
@@ -199,6 +235,7 @@
     const note = document.createElement('p'); note.className = 'dex__note'; note.textContent = '미션은 매일 오전 6시에 새로 바뀌어요.';
     card.appendChild(note);
     box.appendChild(card);
+    box.appendChild(renderStreak());
   }
 
   async function buy(label, price, itemId, done) {

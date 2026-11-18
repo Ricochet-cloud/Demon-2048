@@ -254,3 +254,7 @@
 .bgpick button.on { border-color: var(--lantern); color: var(--lantern); }
 .bgpick .bgpv { height: 38px; font-size: 12px; }
 #decoTabs .chip { padding: 0 2px; font-size: 12px; }
+
+/* 연속 출석 */
+.streak__n { margin: 0 0 10px; font-size: 22px; color: var(--lantern); }
+.streak__sub { display: block; margin-top: 4px; font-size: 11px; color: var(--muted); }

@@ -12,10 +12,12 @@
   const TILE_TARGETS = [128, 256, 512];   // "○○ 타일 만들기" 목표 (날마다 돌아가며 바뀌어요)
   const SCORE_TARGET = 2000;              // "한 판에서 ○○점" 목표
   const REWARD = { play: 10, tile: 20, score: 20, all: 20 };
+  const STREAK_REWARDS = { 3: 30, 7: 100, 14: 200, 30: 500 };   // 연속 출석 N일째에 받는 골드 (하루 한 판 이상 해야 출석)
   const KEY = 'game2048.gold.v1';
 
   const C = window.AppCloud;
   const pad = (n) => String(n).padStart(2, '0');
+  const shiftDay = (key, days) => { const [y, m, d] = key.split('-').map(Number); const x = new Date(Date.UTC(y, m - 1, d + days)); return `${x.getUTCFullYear()}-${pad(x.getUTCMonth() + 1)}-${pad(x.getUTCDate())}`; };
   const union = (a, b) => [...new Set([...(a || []), ...(b || [])])];
 
   function dayKey(date) {
@@ -34,7 +36,7 @@
 
   // ============ 이 기기에 저장된 상태 ============
   // owner: 이 상태가 어느 계정 것인지 (null 이면 로그인 없이 모은 것)
-  let S = { gold: 0, day: '', done: [], claimed: [], owned: [], owner: null };
+  let S = { gold: 0, day: '', done: [], claimed: [], owned: [], owner: null, streak: null, weekClaim: '', chDone: '', chClaim: '' };
   try { S = Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* 저장소를 못 써도 돼요 */ }
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* 무시 */ } };
   const changed = () => { save(); window.dispatchEvent(new Event('gold:change')); };
@@ -51,6 +53,17 @@
     return ['play', 'tile', 'score'].every((k) => out.includes(k)) ? union(out, ['all']) : out;
   }
 
+  // 연속 출석: 오늘 한 판을 끝냈을 때 하루에 한 번 올려요 (어제도 했으면 +1, 아니면 1부터 다시)
+  const newStreak = () => ({ last: '', n: 0, claimed: 0 });
+  function bump(st, day) {
+    st = st || newStreak();
+    if (st.last === day) return st;
+    const cont = st.last === shiftDay(day, -1);
+    return { last: day, n: cont ? st.n + 1 : 1, claimed: cont ? st.claimed : 0 };
+  }
+  const streakAlive = (st, day) => !!st && (st.last === day || st.last === shiftDay(day, -1));
+  const nextMilestone = (st) => Object.keys(STREAK_REWARDS).map(Number).find((m) => m > ((st && st.claimed) || 0));
+
   // ============ 클라우드 (트랜잭션) ============
   // mutate(cur) 가 새 상태를 돌려주면 한 번에 저장해요. 던지면 아무것도 바뀌지 않아요.
   async function cloudUpdate(mutate) {
@@ -66,10 +79,14 @@
         day,
         done: union(same ? d.daily.done : [], S.day === day ? S.done : []),
         weekClaim: typeof d.weekClaim === 'string' ? d.weekClaim : '',
+        chDone: typeof d.chDone === 'string' ? d.chDone : '',
+        chClaim: typeof d.chClaim === 'string' ? d.chClaim : '',
+        streak: (d.streak && typeof d.streak.n === 'number') ? d.streak : (guest ? S.streak : null),
         claimed: same ? [...(d.daily.claimed || [])] : (guest && typeof d.gold !== 'number' && S.day === day ? S.claimed : [])
       };
+      if (cur.done.includes('play')) cur.streak = bump(cur.streak, day);   // 오늘 한 판을 끝냈으면 출석
       const nx = mutate(cur);
-      t.set(ref, { gold: nx.gold, owned: nx.owned, weekClaim: nx.weekClaim || '', daily: { day, done: nx.done, claimed: nx.claimed } }, { merge: true });
+      t.set(ref, { gold: nx.gold, owned: nx.owned, weekClaim: nx.weekClaim || '', chDone: nx.chDone || '', chClaim: nx.chClaim || '', streak: nx.streak || newStreak(), daily: { day, done: nx.done, claimed: nx.claimed } }, { merge: true });
       return nx;
     });
     S = Object.assign(S, next, { owner: C.uid });
@@ -88,7 +105,7 @@
       catch (e) { if (e.user) throw e; console.warn('골드 저장 실패', e); throw needNet(); }
     }
     const day = ensureToday();
-    const nx = mutate({ gold: S.gold, owned: [...S.owned], day, done: [...S.done], claimed: [...S.claimed] });
+    const nx = mutate({ gold: S.gold, owned: [...S.owned], day, done: [...S.done], claimed: [...S.claimed], weekClaim: S.weekClaim || '', chDone: S.chDone || '', chClaim: S.chClaim || '', streak: S.done.includes('play') ? bump(S.streak, day) : S.streak });
     S = Object.assign(S, nx); changed();
     return nx;
   }
@@ -107,6 +124,7 @@
     if (S.done.includes(id)) return;
     const hadAll = S.done.includes('all');
     S.done = addDone(S.done, id);
+    if (id === 'play') S.streak = bump(S.streak, S.day);
     changed();
     toast(!hadAll && S.done.includes('all') ? '오늘 미션을 모두 달성했어요! 상점에서 보상을 받아요' : '미션 달성! 상점에서 보상을 받아요');
     if (C.enabled && C.loaded) cloudUpdate((cur) => Object.assign(cur, { done: addDone(cur.done, id) })).catch((e) => console.warn('미션 저장 실패', e));
@@ -137,7 +155,25 @@
       const day = ensureToday();
       return missionList(day).map((m) => Object.assign({}, m, { state: S.claimed.includes(m.id) ? 'claimed' : S.done.includes(m.id) ? 'ready' : 'doing' }));
     },
-    claimable() { return this.missions().filter((m) => m.state === 'ready').length; },
+    claimable() { return this.missions().filter((m) => m.state === 'ready').length + (this.streak().ready ? 1 : 0); },
+    // 연속 출석 { n: 연속 일수, today: 오늘 출석했는지, next: 다음 보상 일수, ready: 지금 받을 수 있는지, rewards }
+    streak() {
+      const day = ensureToday(), st = S.streak;
+      const alive = streakAlive(st, day), n = alive ? st.n : 0, claimed = alive ? st.claimed : 0;
+      const next = nextMilestone({ claimed });
+      return { n, today: !!st && st.last === day, claimed, next, ready: !!next && n >= next, rewards: STREAK_REWARDS };
+    },
+    async claimStreak() {
+      let got = 0;
+      await update((cur) => {
+        const alive = streakAlive(cur.streak, cur.day);
+        const next = alive ? nextMilestone(cur.streak) : null;
+        if (!next || cur.streak.n < next) throw userError('아직 받을 수 있는 보상이 없어요.');
+        got = STREAK_REWARDS[next];
+        return Object.assign(cur, { gold: (cur.gold || 0) + got, streak: Object.assign({}, cur.streak, { claimed: next }) });
+      });
+      return got;
+    },
     async claim(id) {
       const m = missionList(ensureToday()).find((x) => x.id === id);
       if (!m) throw userError('없는 미션이에요.');
@@ -150,13 +186,16 @@
       return m.reward;
     },
     // 주간 1등 보상 (같은 주는 한 번만)
-    async claimWeekly(weekKey, reward) {
+    // field 에 key 를 적어 두고 골드를 줘요 (같은 key 로는 한 번만) — 주간 1등(weekClaim), 오늘의 도전 완료(chDone)/전날 1등(chClaim)
+    async claimOnce(field, key, reward) {
+      if (!['weekClaim', 'chDone', 'chClaim'].includes(field)) throw userError('받을 수 없는 보상이에요.');
       await update((cur) => {
-        if (cur.weekClaim === weekKey) throw userError('이미 받았어요.');
-        return Object.assign(cur, { gold: (cur.gold || 0) + reward, weekClaim: weekKey });
+        if (cur[field] === key) throw userError('이미 받았어요.');
+        return Object.assign(cur, { gold: (cur.gold || 0) + reward, [field]: key });
       });
       return reward;
     },
+    claimWeekly(weekKey, reward) { return this.claimOnce('weekClaim', weekKey, reward); },
     // 상점에서 쓸 구매 (골드를 내고 itemId 를 가져요) — 아직 파는 물건은 없지만 구조만 만들어 둬요
     async spend(price, itemId) {
       if (!Number.isInteger(price) || price < 0 || !/^[a-z0-9:_-]{1,40}$/.test(String(itemId))) throw userError('살 수 없는 물건이에요.');
