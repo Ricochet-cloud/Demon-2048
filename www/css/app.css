@@ -245,14 +245,14 @@
 .nm-thunder { color: #fff27a; animation: nmthunder 1.2s steps(2, end) infinite; }
 @keyframes nmthunder { 0%, 70% { text-shadow: 0 0 4px #ffe433; } 80% { text-shadow: 0 0 10px #fff, 0 0 16px #fff6a0; } 100% { text-shadow: 0 0 5px #ffe433; } }
 .nm-moon { color: #eaf2ff; text-shadow: 0 0 6px #9fb8ff, 0 0 12px #5d7be0 !important; }
-.nm-flame, .nm-rainbow, .nm-sun { -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; text-shadow: none !important; }
+.nm-flame, .nm-rainbow, .nm-sun, .nm-silver, .nm-dusk { -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; text-shadow: none !important; }
 .nm-flame { background-image: linear-gradient(180deg, #fff2a0, #ff8a1f 55%, #e8330a); filter: drop-shadow(0 0 4px rgba(255, 120, 30, .8)); animation: nmflame 1.4s ease-in-out infinite alternate; }
 @keyframes nmflame { from { filter: drop-shadow(0 0 2px rgba(255, 120, 30, .6)); } to { filter: drop-shadow(0 0 7px rgba(255, 170, 40, .95)); } }
 .nm-rainbow { background-image: linear-gradient(90deg, #ff5b5b, #ffb84d, #f4e85a, #62d97a, #4fb3ff, #a77bff, #ff5b5b); background-size: 200% 100%; animation: nmrainbow 4s linear infinite; }
 @keyframes nmrainbow { to { background-position: 200% 0; } }
 .nm-sun { background-image: linear-gradient(90deg, #ffe58a, #ff9a2e, #fff3a0, #ff9a2e, #ffe58a); background-size: 200% 100%; animation: nmrainbow 3s linear infinite; filter: drop-shadow(0 0 4px rgba(255, 170, 60, .8)); }
-@media (prefers-reduced-motion: reduce) { .nm-thunder, .nm-flame, .nm-rainbow, .nm-sun { animation: none; } }
-.rank__name .nm-flame, .rank__name .nm-rainbow, .rank__name .nm-sun { display: inline-block; }
+@media (prefers-reduced-motion: reduce) { .nm-thunder, .nm-flame, .nm-rainbow, .nm-sun, .nm-silver, .nm-dusk, .nm-neon { animation: none; } }
+.rank__name .nm-flame, .rank__name .nm-rainbow, .rank__name .nm-sun, .rank__name .nm-silver, .rank__name .nm-dusk { display: inline-block; }
 
 /* 미리보기 / 고르기 */
 .bgpv { display: flex; align-items: center; justify-content: center; width: 100%; height: 46px; padding: 0 6px; overflow: hidden; font-size: 14px; color: var(--paper); border: 1px solid rgba(201, 162, 75, .45); white-space: nowrap; }
@@ -327,3 +327,25 @@
 .bg-snow { background: radial-gradient(circle at 20% 25%, rgba(255, 255, 255, .85) 0 1.5px, transparent 2.5px) 0 0 / 30px 26px, radial-gradient(circle at 65% 70%, rgba(255, 255, 255, .6) 0 1.5px, transparent 2.5px) 0 0 / 38px 32px, radial-gradient(circle at 85% 15%, rgba(255, 255, 255, .5) 0 1px, transparent 2px) 0 0 / 22px 24px, linear-gradient(180deg, #0c1a35, #26406e); }
 .bg-lantern { background: radial-gradient(circle at 25% 40%, rgba(255, 190, 90, .6) 0 4px, rgba(255, 120, 40, .25) 5px 14px, transparent 15px) 0 0 / 52px 44px, radial-gradient(circle at 75% 75%, rgba(255, 190, 90, .5) 0 3px, rgba(255, 120, 40, .2) 4px 11px, transparent 12px) 0 0 / 52px 44px, linear-gradient(135deg, #3b0d12, #14070a); }
 .bg-grove { background: repeating-linear-gradient(90deg, rgba(150, 230, 120, .22) 0 3px, transparent 3px 22px), repeating-linear-gradient(90deg, rgba(0, 0, 0, .25) 0 1px, transparent 1px 11px), linear-gradient(180deg, #123a22, #07170e); }
+
+/* 2차 추가: 프레임(바느질·캔디·강철·하트·석양) / 배경(심해·은하·네온 시티·단풍·딸기밭) / 이름(민트·귤빛·은빛·노을빛·네온) */
+.fr-stitch { border: 3px dashed #f7e7ce; box-shadow: 0 0 0 2px #c4566f, 0 0 0 3px rgba(0, 0, 0, .5); }
+.fr-candy { border: 4px solid transparent; background: linear-gradient(var(--depth), var(--depth)) padding-box, repeating-linear-gradient(45deg, #ff5b7a 0 6px, #fff 6px 12px) border-box; box-shadow: 0 0 0 1px #6b1d2d; }
+.fr-steel { border: 4px ridge #b4bcc8; box-shadow: 0 0 0 1px #2a2f38, inset 0 0 6px rgba(0, 0, 0, .6); }
+.fr-heart { border-color: #ff7aa8; box-shadow: 0 0 0 2px #7a1f43, 0 0 10px rgba(255, 110, 160, .8); animation: frheart 1.3s ease-in-out infinite; }
+@keyframes frheart { 0%, 100% { box-shadow: 0 0 0 2px #7a1f43, 0 0 6px rgba(255, 110, 160, .6); } 50% { box-shadow: 0 0 0 2px #7a1f43, 0 0 16px rgba(255, 140, 180, 1); } }
+.fr-sunset { border: 3px solid transparent; background: linear-gradient(var(--depth), var(--depth)) padding-box, linear-gradient(135deg, #ffd36b, #ff7a59 45%, #c24a9a 75%, #6a4bd6) border-box; box-shadow: 0 0 10px rgba(255, 130, 90, .6); }
+@media (prefers-reduced-motion: reduce) { .fr-heart { animation: none; } }
+
+.bg-deep { background: radial-gradient(circle at 20% 80%, rgba(160, 230, 255, .35) 0 3px, transparent 4px) 0 0 / 46px 40px, radial-gradient(circle at 70% 40%, rgba(160, 230, 255, .3) 0 2px, transparent 3px) 0 0 / 34px 30px, radial-gradient(circle at 85% 85%, rgba(160, 230, 255, .25) 0 4px, transparent 5px) 0 0 / 60px 52px, linear-gradient(180deg, #0b4a5e, #06202e); }
+.bg-galaxy { background: radial-gradient(circle at 25% 30%, rgba(190, 120, 255, .45), transparent 45%), radial-gradient(circle at 80% 70%, rgba(80, 150, 255, .4), transparent 50%), radial-gradient(circle at 30% 60%, #fff 0 1px, transparent 2px) 0 0 / 40px 36px, radial-gradient(circle at 70% 20%, #fff 0 1px, transparent 2px) 0 0 / 28px 32px, #120a2a; }
+.bg-neon { background: repeating-linear-gradient(115deg, transparent 0 14px, rgba(255, 70, 200, .28) 14px 16px), repeating-linear-gradient(115deg, transparent 0 30px, rgba(60, 220, 255, .25) 30px 32px), linear-gradient(135deg, #1a0a33, #0a1230); }
+.bg-autumn { background: radial-gradient(ellipse at 25% 30%, rgba(255, 150, 40, .55) 0 5px, transparent 6px) 0 0 / 44px 38px, radial-gradient(ellipse at 70% 75%, rgba(230, 70, 30, .55) 0 5px, transparent 6px) 0 0 / 44px 38px, radial-gradient(ellipse at 90% 20%, rgba(255, 200, 60, .45) 0 4px, transparent 5px) 0 0 / 30px 28px, linear-gradient(180deg, #4a1c10, #240d08); }
+.bg-berry { background: radial-gradient(circle, rgba(255, 190, 215, .35) 0 2px, transparent 3px) 0 0 / 14px 14px, repeating-linear-gradient(90deg, rgba(255, 255, 255, .08) 0 7px, transparent 7px 14px), repeating-linear-gradient(0deg, rgba(255, 255, 255, .08) 0 7px, transparent 7px 14px), linear-gradient(135deg, #5a1230, #2c0818); }
+
+.nm-mint { color: #7ff5c8; }
+.nm-orange { color: #ffa94d; }
+.nm-silver { background-image: linear-gradient(90deg, #cfd6df, #ffffff, #9aa5b5, #ffffff, #cfd6df); background-size: 200% 100%; animation: nmrainbow 3.5s linear infinite; filter: drop-shadow(0 0 3px rgba(200, 215, 235, .7)); }
+.nm-dusk { background-image: linear-gradient(90deg, #ffd36b, #ff7a59, #e0559f, #8a63e8, #e0559f, #ff7a59, #ffd36b); background-size: 200% 100%; animation: nmrainbow 5s linear infinite; }
+.nm-neon { color: #8ffcff; text-shadow: 0 0 4px #17e0ee, 0 0 10px #ff3fd0 !important; animation: nmneon 1.8s ease-in-out infinite alternate; }
+@keyframes nmneon { from { text-shadow: 0 0 3px #17e0ee, 0 0 7px #ff3fd0; } to { text-shadow: 0 0 6px #17e0ee, 0 0 16px #ff3fd0; } }
