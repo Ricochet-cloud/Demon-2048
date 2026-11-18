@@ -110,15 +110,45 @@
     refreshHomeRank();
   }
 
+  // ---------- 응원 ----------
+  const CHEER_MSGS = ['화이팅!', '오늘도 한 판?', '대단해요!', '곧 따라잡을게요', '쉬엄쉬엄 해요'];
+  const lsGet = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* 무시 */ } };
+  const sentToday = () => { const s = lsGet('game2048.cheer.v1', {}); return s.day === G.dayKey() ? s.to || [] : []; };
+  const markSent = (uid) => lsSet('game2048.cheer.v1', { day: G.dayKey(), to: [...sentToday(), uid] });
+  const seenToday = () => { const s = lsGet('game2048.cheerseen.v1', {}); return s.day === G.dayKey() ? s.ids || [] : []; };
+  let cheerIds = [];
+
+  async function renderHomeCheers(list) {
+    const box = $('cheerBox');
+    try {
+      const cheers = (await C.loadCheers(G.dayKey())).filter((c) => !seenToday().includes(c.id));
+      cheerIds = cheers.map((c) => c.id);
+      const wrap = $('cheerList'); wrap.textContent = '';
+      cheers.forEach((c) => {
+        const u = list.find((x) => x.uid === c.from) || {};
+        const row = document.createElement('div'); row.className = 'cheer';
+        row.appendChild(avatarEl(u.avatar, u.nickname, u.frame));
+        const t = document.createElement('div'); t.className = 'cheer__txt';
+        const n = document.createElement('b'); n.textContent = u.nickname || '이름 없음';
+        t.appendChild(n); t.appendChild(document.createTextNode(c.msg || '화이팅!'));
+        row.appendChild(t); wrap.appendChild(row);
+      });
+      box.hidden = cheers.length === 0;
+    } catch (e) { box.hidden = true; }
+  }
+  $('cheerOk').addEventListener('click', () => { lsSet('game2048.cheerseen.v1', { day: G.dayKey(), ids: [...seenToday(), ...cheerIds] }); $('cheerBox').hidden = true; });
+
   // 홈의 작은 '우리 기록' 카드 (로그인했고 기록을 받았을 때만)
   let homeRankSeq = 0;
   async function refreshHomeRank() {
     const card = $('homeRank'), seq = ++homeRankSeq;
-    if (!(A.enabled && A.user && C.loaded && !C.failed)) { card.hidden = true; return; }
+    if (!(A.enabled && A.user && C.loaded && !C.failed)) { card.hidden = true; $('cheerBox').hidden = true; return; }
     try {
       const list = await C.loadAll();
       if (seq !== homeRankSeq || effective() !== 'home') return;
       renderRank(list.sort((a, b) => (b.best || 0) - (a.best || 0)).slice(0, 3), $('homeRankList'), true);
+      renderHomeCheers(list);
       card.hidden = list.length === 0;
     } catch (e) { card.hidden = true; }
   }
@@ -510,6 +540,30 @@
     } catch (e) { return ''; }
   }
 
+  // 다른 사람 줄 밑의 응원 버튼 (누르면 한마디를 골라요, 하루에 한 사람에게 한 번)
+  function cheerRow(u) {
+    const row = document.createElement('div'); row.className = 'cheerrow';
+    const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn btn--sub cheerrow__btn';
+    const opts = document.createElement('div'); opts.className = 'cheerrow__opts'; opts.hidden = true;
+    const sent = () => { btn.textContent = '오늘 응원했어요'; btn.disabled = true; opts.hidden = true; };
+    if (sentToday().includes(u.uid)) sent(); else btn.textContent = '응원 보내기';
+    btn.addEventListener('click', () => { opts.hidden = !opts.hidden; });
+    CHEER_MSGS.forEach((m) => {
+      const c = document.createElement('button'); c.type = 'button'; c.className = 'chip'; c.textContent = m;
+      c.addEventListener('click', async () => {
+        opts.hidden = true; btn.disabled = true;
+        try { await C.sendCheer(u.uid, m, G.dayKey()); markSent(u.uid); sent(); showMsg('응원을 보냈어요!'); }
+        catch (err) {
+          if (/permission|insufficient|already/i.test(String(err && (err.code || err.message)))) { markSent(u.uid); sent(); showMsg('오늘은 이미 응원을 보냈어요.'); }
+          else { btn.disabled = false; showMsg('보내지 못했어요. 잠시 뒤에 다시 눌러 주세요.'); }
+        }
+      });
+      opts.appendChild(c);
+    });
+    row.appendChild(btn); row.appendChild(opts);
+    return row;
+  }
+
   // mode: 'best'(최고 점수) | 'week'(이번 주 누적 점수)
   function renderRank(list, box, compact, mode) {
     box = box || $('rankList');
@@ -546,6 +600,7 @@
       right.appendChild(b); right.appendChild(document.createTextNode(week ? '이번 주' : `최고 타일 ${u.bestTile || '-'}`));
       item.appendChild(left); item.appendChild(right);
       box.appendChild(item);
+      if (!compact && u.uid !== C.uid) box.appendChild(cheerRow(u));
     });
   }
 

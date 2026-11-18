@@ -2,13 +2,13 @@
 
 ## 쓰는 것
 - Authentication: 이메일/비밀번호 (커플 사이트와 같은 계정)
-- Firestore: 컬렉션 `game2048_users` (문서 id = 로그인한 사람의 uid)
-  - 필드: `nickname`, `avatar`(프로필 사진 id), `best`(최고 점수), `bestTile`(최고 타일), `plays`(끝낸 판 수), `updatedAt`, `gold`(보유 골드), `daily`(오늘 미션 상태 {day, done, claimed}), `owned`(상점에서 산 물건 id 목록), `frame`(고른 사진 테두리), `title`(고른 칭호), `bio`(상태 메시지), `week`·`weekClaim`(주간 순위), `bg`(카드 배경), `nameFx`(이름 꾸미기)
+- Firestore: 컬렉션 `game2048_users` (문서 id = 로그인한 사람의 uid), `game2048_cheers` (응원, 문서 id = 보낸이_받는이_날짜)
+  - 필드: `nickname`, `avatar`(프로필 사진 id), `best`(최고 점수), `bestTile`(최고 타일), `plays`(끝낸 판 수), `updatedAt`, `gold`(보유 골드), `daily`(오늘 미션 상태 {day, done, claimed}), `owned`(상점에서 산 물건 id 목록), `frame`(고른 사진 테두리), `title`(고른 칭호), `bio`(상태 메시지), `week`·`weekClaim`(주간 순위), `bg`(카드 배경), `nameFx`(이름 꾸미기), `streak`(연속 출석 {last, n, claimed}), `challenge`·`chDone`·`chClaim`(오늘의 도전)
   - 이메일은 저장하지 않아요. 서로에게는 닉네임과 기록만 보여요.
 
 ## 한 번만 하면 되는 설정
 1. Firebase 콘솔 > Firestore Database 가 만들어져 있어야 해요 (커플 사이트에서 이미 쓰고 있으면 그대로).
-2. Firestore Database > 규칙 탭에서 기존 규칙은 **그대로 두고**(이전 단계에서 이미 `game2048_users` 블록을 넣었다면 그 블록을 아래 내용으로 **교체** — 프레임·칭호·상태 메시지 필드가 추가됐어요. 교체하지 않으면 그 기능이 저장에 실패해요), `match /databases/{database}/documents { ... }` 안쪽에 아래 블록만 **추가**한 뒤 게시해요.
+2. Firestore Database > 규칙 탭에서 기존 규칙은 **그대로 두고**(이전 단계에서 이미 `game2048_users` 블록을 넣었다면 그 블록을 아래 내용으로 **교체** — 프레임·칭호·상태 메시지 필드가 추가됐어요. 교체하지 않으면 그 기능이 저장에 실패해요), `match /databases/{database}/documents { ... }` 안쪽에 아래 블록만 **추가**한 뒤 게시해요. (`game2048_cheers` 블록은 새로 추가돼요.)
 
 ```
     // 2048 앱: 로그인한 사람은 서로의 기록을 읽고, 자기 문서만 쓸 수 있어요
@@ -37,6 +37,19 @@
         && (!('chClaim' in request.resource.data) || (request.resource.data.chClaim is string && request.resource.data.chClaim.size() <= 10))
         && (!('challenge' in request.resource.data) || (request.resource.data.challenge is map && request.resource.data.challenge.keys().hasOnly(['day', 'score', 'tile', 'pd', 'ps'])));
       allow delete: if false;
+    }
+
+    // 응원 보내기: 보낸 사람과 받는 사람만 읽고, 보낸 사람이 하루에 한 사람에게 한 번만 만들 수 있어요 (문서 id 가 보낸이_받는이_날짜)
+    match /game2048_cheers/{id} {
+      allow read: if request.auth != null && (resource.data.to == request.auth.uid || resource.data.from == request.auth.uid);
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['from', 'to', 'day', 'msg', 'at'])
+        && request.resource.data.from == request.auth.uid
+        && request.resource.data.to is string && request.resource.data.to != request.auth.uid
+        && request.resource.data.day is string && request.resource.data.day.size() <= 10
+        && request.resource.data.msg is string && request.resource.data.msg.size() <= 20
+        && id == request.auth.uid + '_' + request.resource.data.to + '_' + request.resource.data.day;
+      allow update, delete: if false;
     }
 ```
 

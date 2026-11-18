@@ -76,6 +76,16 @@
     get nameFx() { return me.nameFx || ''; },
     async saveBg(id) { if (!idOk(id)) throw new Error('배경을 고를 수 없어요.'); await push({ bg: id }); },
     async saveNameFx(id) { if (!idOk(id)) throw new Error('이름 꾸미기를 고를 수 없어요.'); await push({ nameFx: id }); },
+    // 응원: 하루에 한 사람에게 한 번 (이미 보냈으면 규칙이 막아서 오류가 나요)
+    async sendCheer(toUid, msg, day) {
+      await store().collection('game2048_cheers').doc(`${A.user.uid}_${toUid}_${day}`).set({
+        from: A.user.uid, to: toUid, day, msg: String(msg).slice(0, 20), at: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    },
+    async loadCheers(day) {
+      const qs = await store().collection('game2048_cheers').where('to', '==', A.user.uid).where('day', '==', day).get();
+      return qs.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+    },
     async saveTitle(id) { if (!idOk(id)) throw new Error('칭호를 고를 수 없어요.'); await push({ title: id }); },
     async saveBio(text) {
       const n = String(text || '').trim();
