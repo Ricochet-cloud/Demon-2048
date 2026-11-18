@@ -5,11 +5,15 @@
   "description": "2048 (12귀월) 개인용 안드로이드 앱",
   "scripts": {
     "sync": "cap sync android",
-    "open": "cap open android"
+    "open": "cap open android",
+    "admin": "node tools/shop-admin/server.js"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.2",
     "@capacitor/cli": "^8.6.2",
     "@capacitor/core": "^8.6.2"
+  },
+  "devDependencies": {
+    "sharp": "^0.35.5"
   }
 }

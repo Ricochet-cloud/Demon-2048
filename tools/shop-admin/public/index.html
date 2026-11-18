@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>상점 관리</title>
+<style>
+  :root { --bg: #14100d; --panel: #1f1814; --line: #4a3a2c; --gold: #f2b45a; --text: #f1e8d8; --muted: #a8977f; --ok: #6fcf8a; --bad: #ff7a6b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; }
+  header { padding: 14px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 16px; }
+  h1 { margin: 0; font-size: 18px; color: var(--gold); }
+  main { max-width: 1100px; margin: 0 auto; padding: 18px 20px 60px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .tab, button { background: var(--panel); color: var(--text); border: 1px solid var(--line); padding: 8px 14px; border-radius: 6px; cursor: pointer; font: inherit; }
+  .tab.on, button.primary { border-color: var(--gold); background: #3a2a14; color: var(--gold); font-weight: 700; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+  h2 { margin: 0 0 10px; font-size: 15px; color: var(--gold); }
+  label { display: block; margin: 8px 0 4px; color: var(--muted); font-size: 12px; }
+  input[type=text], input[type=number], select { width: 100%; background: #120d0a; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; font: inherit; }
+  input[type=file] { color: var(--muted); }
+  .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .drop { border: 2px dashed var(--line); border-radius: 8px; padding: 22px; text-align: center; color: var(--muted); }
+  .drop.over { border-color: var(--gold); color: var(--gold); }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-width: 520px; }
+  .grid img { width: 100%; display: block; border-radius: 4px; }
+  .grid figure { margin: 0; position: relative; }
+  .grid figcaption { position: absolute; left: 4px; top: 4px; background: #000a; color: #fff; font-size: 11px; padding: 0 5px; border-radius: 3px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+  th { color: var(--muted); font-weight: 400; font-size: 12px; }
+  td img { width: 64px; height: 64px; object-fit: cover; border-radius: 4px; display: block; background: #000; }
+  .none { width: 64px; height: 64px; display: grid; place-items: center; color: var(--muted); font-size: 11px; border: 1px dashed var(--line); border-radius: 4px; }
+  .msg { padding: 10px 12px; border-radius: 6px; margin: 10px 0; }
+  .msg.ok { background: #14301d; border: 1px solid var(--ok); }
+  .msg.bad { background: #3a1814; border: 1px solid var(--bad); }
+  .msg.warn { background: #3a2f14; border: 1px solid var(--gold); }
+  pre { background: #0c0907; padding: 10px; border-radius: 6px; overflow: auto; margin: 6px 0 0; user-select: all; }
+  .muted { color: var(--muted); }
+  .hidden { display: none; }
+  .inline { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .inline label { display: inline-flex; gap: 6px; align-items: center; margin: 0; color: var(--text); font-size: 14px; }
+</style>
+</head>
+<body>
+<header><h1>상점 관리</h1><span class="muted">시트 이미지를 올려서 자동으로 자르고 상점에 올려요</span></header>
+<main>
+  <div class="tabs">
+    <button class="tab on" data-tab="theme">타일 테마 시트</button>
+    <button class="tab" data-tab="avatar">프로필 사진 시트</button>
+  </div>
+
+  <!-- 시트 올리기 (두 탭 공용) -->
+  <div class="card">
+    <h2>1. 시트 이미지 고르기</h2>
+    <div class="drop" id="drop">여기에 이미지를 끌어다 놓거나 <input type="file" id="file" accept="image/*"> 로 고르세요<br><span class="muted">4x4 정사각형 칸, 검은 격자선이 또렷한 시트 (왼쪽 위부터 가로로 1~16번)</span></div>
+    <div id="sheetMsg"></div>
+    <div class="grid hidden" id="sheetGrid"></div>
+  </div>
+
+  <!-- 타일 테마 -->
+  <section id="tab-theme">
+    <div class="card hidden" id="themeForm">
+      <h2>2. 테마 정보</h2>
+      <div class="inline">
+        <label><input type="radio" name="tmode" value="new" checked> 새 테마로 추가</label>
+        <label><input type="radio" name="tmode" value="overwrite"> 기존 테마 덮어쓰기</label>
+      </div>
+      <div class="row" id="tNewFields">
+        <div><label>id (영문 소문자/숫자)</label><input type="text" id="tId" placeholder="animals" maxlength="20"></div>
+        <div><label>이름</label><input type="text" id="tName" placeholder="일본의 귀여운 동물" maxlength="12"></div>
+        <div><label>분류</label><select id="tCat"><option>일본</option><option>귀멸</option><option>기본</option></select></div>
+      </div>
+      <div class="row hidden" id="tOldFields">
+        <div><label>덮어쓸 테마</label><select id="tPick"></select></div>
+        <div><label>이름</label><input type="text" id="tName2" maxlength="12"></div>
+        <div><label>분류</label><select id="tCat2"><option>일본</option><option>귀멸</option><option>기본</option></select></div>
+      </div>
+      <div class="row"><div style="grid-column:1/-1"><label>한 줄 설명</label><input type="text" id="tDesc" maxlength="40" placeholder="귀엽고 색이 또렷한 일본의 동물들이에요"></div></div>
+      <h2 style="margin-top:16px">3. 타일 이름과 그림</h2>
+      <p class="muted" style="margin:0 0 8px">"새 시트 칸"에서 그림을 가져올 칸을 바꿀 수 있어요. 덮어쓰기에서는 체크를 끄면 그 타일은 그대로 둬요.</p>
+      <table><thead><tr><th>타일</th><th class="old">지금 그림</th><th>새 그림</th><th>새 시트 칸</th><th>이름 (도감에 보여요)</th><th>쓰기</th></tr></thead><tbody id="slots"></tbody></table>
+      <div style="margin-top:14px"><button class="primary" id="tSave">상점에 올리기</button></div>
+      <div id="tMsg"></div>
+    </div>
+  </section>
+
+  <!-- 프로필 사진 -->
+  <section id="tab-avatar" class="hidden">
+    <div class="card hidden" id="avatarForm">
+      <h2>2. 올릴 사진 고르기</h2>
+      <p class="muted" style="margin:0 0 8px">올릴 칸만 체크하세요. 이미 있는 id 를 쓰면 그 사진을 새 그림으로 바꿔요. 가격 0 이면 무료예요.</p>
+      <div class="inline" style="margin-bottom:8px"><label>전체 가격 <input type="number" id="aAllPrice" value="100" min="0" style="width:90px"></label><button id="aApply">모든 칸에 적용</button></div>
+      <table><thead><tr><th>칸</th><th>그림</th><th>id (영문)</th><th>이름</th><th>가격</th><th>올리기</th></tr></thead><tbody id="avRows"></tbody></table>
+      <div style="margin-top:14px"><button class="primary" id="aSave">상점에 올리기</button></div>
+      <div id="aMsg"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const VALUES = ['2','4','8','16','32','64','128','256','512','1024','2048','4096','8192','big'];
+  let shop = null, sheet = null, tab = 'theme';
+
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const msg = (el, kind, html) => { el.innerHTML = html ? `<div class="msg ${kind}">${html}</div>` : ''; };
+  async function call(method, url, body) {
+    const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || '문제가 생겼어요.');
+    return j;
+  }
+  const gitBox = (what) => `<div style="margin-top:8px">이제 아래를 PowerShell에 붙여 넣어 올리세요.</div><pre>git add -A\ngit commit -m "${esc(what)}"\ngit push</pre>`;
+
+  // ----- 탭 -----
+  document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => {
+    tab = b.dataset.tab;
+    document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('on', x === b));
+    $('tab-theme').classList.toggle('hidden', tab !== 'theme');
+    $('tab-avatar').classList.toggle('hidden', tab !== 'avatar');
+    showForms();
+  }));
+  function showForms() {
+    $('themeForm').classList.toggle('hidden', !(sheet && tab === 'theme'));
+    $('avatarForm').classList.toggle('hidden', !(sheet && tab === 'avatar'));
+  }
+
+  // ----- 시트 올리기 -----
+  const toBase64 = (file) => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = no; r.readAsDataURL(file); });
+  async function upload(file) {
+    if (!file) return;
+    msg($('sheetMsg'), 'warn', '자르는 중…');
+    try {
+      const res = await call('POST', '/api/sheet', { data: await toBase64(file) });
+      sheet = res; msg($('tMsg'), '', ''); msg($('aMsg'), '', '');
+      $('sheetGrid').classList.remove('hidden');
+      $('sheetGrid').innerHTML = res.thumbs.map((t, i) => `<figure><img src="${t}" alt=""><figcaption>${i + 1}</figcaption></figure>`).join('');
+      msg($('sheetMsg'), res.warn ? 'warn' : 'ok', res.warn ? esc(res.warn) : `칸 16개를 찾았어요. (이미지 ${res.size[0]}x${res.size[1]}) 아래 칸 번호와 그림이 맞는지 확인하세요.`);
+      buildThemeForm(); buildAvatarForm(); showForms();
+    } catch (e) { sheet = null; showForms(); msg($('sheetMsg'), 'bad', esc(e.message)); }
+  }
+  $('file').addEventListener('change', (e) => upload(e.target.files[0]));
+  const drop = $('drop');
+  ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', (e) => upload(e.dataTransfer.files[0]));
+
+  // ----- 타일 테마 -----
+  const mode = () => document.querySelector('input[name=tmode]:checked').value;
+  const curTheme = () => shop.themes.find((t) => t.id === $('tPick').value);
+  const tImg = (t, slot) => (t ? `/files/${t.dir.replace(/^\.\//, '')}${slot}.webp?${t.ver || 0}` : '');
+
+  async function buildThemeForm() {
+    shop = await call('GET', '/api/shop');
+    const olds = shop.themes.filter((t) => !t.plain);
+    $('tPick').innerHTML = olds.map((t) => `<option value="${esc(t.id)}">${esc(t.name)} (${esc(t.id)})</option>`).join('');
+    renderSlots();
+  }
+  function renderSlots() {
+    const ow = mode() === 'overwrite', t = ow ? curTheme() : null;
+    $('tNewFields').classList.toggle('hidden', ow); $('tOldFields').classList.toggle('hidden', !ow);
+    document.querySelectorAll('.old').forEach((e) => e.classList.toggle('hidden', !ow));
+    if (ow && t) { $('tName2').value = t.name; $('tCat2').value = t.cat || '일본'; $('tDesc').value = t.desc || ''; }
+    const rows = VALUES.map((s, i) => {
+      const old = ow && t ? (s === 'big' || Number(s) <= (t.max || 0) ? `<img src="${tImg(t, s)}" alt="">` : '<div class="none">없음</div>') : '';
+      const nm = s === 'big' ? (ow && t ? t.bigName : '') : (ow && t ? (t.names || {})[s] : '');
+      return `<tr data-slot="${s}"><td><b>${s === 'big' ? '큰 이미지' : s}</b></td>
+        <td class="old ${ow ? '' : 'hidden'}">${old}</td>
+        <td><img class="newimg" src="${sheet.thumbs[i]}" alt=""></td>
+        <td><select class="cell">${Array.from({ length: 16 }, (_, k) => `<option value="${k + 1}" ${k === i ? 'selected' : ''}>${k + 1}번</option>`).join('')}</select></td>
+        <td><input type="text" class="nm" maxlength="24" value="${esc(nm || '')}" placeholder="${s === 'big' ? '마지막 큰 이미지 이름' : '이름'}"></td>
+        <td><input type="checkbox" class="on" checked></td></tr>`;
+    });
+    $('slots').innerHTML = rows.join('');
+    $('slots').querySelectorAll('.cell').forEach((sel) => sel.addEventListener('change', () => { sel.closest('tr').querySelector('.newimg').src = sheet.thumbs[Number(sel.value) - 1]; }));
+  }
+  document.querySelectorAll('input[name=tmode]').forEach((r) => r.addEventListener('change', renderSlots));
+  $('tPick').addEventListener('change', renderSlots);
+
+  $('tSave').addEventListener('click', async () => {
+    const ow = mode() === 'overwrite';
+    const slots = [...$('slots').querySelectorAll('tr')].map((tr) => ({ slot: tr.dataset.slot, cell: Number(tr.querySelector('.cell').value), name: tr.querySelector('.nm').value, on: tr.querySelector('.on').checked }));
+    const named = slots.map((s) => ({ ...s }));
+    const big = named.find((s) => s.slot === 'big');
+    const body = { sheetId: sheet.sheetId, mode: mode(), slots: named, desc: $('tDesc').value, bigName: big ? big.name : '' };
+    if (ow) Object.assign(body, { id: $('tPick').value, name: $('tName2').value, cat: $('tCat2').value });
+    else Object.assign(body, { id: $('tId').value.trim(), name: $('tName').value, cat: $('tCat').value });
+    if (ow && !confirm(`'${$('tPick').selectedOptions[0].textContent}' 의 그림을 새 그림으로 바꿔요. 계속할까요?\n(되돌리려면 git 이전 커밋으로 돌아가면 돼요)`)) return;
+    $('tSave').disabled = true; msg($('tMsg'), 'warn', '저장하는 중…');
+    try {
+      const r = await call('POST', '/api/theme', body);
+      msg($('tMsg'), 'ok', '<b>저장했어요!</b><br>' + r.log.map(esc).join('<br>') + gitBox((ow ? '테마 그림 교체: ' : '테마 추가: ') + (ow ? $('tName2').value : $('tName').value)));
+      await buildThemeForm();
+    } catch (e) { msg($('tMsg'), 'bad', esc(e.message)); }
+    $('tSave').disabled = false;
+  });
+
+  // ----- 프로필 사진 -----
+  function buildAvatarForm() {
+    $('avRows').innerHTML = sheet.thumbs.map((t, i) => `<tr data-cell="${i + 1}"><td>${i + 1}</td><td><img src="${t}" alt=""></td>
+      <td><input type="text" class="id" maxlength="20" placeholder="영문 id"></td><td><input type="text" class="nm" maxlength="12" placeholder="상점에 보이는 이름"></td>
+      <td><input type="number" class="pr" min="0" value="100" style="width:90px"></td><td><input type="checkbox" class="on"></td></tr>`).join('');
+    $('avRows').querySelectorAll('.id').forEach((inp) => inp.addEventListener('input', () => {
+      const tr = inp.closest('tr'), ex = shop && shop.avatars.find((a) => a.id === inp.value.trim());
+      if (ex) { tr.querySelector('.nm').value = ex.name; tr.querySelector('.pr').value = ex.price || 0; inp.title = '이미 있는 사진이에요. 올리면 그림이 바뀌어요.'; inp.style.borderColor = 'var(--gold)'; }
+      else { inp.title = ''; inp.style.borderColor = ''; }
+      if (inp.value.trim()) tr.querySelector('.on').checked = true;
+    }));
+  }
+  $('aApply').addEventListener('click', () => $('avRows').querySelectorAll('.pr').forEach((p) => { p.value = $('aAllPrice').value; }));
+  $('aSave').addEventListener('click', async () => {
+    const items = [...$('avRows').querySelectorAll('tr')].map((tr) => ({ cell: Number(tr.dataset.cell), id: tr.querySelector('.id').value.trim(), name: tr.querySelector('.nm').value, price: Number(tr.querySelector('.pr').value || 0), on: tr.querySelector('.on').checked }));
+    const over = items.filter((i) => i.on && shop && shop.avatars.some((a) => a.id === i.id));
+    if (over.length && !confirm(`이미 있는 사진 ${over.length}개의 그림을 바꿔요: ${over.map((i) => i.id).join(', ')}\n계속할까요?`)) return;
+    $('aSave').disabled = true; msg($('aMsg'), 'warn', '저장하는 중…');
+    try {
+      const r = await call('POST', '/api/avatars', { sheetId: sheet.sheetId, items });
+      msg($('aMsg'), 'ok', '<b>저장했어요!</b><br>' + r.log.map(esc).join('<br>') + gitBox('프로필 사진 추가'));
+      shop = await call('GET', '/api/shop');
+    } catch (e) { msg($('aMsg'), 'bad', esc(e.message)); }
+    $('aSave').disabled = false;
+  });
+  call('GET', '/api/shop').then((s) => { shop = s; }).catch(() => {});
+})();
+</script>
+</body>
+</html>

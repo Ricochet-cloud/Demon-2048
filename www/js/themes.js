@@ -18,7 +18,7 @@
   let currentId = 'default';
   try { currentId = byId(localStorage.getItem(KEY)).id; } catch (e) { /* 저장소를 못 써도 기본 테마로 동작 */ }
 
-  function apply() { document.documentElement.dataset.theme = currentId; }
+  function apply() { document.documentElement.dataset.theme = currentId; document.documentElement.dataset.full = byId(currentId).full ? '1' : '0'; }
   apply();
 
   window.AppThemes = {
@@ -34,8 +34,9 @@
     // 타일 숫자 → 그림 주소 (그림이 없으면 null → 색깔 타일)
     imgOf(v, theme) {
       const t = theme || byId(currentId);
-      if (t.values.includes(v)) return t.dir + v + '.webp';
-      if (v > t.values[t.values.length - 1]) return t.dir + 'big.webp';
+      const q = t.ver ? '?v=' + t.ver : '';   // 그림을 바꾸면 ver 가 올라가서 옛 그림이 캐시에 남지 않아요
+      if (t.values.includes(v)) return t.dir + v + '.webp' + q;
+      if (v > t.values[t.values.length - 1]) return t.dir + 'big.webp' + q;
       return null;
     },
     // 도감에 보여 줄 테마 (그림 없는 테마를 쓰고 있으면 그림이 있는 첫 테마)

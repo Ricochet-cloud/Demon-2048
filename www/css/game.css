@@ -77,17 +77,8 @@
 .modal__card .btn { width: 100%; }
 @media (prefers-reduced-motion: reduce) { .tile { transition: none; } .tile span { animation: none !important; } }
 
-/* 그림이 타일 전체를 채우는 테마: 숫자는 아래쪽에 어두운 그라데이션 위로 겹쳐요 */
-[data-theme="corps"] .tile.has-img[data-v] span,
-[data-theme="school"] .tile.has-img[data-v] span,
-[data-theme="items"] .tile.has-img[data-v] span,
-[data-theme="hwatu"] .tile.has-img[data-v] span,
-[data-theme="yokai"] .tile.has-img[data-v] span,
-[data-theme="food"] .tile.has-img[data-v] span,
-[data-theme="wagashi"] .tile.has-img[data-v] span,
-[data-theme="japan"] .tile.has-img[data-v] span,
-[data-theme="ninja"] .tile.has-img[data-v] span,
-[data-theme="irezumi"] .tile.has-img[data-v] span {
+/* 그림이 타일 전체를 채우는 테마(shopdata 의 full: true): 숫자는 아래쪽에 어두운 그라데이션 위로 겹쳐요 */
+[data-full="1"] .tile.has-img[data-v] span {
   background: linear-gradient(180deg, transparent 58%, rgba(10, 6, 4, .88) 100%), var(--img) center / 100% 100% no-repeat, #1a0f0a;
   padding-bottom: 2%; text-shadow: 0 1px 0 #000, 0 0 4px rgba(0, 0, 0, .9);
 }

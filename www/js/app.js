@@ -10,7 +10,7 @@
   // 프로필 사진은 images/avatars/<id>.webp, price 가 있으면 상점에서 골드로 사야 쓸 수 있어요 (없으면 처음부터 무료)
   const SHOP = window.SHOP;   // 상점 물건 목록은 js/shopdata.js
   const AVATARS = SHOP.avatars;
-  const avatarSrc = (id) => `./images/avatars/${id}.webp`;
+  const avatarSrc = (id) => { const a = AVATARS.find((x) => x.id === id); return `./images/avatars/${id}.webp${a && a.ver ? '?v=' + a.ver : ''}`; };
   const knownAvatar = (id) => AVATARS.some((a) => a.id === id);
   // 쓸 수 있는 사진: 무료이거나, 샀거나, 이미 지금 쓰고 있는 사진 (이전에 고른 사진은 그대로 써요)
   const ownsAvatar = (a) => !a.price || G.owns('avatar:' + a.id) || a.id === C.avatar;
@@ -144,7 +144,7 @@
     grid.textContent = '';
     const cells = th.values.map((v) => ({ v, label: th.names[v] || '', img: T.imgOf(v, th), on: v <= best }));
     const bigFrom = th.values[th.values.length - 1] * 2;
-    cells.push({ v: bigFrom + '+', label: th.bigName, img: th.dir + 'big.webp', on: best >= bigFrom });
+    cells.push({ v: bigFrom + '+', label: th.bigName, img: T.imgOf(bigFrom, th), on: best >= bigFrom });
     cells.forEach((c) => {
       const f = document.createElement('figure');
       f.className = 'dex__cell' + (c.on ? '' : ' locked');

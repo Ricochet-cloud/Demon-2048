@@ -2,6 +2,7 @@
 // 상점 관리 프로그램(tools/shop-admin)이 이 파일을 고쳐요. 손으로 고쳐도 돼요.
 // - price 가 없으면 무료예요 (칭호는 price 도 cond 도 없으면 미션 보상 같은 특별 칭호)
 // - off: true 는 '판매 중지'예요. 상점에서는 사라지지만, 이미 가진 사람은 계속 쓸 수 있어요.
+// - ver: 그림을 바꿀 때마다 올라가는 번호예요 (옛 그림이 앱에 남지 않게 주소 뒤에 붙어요).
 // - titles 의 cond 는 업적 조건 이름이에요 (win2048 / dexHalf / dexFull) — app.js 의 CONDS 에서 정해요.
 // - frames / bgs / nameFx 의 모양(CSS)은 css/app.css 의 .fr-<id> / .bg-<id> / .nm-<id> 에 있어요.
 // - themes: max 는 이 테마에 그림이 있는 가장 큰 타일 숫자, cat 은 상점 분류(귀멸/일본/기본), dir 은 이미지 폴더예요.
