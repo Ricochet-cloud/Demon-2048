@@ -83,6 +83,23 @@
     bigName: '일본 지도'
   });
 
+  LIST.push({
+    id: 'ninja', name: '닌자', desc: '쿠나이에서 인술까지, 색이 또렷한 닌자 세계예요', dir: './images/themes/ninja/', full: true, values: pow(8192),
+    names: {
+      2: '쿠나이', 4: '수리검', 8: '닌자 두루마리', 16: '폭죽 부적', 32: '닌자 라멘', 64: '이마 보호대', 128: '복면 닌자',
+      256: '차크라 구슬', 512: '화둔 인술', 1024: '수둔 인술', 2048: '뇌둔 인술', 4096: '닌자 성', 8192: '지붕 위의 대장'
+    },
+    bigName: '닌자 마을'
+  });
+  LIST.push({
+    id: 'irezumi', name: '이레즈미', desc: '일본 전통 문신 도안, 색마다 그림이 달라요', dir: './images/themes/irezumi/', full: true, values: pow(8192),
+    names: {
+      2: '벚꽃', 4: '파도', 8: '단풍', 16: '잉어', 32: '모란', 64: '뱀', 128: '하니야 가면',
+      256: '호랑이', 512: '봉황', 1024: '오니', 2048: '용', 4096: '등용문', 8192: '용호상박'
+    },
+    bigName: '등판 도안'
+  });
+
   LIST.push({ id: 'plain', name: '기본 숫자', desc: '그림 없이 숫자만 보이는 깔끔한 타일이에요', dir: '', full: false, values: [], names: {}, bigName: '', plain: true });
 
   const byId = (id) => LIST.find((t) => t.id === id) || LIST[0];
