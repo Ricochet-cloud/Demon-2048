@@ -6,66 +6,27 @@
   'use strict';
 
   const SCREENS = ['home', 'modes', 'game', 'profile', 'dex', 'shop', 'settings', 'login'];
-  // 프로필 사진 목록 — images/avatars/<id>.webp. price 가 있으면 상점에서 골드로 사야 쓸 수 있어요 (없으면 처음부터 무료)
-  // 사진을 늘리려면 여기에 한 줄 추가하고 파일을 넣어요. 가격은 여기서만 바꾸면 돼요.
-  const AVATARS = [
-    { id: 'tanjiro', name: '탄지로' }, { id: 'nezuko', name: '네즈코' }, { id: 'zenitsu', name: '젠이츠' },
-    { id: 'inosuke', name: '이노스케' }, { id: 'mitsuri', name: '미츠리' }, { id: 'rengoku', name: '렌고쿠' },
-    { id: 'murata', name: '무라타', price: 50 }, { id: 'rui', name: '루이', price: 100 }, { id: 'enmu', name: '엔무', price: 100 },
-    { id: 'daki', name: '다키', price: 120 }, { id: 'gyutaro', name: '규타로', price: 120 }, { id: 'tamayo', name: '타마요', price: 150 },
-    { id: 'akaza', name: '아카자', price: 150 }, { id: 'douma', name: '도우마', price: 150 }, { id: 'kokushibo', name: '코쿠시보', price: 200 },
-    { id: 'muzan', name: '키부츠지 무잔', price: 300 },
-    { id: 'shinobu', name: '시노부', price: 150 }, { id: 'muichiro', name: '무이치로', price: 150 }, { id: 'sanemi', name: '사네미', price: 200 },
-    { id: 'obanai', name: '오바나이', price: 200 }, { id: 'giyu', name: '기유', price: 200 }, { id: 'tengen', name: '텐겐', price: 250 },
-    { id: 'gyomei', name: '교메이', price: 300 },
-    { id: 'tanjiro-nezuko', name: '탄지로·네즈코', price: 150 }, { id: 'yushiro-tamayo', name: '유시로·타마요', price: 200 },
-    { id: 'hakuji-koyuki', name: '하쿠지·코유키', price: 200 }, { id: 'tengen-wives', name: '텐겐의 아내들', price: 250 }
-  ];
+  // 상점 물건(프로필 사진·프레임·칭호·배경·이름·테마)의 이름과 가격은 js/shopdata.js 에서 바꿔요.
+  // 프로필 사진은 images/avatars/<id>.webp, price 가 있으면 상점에서 골드로 사야 쓸 수 있어요 (없으면 처음부터 무료)
+  const SHOP = window.SHOP;   // 상점 물건 목록은 js/shopdata.js
+  const AVATARS = SHOP.avatars;
   const avatarSrc = (id) => `./images/avatars/${id}.webp`;
   const knownAvatar = (id) => AVATARS.some((a) => a.id === id);
   // 쓸 수 있는 사진: 무료이거나, 샀거나, 이미 지금 쓰고 있는 사진 (이전에 고른 사진은 그대로 써요)
   const ownsAvatar = (a) => !a.price || G.owns('avatar:' + a.id) || a.id === C.avatar;
   // 프레임(사진 테두리) — CSS 는 app.css 의 .fr-<id>. price 없으면 무료
-  const FRAMES = [
-    { id: 'silver', name: '은색' }, { id: 'gold', name: '금색', price: 80 }, { id: 'sakura', name: '벚꽃', price: 120 },
-    { id: 'wave', name: '물결', price: 120 }, { id: 'flame', name: '불꽃', price: 200 },
-    { id: 'ice', name: '서리', price: 120 }, { id: 'wisteria', name: '등꽃', price: 130 }, { id: 'rainbow', name: '무지개', price: 150 },
-    { id: 'moon', name: '달빛', price: 160 }, { id: 'thunder', name: '번개', price: 180 }, { id: 'blood', name: '혈귀', price: 220 },
-    { id: 'sun', name: '일륜', price: 350 }
-  ];
+  const FRAMES = SHOP.frames;
   // 칭호 — price 가 있으면 상점에서 사고, when 이 있으면 조건을 채우면 저절로 얻어요 (diligent 는 미션을 다 받을 때 gold.js 가 줘요)
   const best = () => readSaved().bestTile || 0;
   const dexHalf = () => best() >= 128;      // 도감 절반 (가장 긴 도감 14칸 중 7칸 = 128 타일)
   const dexFull = () => best() >= 8192;     // 그림 있는 도감 하나를 다 채움
-  const TITLES = [
-    { id: 'beginner', name: '귀살대 신입', price: 50, group: '일반' }, { id: 'hashira', name: '주 보좌', price: 100, group: '일반' }, { id: 'flame', name: '불꽃의 후예', price: 150, group: '일반' },
-    { id: 'p-mushi', name: '蟲柱 충주', price: 200, group: '주(柱)' }, { id: 'p-kasumi', name: '霞柱 하주', price: 250, group: '주(柱)' },
-    { id: 'p-sound', name: '音柱 음주', price: 250, group: '주(柱)' }, { id: 'p-stone', name: '岩柱 암주', price: 300, group: '주(柱)' },
-    { id: 'p-flame', name: '炎柱 염주', price: 300, group: '주(柱)' }, { id: 'p-water', name: '水柱 수주', price: 300, group: '주(柱)' },
-    { id: 'p-wind', name: '風柱 풍주', price: 350, group: '주(柱)' }, { id: 'p-love', name: '戀柱 연주', price: 350, group: '주(柱)' },
-    { id: 'p-snake', name: '蛇柱 사주', price: 350, group: '주(柱)' },
-    { id: 'u6', name: '上弦 陸 상현6', price: 500, group: '상현(上弦)' }, { id: 'u5', name: '上弦 伍 상현5', price: 600, group: '상현(上弦)' },
-    { id: 'u4', name: '上弦 肆 상현4', price: 700, group: '상현(上弦)' }, { id: 'u3', name: '上弦 參 상현3', price: 800, group: '상현(上弦)' },
-    { id: 'u2', name: '上弦 貳 상현2', price: 1000, group: '상현(上弦)' }, { id: 'u1', name: '上弦 壹 상현1', price: 1500, group: '상현(上弦)' },
-    { id: 'win2048', name: '2048 달성자', when: () => best() >= 2048, how: '2048 타일 만들기' },
-    { id: 'collector', name: '수집가', when: dexHalf, how: '도감 절반 채우기' },
-    { id: 'master', name: '도감 마스터', when: dexFull, how: '도감 전부 채우기' },
-    { id: 'diligent', name: '성실한 대원', how: '하루 미션 전부 받기' }
-  ];
+  // 업적 칭호의 조건 (shopdata.js 의 cond 이름과 짝이에요)
+  const CONDS = { win2048: () => best() >= 2048, dexHalf, dexFull };
+  const TITLES = SHOP.titles.map((t) => (t.cond ? Object.assign({}, t, { when: CONDS[t.cond] || (() => false) }) : t));
   // 카드 배경 (우리 기록의 내 줄과 프로필 카드) — CSS 는 app.css 의 .bg-<id>
-  const BGS = [
-    { id: 'check', name: '이치마쓰', price: 80 }, { id: 'asanoha', name: '삼베잎', price: 80 }, { id: 'sakura', name: '벚꽃', price: 100 },
-    { id: 'butterfly', name: '나비 저택', price: 100 }, { id: 'water', name: '물의 호흡', price: 120 }, { id: 'flame', name: '불의 호흡', price: 150 },
-    { id: 'thunder', name: '천둥의 호흡', price: 150 }, { id: 'infinity', name: '무한성', price: 200 }, { id: 'moon', name: '상현의 밤', price: 200 },
-    { id: 'blood', name: '혈귀', price: 250 }, { id: 'sun', name: '일륜도', price: 300 }
-  ];
+  const BGS = SHOP.bgs;
   // 이름 꾸미기 (닉네임 색과 효과) — CSS 는 app.css 의 .nm-<id>
-  const NAMEFX = [
-    { id: 'gold', name: '금빛', price: 80 }, { id: 'sakura', name: '벚꽃빛', price: 80 }, { id: 'water', name: '물빛', price: 80 },
-    { id: 'wisteria', name: '등꽃빛', price: 80 }, { id: 'red', name: '핏빛', price: 100 }, { id: 'flame', name: '불꽃', price: 200 },
-    { id: 'thunder', name: '번개', price: 200 }, { id: 'rainbow', name: '무지개', price: 250 }, { id: 'moon', name: '달빛', price: 250 },
-    { id: 'sun', name: '일륜', price: 300 }
-  ];
+  const NAMEFX = SHOP.nameFx;
   const bgOf = (id) => BGS.find((b) => b.id === id);
   const fxOf = (id) => NAMEFX.find((b) => b.id === id);
   const ownsBg = (b) => G.owns('bg:' + b.id) || b.id === C.bg;
@@ -299,7 +260,7 @@
     const card = document.createElement('div'); card.className = 'card';
     const h = document.createElement('h2'); h.textContent = '프레임'; card.appendChild(h);
     const grid = document.createElement('div'); grid.className = 'buys';
-    FRAMES.filter((f) => f.price).forEach((f) => {
+    FRAMES.filter((f) => f.price && !f.off).forEach((f) => {
       const own = ownsFrame(f);
       const item = document.createElement('div'); item.className = 'buy' + (own ? ' own' : '');
       item.appendChild(avatarEl(C.avatar, C.nickname, f.id));
@@ -341,7 +302,7 @@
     const card = document.createElement('div'); card.className = 'card';
     const h = document.createElement('h2'); h.textContent = '칭호'; card.appendChild(h);
     let grp = null;
-    TITLES.filter((t) => t.price).concat(TITLES.filter((t) => !t.price)).forEach((t) => {
+    TITLES.filter((t) => t.price && !t.off).concat(TITLES.filter((t) => !t.price && !t.off)).forEach((t) => {
       const g = t.group || '업적';
       if (g !== grp) { grp = g; const hh = document.createElement('h3'); hh.className = 'shop__group'; hh.textContent = g; card.appendChild(hh); }
       const own = ownsTitle(t);
@@ -408,8 +369,8 @@
     $('decoShop').textContent = '';
     if (decoTab === 'avatar') renderAvatars();
     else if (decoTab === 'frame') renderFrames();
-    else if (decoTab === 'bg') renderBuyGrid('카드 배경', BGS, 'bg:', ownsBg, (x) => bgPreview(x.id, ''));
-    else if (decoTab === 'name') renderBuyGrid('이름 꾸미기', NAMEFX, 'name:', ownsFx, (x) => bgPreview('', x.id));
+    else if (decoTab === 'bg') renderBuyGrid('카드 배경', BGS.filter((x) => !x.off), 'bg:', ownsBg, (x) => bgPreview(x.id, ''));
+    else if (decoTab === 'name') renderBuyGrid('이름 꾸미기', NAMEFX.filter((x) => !x.off), 'name:', ownsFx, (x) => bgPreview('', x.id));
     else renderTitles();
   }
 
@@ -419,7 +380,7 @@
     const card = document.createElement('div'); card.className = 'card';
     const h = document.createElement('h2'); h.textContent = '프로필 사진'; card.appendChild(h);
     const grid = document.createElement('div'); grid.className = 'buys';
-    AVATARS.filter((a) => a.price).forEach((a) => {
+    AVATARS.filter((a) => a.price && !a.off).forEach((a) => {
       const own = ownsAvatar(a);
       const item = document.createElement('div'); item.className = 'buy' + (own ? ' own' : '');
       const img = document.createElement('img'); img.src = avatarSrc(a.id); img.alt = ''; img.draggable = false;
@@ -444,9 +405,9 @@
     box.appendChild(card);
   }
 
-  // 테마 분류 (상점 테마 탭의 칩) — 새 테마는 CORP/기본 에 없으면 '일본' 으로 들어가요
+  // 테마 분류 (상점 테마 탭의 칩) — 각 테마의 cat (shopdata.js), 없으면 '일본'
   const THEME_CATS = ['전체', '귀멸', '일본', '기본'];
-  const themeCat = (id) => (['corps', 'school', 'items'].includes(id) ? '귀멸' : ['default', 'plain'].includes(id) ? '기본' : '일본');
+  const themeCat = (id) => T.byId(id).cat || '일본';
   let themeFilter = '전체';
 
   function themePreview(t, vals) {
@@ -486,7 +447,7 @@
     box.appendChild(chips);
     // 2) 나머지는 두 줄 격자 (미리보기 2장)
     const grid = document.createElement('div'); grid.className = 'themegrid';
-    T.list.filter((t) => t.id !== cur.id && (themeFilter === '전체' || themeCat(t.id) === themeFilter)).forEach((t) => {
+    T.list.filter((t) => t.id !== cur.id && !t.off && (themeFilter === '전체' || themeCat(t.id) === themeFilter)).forEach((t) => {
       const card = document.createElement('div'); card.className = 'card themecell';
       const nm = document.createElement('b'); nm.textContent = t.name;
       const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn themecell__btn'; btn.textContent = '바꾸기';
