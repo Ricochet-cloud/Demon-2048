@@ -272,3 +272,12 @@
 .cheer__txt b { display: block; font-size: 11px; color: var(--lantern); }
 .cheerbox__ok { width: 100%; min-height: 34px; margin-top: 6px; padding: 0; font-size: 12px; }
 .cheerbox[hidden] { display: none; }
+
+/* 조커카드 상점 · (조커사용) 표시 */
+.jkrow { gap: 10px; }
+.jkrow__img { width: 52px; height: 52px; flex: none; object-fit: cover; border: 2px solid var(--gold); }
+.jkmark { display: inline; margin-left: 4px; font-size: 9px; font-weight: 400; color: var(--muted); white-space: nowrap; }
+.jkrow .dex__note { display: block; margin: 3px 0 0; font-size: 11px; line-height: 1.4; }
+.jkrow .mission__txt b { font-size: 13px; }
+.jkrow .buy__btn { flex: none; width: 56px; min-height: 36px; padding: 0; white-space: nowrap; }
+.jkrow .mission__txt { flex: 1; min-width: 0; text-align: left; }

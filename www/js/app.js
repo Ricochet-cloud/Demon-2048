@@ -186,7 +186,7 @@
 
   // ---------- 상점 (미션 · 테마) ----------
   let shopTab = 'mission';
-  const TABS = [{ id: 'mission', name: '미션' }, { id: 'deco', name: '꾸미기' }, { id: 'theme', name: '타일 테마' }];
+  const TABS = [{ id: 'mission', name: '미션' }, { id: 'deco', name: '꾸미기' }, { id: 'joker', name: '조커카드' }, { id: 'theme', name: '타일 테마' }];
   let decoTab = 'avatar';
   const DECO = [{ id: 'avatar', name: '사진' }, { id: 'frame', name: '프레임' }, { id: 'title', name: '칭호' }, { id: 'bg', name: '배경' }, { id: 'name', name: '이름' }];
 
@@ -344,6 +344,45 @@
     box.appendChild(card);
   }
 
+  // 조커카드 상점
+  const JOKER_INFO = [
+    { id: 'undo', name: '되돌리기', desc: '직전에 움직인 한 수를 되돌려요' },
+    { id: 'erase', name: '지우기', desc: '고른 타일 하나를 없애요' },
+    { id: 'shuffle', name: '섞기', desc: '보드 위 타일 위치를 무작위로 섞어요' },
+    { id: 'upgrade', name: '올리기', desc: '고른 타일을 한 단계 올려요 (2는 4가 돼요)' }
+  ];
+  async function buyJokerCard(x) {
+    const price = G.JOKER_PRICE[x.id];
+    if (!window.confirm(`${x.name} 조커카드 1장 — ${price}골드에 살까요?`)) return;
+    try { await G.buyJoker(x.id); showMsg(`${x.name} 조커카드를 샀어요!`); }
+    catch (err) { showMsg(err.user ? err.message : '사지 못했어요. 잠시 뒤에 다시 눌러 주세요.'); }
+    if (effective() === 'shop') refreshShop();
+  }
+  function renderJokerShop() {
+    const box = $('jokerShop');
+    box.textContent = '';
+    const card = document.createElement('div'); card.className = 'card';
+    const h = document.createElement('h2'); h.textContent = '조커카드'; card.appendChild(h);
+    const have = G.jokers();
+    JOKER_INFO.forEach((x) => {
+      const price = G.JOKER_PRICE[x.id];
+      const row = document.createElement('div'); row.className = 'mission jkrow';
+      const img = document.createElement('img'); img.src = `./images/jokers/${x.id}.webp`; img.alt = ''; img.draggable = false; img.className = 'jkrow__img';
+      const txt = document.createElement('div'); txt.className = 'mission__txt';
+      const nm = document.createElement('b'); nm.textContent = `${x.name} · 보유 ${have[x.id]}장`;
+      const ds = document.createElement('span'); ds.className = 'dex__note'; ds.textContent = x.desc;
+      txt.appendChild(nm); txt.appendChild(ds);
+      const pr = document.createElement('span'); pr.className = 'gold gold--sm' + (G.gold < price ? ' gold--short' : ''); pr.textContent = price;
+      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn buy__btn'; btn.textContent = '구매';
+      btn.addEventListener('click', () => { btn.disabled = true; buyJokerCard(x); });
+      row.appendChild(img); row.appendChild(txt); row.appendChild(pr); row.appendChild(btn);
+      card.appendChild(row);
+    });
+    const note = document.createElement('p'); note.className = 'dex__note';
+    note.textContent = '조커카드는 일반 모드에서만 쓸 수 있고, 한 판에 3장까지예요. 쓴 판의 기록에는 (조커사용) 표시가 붙어요.';
+    card.appendChild(note); box.appendChild(card);
+  }
+
   function renderDeco() {
     const tabs = $('decoTabs');
     tabs.textContent = '';
@@ -437,8 +476,9 @@
     });
     $('missionList').hidden = shopTab !== 'mission';
     $('decoPane').hidden = shopTab !== 'deco';
+    $('jokerShop').hidden = shopTab !== 'joker';
     $('themeList').hidden = shopTab !== 'theme';
-    if (shopTab === 'mission') renderMissions(); else if (shopTab === 'deco') renderDeco(); else renderThemes();
+    if (shopTab === 'mission') renderMissions(); else if (shopTab === 'deco') renderDeco(); else if (shopTab === 'joker') renderJokerShop(); else renderThemes();
   }
 
   // ---------- 프로필 사진 ----------
@@ -594,6 +634,7 @@
       const right = document.createElement('div');
       right.className = 'rank__score';
       const b = document.createElement('b'); b.textContent = val(u);
+      if (!week && !chal && u.bestJk) { const jm = document.createElement('small'); jm.className = 'jkmark'; jm.textContent = '(조커사용)'; b.appendChild(jm); }
       right.appendChild(b); right.appendChild(document.createTextNode(week ? '이번 주' : chal ? (val(u) > 0 ? '오늘' : '아직 안 했어요') : `최고 타일 ${u.bestTile || '-'}`));
       item.appendChild(left); item.appendChild(right);
       box.appendChild(item);
@@ -638,6 +679,7 @@
   function refreshProfile() {
     const s = readSaved();
     $('pfBest').textContent = s.best || '-';
+    if (s.best && s.bestJk) { const jm = document.createElement('small'); jm.className = 'jkmark'; jm.textContent = '(조커사용)'; $('pfBest').appendChild(jm); }
     $('pfTile').textContent = s.bestTile || '-';
     $('pfPlays').textContent = s.plays || '-';
     const online = A.enabled && !!A.user;

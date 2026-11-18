@@ -29,7 +29,9 @@
   let tiles = [];          // { v, r, c, el }
   let score = 0, maxTile = 0;
   let over = false, locked = false, winShown = false;
-  let undoSnap = null, undoLeft = 1;
+  let undoSnap = null;
+  let jk = 0, picking = null;   // 이번 판에 쓴 조커 수 / 지우기·올리기에서 타일을 고르는 중인 조커
+  const JOKER_MAX = 3;          // 한 판에 쓸 수 있는 조커 수
   let toastTimer = null;
   // 모드: 'normal' 평소 게임 / 'challenge' 오늘의 도전 (하루 한 판, 모두 같은 시작과 같은 새 타일 순서)
   let mode = 'normal', rngState = 0;
@@ -184,14 +186,14 @@
   // ============ 기록 · 저장 ============
   function recordBest() {
     let changed = false;
-    if (score > saved.best) { saved.best = score; changed = true; }
+    if (score > saved.best) { saved.best = score; saved.bestJk = mode === 'normal' && jk > 0; changed = true; }   // 조커를 쓴 판의 기록은 (조커사용) 표시가 붙어요
     if (maxTile > saved.bestTile) { saved.bestTile = maxTile; changed = true; }
     if (changed) { save(); emit('game2048:record'); }
   }
 
   function saveGame() {
     // 끝난 판은 이어하지 않고 지워요 (다음에 켜면 새 판)
-    const g = over ? null : { ...snapshot(), undoLeft, winShown };
+    const g = over ? null : { ...snapshot(), jk, winShown };
     if (mode === 'challenge') { if (saved.challenge) saved.challenge.game = g; }
     else saved.game = g;
     save();
@@ -202,13 +204,25 @@
     $('score').textContent = score;
     $('maxTile').textContent = maxTile || '-';
     $('best').textContent = Math.max(saved.best, score) || '-';
-    $('undoBtn').textContent = `↩ 되돌리기 (${undoLeft})`;
-    $('undoBtn').disabled = undoLeft <= 0 || !undoSnap || over;
+    updateJokers();
+  }
+
+  function updateJokers() {
+    const have = window.AppGold ? window.AppGold.jokers() : {};
+    document.querySelectorAll('#jokers [data-joker]').forEach((b) => {
+      const k = b.dataset.joker, n = have[k] || 0;
+      b.querySelector('i').textContent = n;
+      b.classList.toggle('joker--empty', n <= 0);
+      b.classList.toggle('joker--on', picking === k);
+      b.disabled = over || jk >= JOKER_MAX;
+    });
+    $('jkNote').textContent = picking ? (picking === 'erase' ? '없앨 타일을 눌러 주세요' : '한 단계 올릴 타일을 눌러 주세요')
+      : `이번 판 조커 ${jk}/${JOKER_MAX}${jk ? ' · (조커사용)' : ''}`;
   }
 
   function showModal(title, win) {
     $('modalTitle').textContent = title;
-    $('modalStats').innerHTML = `점수 <b>${score}</b> · 최고 타일 <b>${maxTile}</b><br>최고 점수 <b>${Math.max(saved.best, score)}</b>`;
+    $('modalStats').innerHTML = `점수 <b>${score}</b> · 최고 타일 <b>${maxTile}</b><br>최고 점수 <b>${Math.max(saved.best, score)}</b>${mode === 'normal' && jk ? '<br>(조커사용)' : ''}`;
     $('modalNote').textContent = mode === 'challenge' && over ? '오늘은 한 판만 도전할 수 있어요. 내일 오전 6시에 새 도전이 열려요.' : (win && maxTile >= WIN_TILE ? '계속해서 더 높이 도전할 수 있어요!' : '');
     $('continueBtn').style.display = win ? '' : 'none';
     $('modal').classList.add('show');
@@ -218,16 +232,64 @@
     $('modal').classList.remove('show');
     $('tiles').innerHTML = '';
     tiles = []; score = 0; maxTile = 0; over = false; locked = false; winShown = false;
-    undoSnap = null; undoLeft = 1;
+    undoSnap = null; jk = 0; picking = null; board().classList.remove('picking');
     addRandomTile(); addRandomTile();
     saveGame(); updateHud();
   }
 
-  function undo() {
-    if (locked || over || undoLeft <= 0 || !undoSnap) return;
-    restore(undoSnap); undoSnap = null; undoLeft--;
+  // ============ 조커카드 (일반 모드에서만, 한 판에 3장까지) ============
+  const board = () => $('board');
+  function setPicking(k) { picking = k; board().classList.toggle('picking', !!k); updateJokers(); }
+  const tileAt = (el) => tiles.find((t) => t.el === el);
+
+  async function useJoker(kind) {
+    if (mode !== 'normal' || over || locked) return;
+    const A = window.AppGold;
+    if (!A) return;
+    if (picking === kind) { setPicking(null); return; }   // 한 번 더 누르면 취소
+    setPicking(null);
+    if (jk >= JOKER_MAX) { toast(`조커는 한 판에 ${JOKER_MAX}장까지 쓸 수 있어요`); return; }
+    if ((A.jokers()[kind] || 0) <= 0) { toast('조커카드가 없어요. 상점에서 살 수 있어요'); return; }
+    if (kind === 'undo' && !undoSnap) { toast('되돌릴 수가 없어요'); return; }
+    if (kind === 'shuffle' && tiles.length < 2) { toast('섞을 타일이 모자라요'); return; }
+    if (kind === 'erase' || kind === 'upgrade') { setPicking(kind); return; }
+    await consume(kind, () => { if (kind === 'undo') doUndo(); else doShuffle(); });
+  }
+
+  // 조커를 하나 쓰고(저장이 끝난 뒤에) 효과를 적용해요
+  async function consume(kind, apply) {
+    locked = true;
+    try { await window.AppGold.useJoker(kind); }
+    catch (e) { locked = false; toast(e && e.user ? e.message : '조커를 쓰지 못했어요. 잠시 뒤에 다시 눌러 주세요'); return; }
+    locked = false;
+    jk++; apply();
+  }
+
+  function doUndo() {
+    restore(undoSnap); undoSnap = null;
     emit('game2048:undo');
     saveGame(); updateHud();
+  }
+  function doShuffle() {
+    const cells = [];
+    for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) cells.push([r, c]);
+    for (let i = cells.length - 1; i > 0; i--) { const k = Math.floor(Math.random() * (i + 1)); [cells[i], cells[k]] = [cells[k], cells[i]]; }
+    tiles.forEach((t, i) => { t.r = cells[i][0]; t.c = cells[i][1]; setPos(t); });
+    undoSnap = null; afterMove();
+  }
+  async function pickTile(el) {
+    const kind = picking, t = tileAt(el.closest('.tile'));
+    if (!kind || !t) return;
+    setPicking(null);
+    await consume(kind, () => {
+      undoSnap = null;
+      if (kind === 'erase') { t.el.remove(); tiles = tiles.filter((x) => x !== t); }
+      else {
+        t.v *= 2; paint(t); if (t.v > maxTile) maxTile = t.v;
+        t.el.classList.remove('is-pop'); void t.el.offsetWidth; t.el.classList.add('is-pop');
+      }
+      afterMove();
+    });
   }
 
   // 지난 판 이어하기 (저장된 값이 이상하면 무시하고 새 판)
@@ -236,7 +298,7 @@
       if (!g || !Array.isArray(g.tiles) || !g.tiles.length) return false;
       if (!g.tiles.every((t) => Number.isInteger(t.r) && Number.isInteger(t.c) && t.r >= 0 && t.r < SIZE && t.c >= 0 && t.c < SIZE && t.v >= 2)) return false;
       restore(g);
-      undoLeft = g.undoLeft === 0 ? 0 : 1; winShown = !!g.winShown; undoSnap = null; over = false;
+      jk = Math.max(0, Math.min(JOKER_MAX, g.jk | 0)); winShown = !!g.winShown; undoSnap = null; over = false;
       return true;
     } catch (e) { return false; }
   }
@@ -253,13 +315,14 @@
     ch.done = true; ch.score = score; ch.tile = maxTile; ch.game = null; save();
     emit('game2048:challenge', { day: ch.day, score, tile: maxTile });
   }
-  function clearBoard() { $('modal').classList.remove('show'); $('tiles').innerHTML = ''; tiles = []; score = 0; maxTile = 0; over = false; locked = false; winShown = false; undoSnap = null; undoLeft = 1; }
+  function clearBoard() { $('modal').classList.remove('show'); $('tiles').innerHTML = ''; tiles = []; score = 0; maxTile = 0; over = false; locked = false; winShown = false; undoSnap = null; jk = 0; picking = null; board().classList.remove('picking'); }
   function applyModeUI() {
     const ch = mode === 'challenge';
     const title = document.querySelector('#screen-game .topbar__title'), hint = document.querySelector('#screen-game .hint');
     if (title) title.textContent = ch ? '오늘의 도전' : '2048';
     if (hint) hint.textContent = ch ? '오늘 하루 한 판만! 모두 같은 시작 배치로 겨뤄요.' : '밀어서 같은 숫자를 합쳐요. 2048 을 만들어 보세요!';
     $('restartBtn').style.display = ch ? 'none' : '';
+    $('jokers').style.display = ch ? 'none' : ''; $('jkNote').style.display = ch ? 'none' : '';
     $('againBtn').textContent = ch ? '홈으로' : '새 판';
   }
   function loadChallenge() {
@@ -305,11 +368,13 @@
       if (!tracking) return;
       tracking = false;
       const dx = e.clientX - sx, dy = e.clientY - sy;
+      if (picking) { if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE_MIN && e.target.closest && e.target.closest('.tile')) pickTile(e.target); return; }   // 조커로 타일 고르기
       if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE_MIN) return;
       move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
     });
 
-    $('undoBtn').addEventListener('click', undo);
+    document.querySelectorAll('#jokers [data-joker]').forEach((b) => b.addEventListener('click', () => useJoker(b.dataset.joker)));
+    window.addEventListener('gold:change', updateJokers);
     $('restartBtn').addEventListener('click', newGame);
     $('againBtn').addEventListener('click', () => { if (mode === 'challenge') { $('modal').classList.remove('show'); emit('game2048:exit'); } else newGame(); });
     $('continueBtn').addEventListener('click', () => $('modal').classList.remove('show'));
@@ -317,8 +382,9 @@
 
   // 다른 파일(cloud.js)이 기록을 읽고 합칠 수 있게 열어 둬요 — 기록은 올라가기만 해요
   window.Game2048 = {
-    records() { return { best: saved.best || 0, bestTile: saved.bestTile || 0, plays: saved.plays || 0 }; },
+    records() { return { best: saved.best || 0, bestTile: saved.bestTile || 0, plays: saved.plays || 0, bestJk: !!saved.bestJk }; },
     apply(r) {
+      if ((r.best || 0) > (saved.best || 0)) saved.bestJk = !!r.bestJk;   // 더 높은 쪽 기록의 표시를 따라가요
       saved.best = Math.max(saved.best || 0, r.best || 0);
       saved.bestTile = Math.max(saved.bestTile || 0, r.bestTile || 0);
       saved.plays = Math.max(saved.plays || 0, r.plays || 0);

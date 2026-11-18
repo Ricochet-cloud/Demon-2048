@@ -13,11 +13,14 @@
   const SCORE_TARGET = 2000;              // "한 판에서 ○○점" 목표
   const REWARD = { play: 10, tile: 20, score: 20, all: 20 };
   const STREAK_REWARDS = { 3: 30, 7: 100, 14: 200, 30: 500 };   // 연속 출석 N일째에 받는 골드 (하루 한 판 이상 해야 출석)
+  const JOKER_PRICE = { undo: 30, erase: 40, shuffle: 50, upgrade: 80 };   // 조커카드 가격
+  const JOKER_HOLD = 99;                                                    // 종류별로 가질 수 있는 최대 개수
   const KEY = 'game2048.gold.v1';
 
   const C = window.AppCloud;
   const pad = (n) => String(n).padStart(2, '0');
   const shiftDay = (key, days) => { const [y, m, d] = key.split('-').map(Number); const x = new Date(Date.UTC(y, m - 1, d + days)); return `${x.getUTCFullYear()}-${pad(x.getUTCMonth() + 1)}-${pad(x.getUTCDate())}`; };
+  const normJk = (j) => { const o = {}; Object.keys(JOKER_PRICE).forEach((k) => { const n = j && Number.isInteger(j[k]) ? j[k] : 0; o[k] = Math.max(0, Math.min(JOKER_HOLD, n)); }); return o; };
   const union = (a, b) => [...new Set([...(a || []), ...(b || [])])];
 
   function dayKey(date) {
@@ -36,7 +39,7 @@
 
   // ============ 이 기기에 저장된 상태 ============
   // owner: 이 상태가 어느 계정 것인지 (null 이면 로그인 없이 모은 것)
-  let S = { gold: 0, day: '', done: [], claimed: [], owned: [], owner: null, streak: null, weekClaim: '', chDone: '', chClaim: '' };
+  let S = { gold: 0, day: '', done: [], claimed: [], owned: [], owner: null, streak: null, weekClaim: '', chDone: '', chClaim: '', jokers: {} };
   try { S = Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* 저장소를 못 써도 돼요 */ }
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* 무시 */ } };
   const changed = () => { save(); window.dispatchEvent(new Event('gold:change')); };
@@ -78,6 +81,7 @@
         owned: Array.isArray(d.owned) ? d.owned : (guest ? S.owned : []),
         day,
         done: union(same ? d.daily.done : [], S.day === day ? S.done : []),
+        jokers: normJk(d.jokers && typeof d.jokers === 'object' ? d.jokers : (guest ? S.jokers : null)),
         weekClaim: typeof d.weekClaim === 'string' ? d.weekClaim : '',
         chDone: typeof d.chDone === 'string' ? d.chDone : '',
         chClaim: typeof d.chClaim === 'string' ? d.chClaim : '',
@@ -86,7 +90,7 @@
       };
       if (cur.done.includes('play')) cur.streak = bump(cur.streak, day);   // 오늘 한 판을 끝냈으면 출석
       const nx = mutate(cur);
-      t.set(ref, { gold: nx.gold, owned: nx.owned, weekClaim: nx.weekClaim || '', chDone: nx.chDone || '', chClaim: nx.chClaim || '', streak: nx.streak || newStreak(), daily: { day, done: nx.done, claimed: nx.claimed } }, { merge: true });
+      t.set(ref, { gold: nx.gold, owned: nx.owned, jokers: normJk(nx.jokers), weekClaim: nx.weekClaim || '', chDone: nx.chDone || '', chClaim: nx.chClaim || '', streak: nx.streak || newStreak(), daily: { day, done: nx.done, claimed: nx.claimed } }, { merge: true });
       return nx;
     });
     S = Object.assign(S, next, { owner: C.uid });
@@ -105,7 +109,7 @@
       catch (e) { if (e.user) throw e; console.warn('골드 저장 실패', e); throw needNet(); }
     }
     const day = ensureToday();
-    const nx = mutate({ gold: S.gold, owned: [...S.owned], day, done: [...S.done], claimed: [...S.claimed], weekClaim: S.weekClaim || '', chDone: S.chDone || '', chClaim: S.chClaim || '', streak: S.done.includes('play') ? bump(S.streak, day) : S.streak });
+    const nx = mutate({ gold: S.gold, owned: [...S.owned], jokers: normJk(S.jokers), day, done: [...S.done], claimed: [...S.claimed], weekClaim: S.weekClaim || '', chDone: S.chDone || '', chClaim: S.chClaim || '', streak: S.done.includes('play') ? bump(S.streak, day) : S.streak });
     S = Object.assign(S, nx); changed();
     return nx;
   }
@@ -140,7 +144,7 @@
 
   // 로그인 직후 / 클라우드를 다 받은 뒤: 계정 기준으로 맞춰요
   window.addEventListener('cloud:ready', () => {
-    if (S.owner && S.owner !== C.uid) S = { gold: 0, day: '', done: [], claimed: [], owned: [], owner: null, other: true };   // 다른 계정 상태는 버려요
+    if (S.owner && S.owner !== C.uid) S = { gold: 0, day: '', done: [], claimed: [], owned: [], owner: null, other: true, jokers: {} };   // 다른 계정 상태는 버려요
     ensureToday();
     cloudUpdate((cur) => cur).catch((e) => console.warn('골드 동기화 실패', e));
   });
@@ -150,6 +154,29 @@
     dayKey,
     get gold() { return S.gold || 0; },
     owns(id) { return S.owned.includes(id); },
+    // 조커카드: 가진 개수 { undo, erase, shuffle, upgrade } / 가격표 / 사기 / 쓰기 (쓰면 개수가 하나 줄어요)
+    jokers() { return normJk(S.jokers); },
+    JOKER_PRICE,
+    async buyJoker(kind) {
+      const price = JOKER_PRICE[kind];
+      if (!price) throw userError('살 수 없는 물건이에요.');
+      await update((cur) => {
+        const jk = normJk(cur.jokers);
+        if (jk[kind] >= JOKER_HOLD) throw userError(`더 가질 수 없어요. (최대 ${JOKER_HOLD}장)`);
+        if ((cur.gold || 0) < price) throw userError('골드가 모자라요.');
+        jk[kind]++;
+        return Object.assign(cur, { gold: cur.gold - price, jokers: jk });
+      });
+    },
+    async useJoker(kind) {
+      if (!JOKER_PRICE[kind]) throw userError('쓸 수 없는 조커예요.');
+      await update((cur) => {
+        const jk = normJk(cur.jokers);
+        if (jk[kind] <= 0) throw userError('조커카드가 없어요. 상점에서 살 수 있어요.');
+        jk[kind]--;
+        return Object.assign(cur, { jokers: jk });
+      });
+    },
     // 오늘 미션 [{ id, name, reward, state: 'doing' | 'ready' | 'claimed' }]
     missions() {
       const day = ensureToday();

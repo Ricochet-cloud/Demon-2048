@@ -26,7 +26,7 @@
   async function push(extra) {
     const r = G.records();
     await mine().set(Object.assign(
-      { best: r.best, bestTile: r.bestTile, plays: r.plays, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
+      { best: r.best, bestTile: r.bestTile, plays: r.plays, bestJk: !!r.bestJk, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
       extra || {}
     ), { merge: true });
     if (extra) Object.assign(me, extra);
@@ -36,7 +36,7 @@
   async function reconcile() {
     const snap = await mine().get();
     me = snap.exists ? snap.data() : {};
-    G.apply({ best: me.best, bestTile: me.bestTile, plays: me.plays });
+    G.apply({ best: me.best, bestTile: me.bestTile, plays: me.plays, bestJk: me.bestJk });
     await push();
     loaded = true;
     readyListeners.forEach((f) => { try { f(); } catch (e) { console.error(e); } });

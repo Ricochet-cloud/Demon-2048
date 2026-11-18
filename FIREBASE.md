@@ -16,7 +16,7 @@
       allow read: if request.auth != null;
       allow create, update: if request.auth != null
         && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['nickname', 'avatar', 'best', 'bestTile', 'plays', 'updatedAt', 'gold', 'daily', 'owned', 'frame', 'title', 'bio', 'week', 'weekClaim', 'bg', 'nameFx', 'streak', 'chDone', 'chClaim', 'challenge'])
+        && request.resource.data.keys().hasOnly(['nickname', 'avatar', 'best', 'bestTile', 'plays', 'updatedAt', 'gold', 'daily', 'owned', 'frame', 'title', 'bio', 'week', 'weekClaim', 'bg', 'nameFx', 'streak', 'chDone', 'chClaim', 'challenge', 'jokers', 'bestJk'])
         && (!('nickname' in request.resource.data) || (request.resource.data.nickname is string && request.resource.data.nickname.size() <= 24))
         && (!('avatar' in request.resource.data) || (request.resource.data.avatar is string && request.resource.data.avatar.size() <= 20))
         && (!('best' in request.resource.data) || (request.resource.data.best is int && request.resource.data.best >= 0))
@@ -35,7 +35,9 @@
         && (!('streak' in request.resource.data) || (request.resource.data.streak is map && request.resource.data.streak.keys().hasOnly(['last', 'n', 'claimed'])))
         && (!('chDone' in request.resource.data) || (request.resource.data.chDone is string && request.resource.data.chDone.size() <= 10))
         && (!('chClaim' in request.resource.data) || (request.resource.data.chClaim is string && request.resource.data.chClaim.size() <= 10))
-        && (!('challenge' in request.resource.data) || (request.resource.data.challenge is map && request.resource.data.challenge.keys().hasOnly(['day', 'score', 'tile', 'pd', 'ps'])));
+        && (!('challenge' in request.resource.data) || (request.resource.data.challenge is map && request.resource.data.challenge.keys().hasOnly(['day', 'score', 'tile', 'pd', 'ps'])))
+        && (!('jokers' in request.resource.data) || (request.resource.data.jokers is map && request.resource.data.jokers.keys().hasOnly(['undo', 'erase', 'shuffle', 'upgrade']) && request.resource.data.jokers.get('undo', 0) is int && request.resource.data.jokers.get('undo', 0) >= 0 && request.resource.data.jokers.get('undo', 0) <= 99 && request.resource.data.jokers.get('erase', 0) is int && request.resource.data.jokers.get('erase', 0) >= 0 && request.resource.data.jokers.get('erase', 0) <= 99 && request.resource.data.jokers.get('shuffle', 0) is int && request.resource.data.jokers.get('shuffle', 0) >= 0 && request.resource.data.jokers.get('shuffle', 0) <= 99 && request.resource.data.jokers.get('upgrade', 0) is int && request.resource.data.jokers.get('upgrade', 0) >= 0 && request.resource.data.jokers.get('upgrade', 0) <= 99))
+        && (!('bestJk' in request.resource.data) || request.resource.data.bestJk is bool);
       allow delete: if false;
     }
 

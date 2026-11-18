@@ -113,8 +113,15 @@
         </div>
       </div>
 
+      <div class="jokers" id="jokers">
+        <button type="button" class="joker" data-joker="undo"><img src="./images/jokers/undo.webp" alt="" draggable="false"><b>되돌리기</b><i>0</i></button>
+        <button type="button" class="joker" data-joker="erase"><img src="./images/jokers/erase.webp" alt="" draggable="false"><b>지우기</b><i>0</i></button>
+        <button type="button" class="joker" data-joker="shuffle"><img src="./images/jokers/shuffle.webp" alt="" draggable="false"><b>섞기</b><i>0</i></button>
+        <button type="button" class="joker" data-joker="upgrade"><img src="./images/jokers/upgrade.webp" alt="" draggable="false"><b>올리기</b><i>0</i></button>
+      </div>
+      <p class="jokers__note" id="jkNote"></p>
+
       <div class="controls">
-        <button class="btn" id="undoBtn">↩ 되돌리기 (1)</button>
         <button class="btn btn--sub" id="restartBtn">↻ 새 판</button>
       </div>
     </main>
@@ -264,6 +271,7 @@
       <div class="chips" id="shopTabs"></div>
       <div id="missionList"></div>
       <div id="decoPane"><div class="chips" id="decoTabs"></div><div id="decoShop"></div></div>
+      <div id="jokerShop"></div>
       <div id="themeList"></div>
     </div>
   </section>
