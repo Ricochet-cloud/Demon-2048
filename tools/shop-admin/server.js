@@ -104,7 +104,7 @@ const api = {
     let n = 0;
     for (const s of slots) {
       if (!s.on) continue;
-      await lib.writeCell(sheet.buf, sheet.cells[s.cell - 1], 200, path.join(dir, String(s.slot) + '.webp'));
+      await lib.writeCell(sheet.buf, sheet.cells[s.cell - 1], 256, path.join(dir, String(s.slot) + '.webp'));
       n++;
     }
     if (n) { theme.ver = (theme.ver || 0) + 1; log.push(`이미지 ${n}장 저장 (${theme.dir})`); }
@@ -132,7 +132,7 @@ const api = {
     }
     const log = [];
     for (const i of items) {
-      await lib.writeCell(sheet.buf, sheet.cells[i.cell - 1], 256, inWww('images', 'avatars', i.id + '.webp'));
+      await lib.writeCell(sheet.buf, sheet.cells[i.cell - 1], 384, inWww('images', 'avatars', i.id + '.webp'));
       const price = Number(i.price || 0), name = clean(i.name, 12);
       const cur = shop.avatars.find((a) => a.id === i.id);
       if (cur) { cur.name = name; if (price) cur.price = price; else delete cur.price; cur.ver = (cur.ver || 0) + 1; log.push(`'${name}' 덮어쓰기`); }

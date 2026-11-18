@@ -56,12 +56,16 @@ async function findCells(buf, grid) {
   return { cells, cols: nc, rows: nr, warn, auto, width: W, height: H };
 }
 
-const cellImage = (buf, cell, px) => sharp(buf).extract({ left: cell.left, top: cell.top, width: cell.size, height: cell.size }).resize(px, px, { kernel: 'lanczos3' });
+const cellImage = (buf, cell, px) => {
+  const img = sharp(buf).extract({ left: cell.left, top: cell.top, width: cell.size, height: cell.size });
+  return px && cell.size > px ? img.resize(px, px, { kernel: 'lanczos3' }) : img;   // 원본보다 작게 줄일 때만 줄여요 (늘리거나 불필요하게 줄이면 뿌예져요)
+};
+// px 는 '최대 크기'예요. 칸이 그보다 작으면 원본 크기 그대로, 품질 94 로 저장해서 또렷하게 남겨요.
 async function writeCell(buf, cell, px, out) {
   fs.mkdirSync(path.dirname(out), { recursive: true });
-  await cellImage(buf, cell, px).webp({ quality: 86, effort: 6 }).toFile(out);
+  await cellImage(buf, cell, px).webp({ quality: 94, effort: 6, smartSubsample: false }).toFile(out);
 }
-async function thumb(buf, cell, px) { return 'data:image/webp;base64,' + (await cellImage(buf, cell, px).webp({ quality: 70 }).toBuffer()).toString('base64'); }
+async function thumb(buf, cell, px) { return 'data:image/webp;base64,' + (await sharp(buf).extract({ left: cell.left, top: cell.top, width: cell.size, height: cell.size }).resize(px, px, { kernel: 'lanczos3' }).webp({ quality: 70 }).toBuffer()).toString('base64'); }
 
 // ---- shopdata.js 읽고 쓰기 ----
 const HEADER = `// 상점 물건 목록 (프로필 사진 · 프레임 · 칭호 · 카드 배경 · 이름 꾸미기 · 타일 테마)
