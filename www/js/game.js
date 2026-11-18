@@ -16,7 +16,7 @@
   const $ = (id) => document.getElementById(id);
 
   // ============ 저장 ============
-  let saved = { best: 0, bestTile: 0, plays: 0, game: null };
+  let saved = { best: 0, bestTile: 0, plays: 0, game: null, challenge: null };   // challenge: 오늘의 도전 { day, game, done, score, tile }
   // 기록이 바뀌면 알려줘요 (클라우드 저장 쪽에서 이 이벤트를 들어요)
   const emit = (name, detail) => { try { window.dispatchEvent(new CustomEvent(name, { detail })); } catch (e) { /* 무시 */ } };
   try { saved = Object.assign(saved, JSON.parse(localStorage.getItem(STORE_KEY) || '{}')); } catch (e) { /* 저장소를 못 써도 게임은 돼요 */ }
@@ -31,6 +31,16 @@
   let over = false, locked = false, winShown = false;
   let undoSnap = null, undoLeft = 1;
   let toastTimer = null;
+  // 모드: 'normal' 평소 게임 / 'challenge' 오늘의 도전 (하루 한 판, 모두 같은 시작과 같은 새 타일 순서)
+  let mode = 'normal', rngState = 0;
+  const today = () => (window.AppGold ? window.AppGold.dayKey() : new Date().toISOString().slice(0, 10));
+  function hashSeed(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function rand() {
+    if (mode !== 'challenge') return Math.random();
+    rngState = (rngState + 0x6D2B79F5) >>> 0;
+    let t = rngState; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
 
   function toast(msg) {
     const t = $('toast');
@@ -74,8 +84,8 @@
     const m = cellMap(), empty = [];
     for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) if (!m[r][c]) empty.push([r, c]);
     if (!empty.length) return;
-    const [r, c] = empty[Math.floor(Math.random() * empty.length)];
-    makeTile(Math.random() < FOUR_RATE ? 4 : 2, r, c, 'is-new');
+    const [r, c] = empty[Math.floor(rand() * empty.length)];
+    makeTile(rand() < FOUR_RATE ? 4 : 2, r, c, 'is-new');
   }
 
   function canMove() {
@@ -88,12 +98,13 @@
     return false;
   }
 
-  const snapshot = () => ({ tiles: tiles.map((t) => ({ v: t.v, r: t.r, c: t.c })), score, maxTile });
+  const snapshot = () => ({ tiles: tiles.map((t) => ({ v: t.v, r: t.r, c: t.c })), score, maxTile, rs: rngState });
 
   function restore(s) {
     $('tiles').innerHTML = ''; tiles = []; maxTile = 0;
     s.tiles.forEach((t) => makeTile(t.v, t.r, t.c));
     score = s.score; maxTile = s.maxTile;
+    if (Number.isInteger(s.rs)) rngState = s.rs >>> 0;   // 되돌리면 새 타일 순서도 되돌아가요
   }
 
   function move(dirName) {
@@ -164,7 +175,8 @@
     if (maxTile >= WIN_TILE && !winShown) { winShown = true; saveGame(); updateHud(); showModal('🎉 2048 달성!', true); emit('game2048:win'); return; }
     if (!canMove()) {
       over = true; saved.plays = (saved.plays || 0) + 1;
-      saveGame(); updateHud(); showModal('게임 오버', false); emit('game2048:over'); emit('game2048:record'); return;
+      if (mode === 'challenge') endChallenge();
+      saveGame(); updateHud(); showModal(mode === 'challenge' ? '오늘의 도전 끝' : '게임 오버', false); emit('game2048:over'); emit('game2048:record'); return;
     }
     saveGame(); updateHud();
   }
@@ -179,7 +191,9 @@
 
   function saveGame() {
     // 끝난 판은 이어하지 않고 지워요 (다음에 켜면 새 판)
-    saved.game = over ? null : { ...snapshot(), undoLeft, winShown };
+    const g = over ? null : { ...snapshot(), undoLeft, winShown };
+    if (mode === 'challenge') { if (saved.challenge) saved.challenge.game = g; }
+    else saved.game = g;
     save();
   }
 
@@ -195,7 +209,7 @@
   function showModal(title, win) {
     $('modalTitle').textContent = title;
     $('modalStats').innerHTML = `점수 <b>${score}</b> · 최고 타일 <b>${maxTile}</b><br>최고 점수 <b>${Math.max(saved.best, score)}</b>`;
-    $('modalNote').textContent = win && maxTile >= WIN_TILE ? '계속해서 더 높이 도전할 수 있어요!' : '';
+    $('modalNote').textContent = mode === 'challenge' && over ? '오늘은 한 판만 도전할 수 있어요. 내일 오전 6시에 새 도전이 열려요.' : (win && maxTile >= WIN_TILE ? '계속해서 더 높이 도전할 수 있어요!' : '');
     $('continueBtn').style.display = win ? '' : 'none';
     $('modal').classList.add('show');
   }
@@ -217,17 +231,57 @@
   }
 
   // 지난 판 이어하기 (저장된 값이 이상하면 무시하고 새 판)
-  function resume() {
-    const g = saved.game;
+  function resumeFrom(g) {
     try {
       if (!g || !Array.isArray(g.tiles) || !g.tiles.length) return false;
       if (!g.tiles.every((t) => Number.isInteger(t.r) && Number.isInteger(t.c) && t.r >= 0 && t.r < SIZE && t.c >= 0 && t.c < SIZE && t.v >= 2)) return false;
       restore(g);
-      undoLeft = g.undoLeft === 0 ? 0 : 1; winShown = !!g.winShown; undoSnap = null;
-      if (!canMove()) { over = true; saved.game = null; save(); showModal('게임 오버', false); }
-      updateHud();
+      undoLeft = g.undoLeft === 0 ? 0 : 1; winShown = !!g.winShown; undoSnap = null; over = false;
       return true;
     } catch (e) { return false; }
+  }
+  function resume() {
+    if (!resumeFrom(saved.game)) return false;
+    if (!canMove()) { over = true; saved.game = null; save(); showModal('게임 오버', false); }
+    updateHud();
+    return true;
+  }
+
+  // ============ 오늘의 도전 ============
+  function endChallenge() {
+    const ch = saved.challenge; if (!ch) return;
+    ch.done = true; ch.score = score; ch.tile = maxTile; ch.game = null; save();
+    emit('game2048:challenge', { day: ch.day, score, tile: maxTile });
+  }
+  function clearBoard() { $('modal').classList.remove('show'); $('tiles').innerHTML = ''; tiles = []; score = 0; maxTile = 0; over = false; locked = false; winShown = false; undoSnap = null; undoLeft = 1; }
+  function applyModeUI() {
+    const ch = mode === 'challenge';
+    const title = document.querySelector('#screen-game .topbar__title'), hint = document.querySelector('#screen-game .hint');
+    if (title) title.textContent = ch ? '오늘의 도전' : '2048';
+    if (hint) hint.textContent = ch ? '오늘 하루 한 판만! 모두 같은 시작 배치로 겨뤄요.' : '밀어서 같은 숫자를 합쳐요. 2048 을 만들어 보세요!';
+    $('restartBtn').style.display = ch ? 'none' : '';
+    $('againBtn').textContent = ch ? '홈으로' : '새 판';
+  }
+  function loadChallenge() {
+    const day = today();
+    if (!saved.challenge || saved.challenge.day !== day) saved.challenge = { day, game: null, done: false, score: 0, tile: 0 };   // 어제 하던 판은 버려요
+    const ch = saved.challenge;
+    clearBoard();
+    if (ch.done) { score = ch.score || 0; maxTile = ch.tile || 0; over = true; updateHud(); showModal('오늘의 도전 완료', false); return; }
+    if (resumeFrom(ch.game)) { if (!canMove()) { over = true; score = score; endChallenge(); saveGame(); showModal('오늘의 도전 끝', false); } updateHud(); return; }
+    rngState = hashSeed('2048-challenge-' + day);
+    addRandomTile(); addRandomTile();
+    saveGame(); updateHud();
+  }
+  function setMode(m) {
+    if (m !== 'challenge') m = 'normal';
+    if (m === mode && m === 'normal') return;
+    if (m === mode && saved.challenge && saved.challenge.day === today()) { if (saved.challenge.done) { updateHud(); showModal('오늘의 도전 완료', false); } return; }
+    saveGame();
+    mode = m;
+    if (m === 'challenge') loadChallenge();
+    else { clearBoard(); if (!resume()) newGame(); }
+    applyModeUI();
   }
 
   function start() {
@@ -257,7 +311,7 @@
 
     $('undoBtn').addEventListener('click', undo);
     $('restartBtn').addEventListener('click', newGame);
-    $('againBtn').addEventListener('click', newGame);
+    $('againBtn').addEventListener('click', () => { if (mode === 'challenge') { $('modal').classList.remove('show'); emit('game2048:exit'); } else newGame(); });
     $('continueBtn').addEventListener('click', () => $('modal').classList.remove('show'));
   }
 
@@ -270,7 +324,14 @@
       saved.plays = Math.max(saved.plays || 0, r.plays || 0);
       save(); updateHud();
     },
-    repaint() { tiles.forEach(paint); }   // 테마를 바꾸면 보드 위 타일 그림도 바꿔요
+    repaint() { tiles.forEach(paint); },
+    setMode,
+    get mode() { return mode; },
+    // 오늘의 도전 상태 { done, started, score }
+    challengeState() {
+      const ch = saved.challenge && saved.challenge.day === today() ? saved.challenge : null;
+      return { done: !!(ch && ch.done), started: !!(ch && (ch.done || ch.game)), score: ch ? (ch.done ? ch.score : (ch.game ? ch.game.score : 0)) : 0 };
+    }   // 테마를 바꾸면 보드 위 타일 그림도 바꿔요
   };
   window.addEventListener('themechange', () => window.Game2048.repaint());
 

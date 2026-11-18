@@ -107,6 +107,9 @@
     $('homeDex').textContent = `${got} / ${th.values.length}`;
     $('homeGold').textContent = G.gold;
     $('homeShopTag').hidden = G.claimable() === 0;
+    const ch = window.Game2048.challengeState();
+    $('homeChallengeSub').textContent = ch.done ? `완료 · ${ch.score}점` : ch.started ? `진행 중 · ${ch.score}점` : '하루 한 판 · 모두 같은 판';
+    $('homeChallengeTag').hidden = ch.done;
     refreshHomeRank();
   }
 
@@ -568,8 +571,8 @@
   function renderRank(list, box, compact, mode) {
     box = box || $('rankList');
     box.textContent = '';
-    const week = mode === 'week', wk = week ? W.key() : '';
-    const val = (u) => (week ? W.scoreOf(u, wk) : (u.best || 0));
+    const week = mode === 'week', wk = week ? W.key() : '', chal = mode === 'ch', cd = chal ? window.AppChallenge.day() : '';
+    const val = (u) => (week ? W.scoreOf(u, wk) : chal ? window.AppChallenge.scoreOf(u, cd) : (u.best || 0));
     list.sort((a, b) => val(b) - val(a)).forEach((u, i) => {
       const item = document.createElement('div');
       item.className = 'rank__item' + (u.uid === C.uid ? ' rank__item--me' : '') + (bgOf(u.bg) ? ' bg-' + u.bg : '');
@@ -584,7 +587,7 @@
       nmt.className = fxOf(u.nameFx) ? 'nm-' + u.nameFx : '';
       nmt.textContent = u.nickname || '이름 없음'; nm.appendChild(nmt);
       if (u.uid === C.uid) { const t = document.createElement('small'); t.textContent = '나'; nm.appendChild(t); }
-      if (week && i === 0 && val(u) > 0) { const t = document.createElement('small'); t.className = 'rank__first'; t.textContent = '1등'; nm.appendChild(t); }
+      if ((week || chal) && i === 0 && val(u) > 0) { const t = document.createElement('small'); t.className = 'rank__first'; t.textContent = '1등'; nm.appendChild(t); }
       const sub = document.createElement('span');
       sub.className = 'rank__sub';
       sub.textContent = `플레이 ${u.plays || 0}회${u.updatedAt ? ' · ' + ago(u.updatedAt) : ''}`;
@@ -597,7 +600,7 @@
       const right = document.createElement('div');
       right.className = 'rank__score';
       const b = document.createElement('b'); b.textContent = val(u);
-      right.appendChild(b); right.appendChild(document.createTextNode(week ? '이번 주' : `최고 타일 ${u.bestTile || '-'}`));
+      right.appendChild(b); right.appendChild(document.createTextNode(week ? '이번 주' : chal ? (val(u) > 0 ? '오늘' : '아직 안 했어요') : `최고 타일 ${u.bestTile || '-'}`));
       item.appendChild(left); item.appendChild(right);
       box.appendChild(item);
       if (!compact && u.uid !== C.uid) box.appendChild(cheerRow(u));
@@ -608,7 +611,7 @@
   function renderRankTabs() {
     const box = $('rankTabs');
     box.textContent = '';
-    [{ id: 'best', name: '최고 점수' }, { id: 'week', name: '주간 순위' }].forEach((t) => {
+    [{ id: 'best', name: '최고 점수' }, { id: 'week', name: '주간 순위' }, { id: 'ch', name: '오늘의 도전' }].forEach((t) => {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'chip' + (t.id === rankTab ? ' on' : ''); b.textContent = t.name;
       b.addEventListener('click', () => { rankTab = t.id; refreshRank(); });
@@ -627,7 +630,8 @@
       const list = await C.loadAll();
       renderRank(list, $('rankList'), false, rankTab);
       msg.textContent = '';
-      note.hidden = rankTab !== 'week';
+      note.hidden = rankTab === 'best';
+      if (rankTab === 'ch') note.textContent = `하루 한 판, 모두 같은 시작 배치예요. 끝내면 ${window.AppChallenge.rewardDone}골드, 전날 1등은 다음 날 ${window.AppChallenge.rewardWin}골드를 받아요.`;
       if (rankTab === 'week') {
         const last = W.prevKey();
         const top = list.map((u) => ({ n: u.nickname || '이름 없음', s: W.scoreOf(u, last) })).sort((a, b) => b.s - a.s)[0];
@@ -691,10 +695,13 @@
 
   document.addEventListener('click', (e) => {
     const g = e.target.closest('[data-go]');
-    if (g) { go(g.dataset.go); return; }
+    if (g) { if (g.dataset.go === 'game') window.Game2048.setMode('normal'); go(g.dataset.go); return; }
     if (e.target.closest('[data-back]')) back();
   });
   window.addEventListener('popstate', render);
+  // 오늘의 도전
+  $('homeChallenge').addEventListener('click', () => { window.Game2048.setMode('challenge'); go('game'); });
+  window.addEventListener('game2048:exit', () => { if (effective() === 'game') back(); });
   // 골드·미션이 바뀌면 지금 보는 화면을 새로 그려요
   window.addEventListener('gold:change', () => { const n = effective(); if (n === 'home') refreshHome(); if (n === 'shop') refreshShop(); });
   A.onChange(render);
