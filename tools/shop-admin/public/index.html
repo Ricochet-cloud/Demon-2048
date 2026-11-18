@@ -55,7 +55,8 @@
   <!-- 시트 올리기 (두 탭 공용) -->
   <div class="card" id="sheetCard">
     <h2>1. 시트 이미지 고르기</h2>
-    <div class="drop" id="drop">여기에 이미지를 끌어다 놓거나 <input type="file" id="file" accept="image/*"> 로 고르세요<br><span class="muted">4x4 정사각형 칸, 검은 격자선이 또렷한 시트 (왼쪽 위부터 가로로 1~16번)</span></div>
+    <div class="drop" id="drop">여기에 이미지를 끌어다 놓거나 <input type="file" id="file" accept="image/*"> 로 고르세요<br><span class="muted">정사각형 칸에 검은 격자선이 또렷한 시트 (4x4, 2x2, 3x3 등 — 칸 번호는 왼쪽 위부터 가로로 1, 2, 3…)</span></div>
+    <div class="inline" style="margin-top:10px"><label>칸 수 (가로x세로) <select id="gridSel" style="width:auto"><option value="">자동으로 찾기</option><option value="2x1">2x1</option><option value="1x2">1x2</option><option value="2x2">2x2</option><option value="3x2">3x2</option><option value="2x3">2x3</option><option value="3x3">3x3</option><option value="4x2">4x2</option><option value="2x4">2x4</option><option value="4x3">4x3</option><option value="3x4">3x4</option><option value="4x4">4x4</option><option value="5x5">5x5</option></select></label><span class="muted">격자선이 또렷하면 자동으로 찾아요. 틀리면 직접 고르세요.</span></div>
     <div id="sheetMsg"></div>
     <div class="grid hidden" id="sheetGrid"></div>
   </div>
@@ -84,6 +85,7 @@
       <h2 style="margin-top:16px">3. 타일 이름과 그림</h2>
       <p class="muted" style="margin:0 0 8px">"새 시트 칸"에서 그림을 가져올 칸을 바꿀 수 있어요. 덮어쓰기에서는 체크를 끄면 그 타일은 그대로 둬요.</p>
       <table><thead><tr><th>타일</th><th class="old">지금 그림</th><th>새 그림</th><th>새 시트 칸</th><th>이름 (도감에 보여요)</th><th>쓰기</th></tr></thead><tbody id="slots"></tbody></table>
+      <div id="tFew"></div>
       <div style="margin-top:14px"><button class="primary" id="tSave">상점에 올리기</button></div>
       <div id="tMsg"></div>
     </div>
@@ -130,7 +132,7 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   const VALUES = ['2','4','8','16','32','64','128','256','512','1024','2048','4096','8192','big'];
-  let shop = null, sheet = null, tab = 'theme';
+  let shop = null, sheet = null, tab = 'theme', lastFile = null;
 
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const msg = (el, kind, html) => { el.innerHTML = html ? `<div class="msg ${kind}">${html}</div>` : ''; };
@@ -162,17 +164,20 @@
   const toBase64 = (file) => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = no; r.readAsDataURL(file); });
   async function upload(file) {
     if (!file) return;
-    msg($('sheetMsg'), 'warn', '자르는 중…');
+    msg($('sheetMsg'), 'warn', '자르는 중…'); lastFile = file;
+    const gs = $('gridSel').value.split('x');
     try {
-      const res = await call('POST', '/api/sheet', { data: await toBase64(file) });
+      const res = await call('POST', '/api/sheet', { data: await toBase64(file), cols: gs[0] ? Number(gs[0]) : undefined, rows: gs[1] ? Number(gs[1]) : undefined });
       sheet = res; msg($('tMsg'), '', ''); msg($('aMsg'), '', '');
       $('sheetGrid').classList.remove('hidden');
+      $('sheetGrid').style.gridTemplateColumns = `repeat(${res.cols}, 1fr)`;
       $('sheetGrid').innerHTML = res.thumbs.map((t, i) => `<figure><img src="${t}" alt=""><figcaption>${i + 1}</figcaption></figure>`).join('');
-      msg($('sheetMsg'), res.warn ? 'warn' : 'ok', res.warn ? esc(res.warn) : `칸 16개를 찾았어요. (이미지 ${res.size[0]}x${res.size[1]}) 아래 칸 번호와 그림이 맞는지 확인하세요.`);
+      msg($('sheetMsg'), res.warn ? 'warn' : 'ok', res.warn ? esc(res.warn) : `칸 ${res.thumbs.length}개(${res.cols}x${res.rows})를 찾았어요. (이미지 ${res.size[0]}x${res.size[1]}) 아래 칸 번호와 그림이 맞는지 확인하세요.`);
       buildThemeForm(); buildAvatarForm(); showForms();
     } catch (e) { sheet = null; showForms(); msg($('sheetMsg'), 'bad', esc(e.message)); }
   }
   $('file').addEventListener('change', (e) => upload(e.target.files[0]));
+  $('gridSel').addEventListener('change', () => { if (lastFile) upload(lastFile); });
   const drop = $('drop');
   ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
   ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
@@ -199,12 +204,14 @@
       const nm = s === 'big' ? (ow && t ? t.bigName : '') : (ow && t ? (t.names || {})[s] : '');
       return `<tr data-slot="${s}"><td><b>${s === 'big' ? '큰 이미지' : s}</b></td>
         <td class="old ${ow ? '' : 'hidden'}">${old}</td>
-        <td><img class="newimg" src="${sheet.thumbs[i]}" alt=""></td>
-        <td><select class="cell">${Array.from({ length: 16 }, (_, k) => `<option value="${k + 1}" ${k === i ? 'selected' : ''}>${k + 1}번</option>`).join('')}</select></td>
+        <td><img class="newimg" src="${sheet.thumbs[Math.min(i, sheet.thumbs.length - 1)]}" alt=""></td>
+        <td><select class="cell">${sheet.thumbs.map((_, k) => `<option value="${k + 1}" ${k === Math.min(i, sheet.thumbs.length - 1) ? 'selected' : ''}>${k + 1}번</option>`).join('')}</select></td>
         <td><input type="text" class="nm" maxlength="24" value="${esc(nm || '')}" placeholder="${s === 'big' ? '마지막 큰 이미지 이름' : '이름'}"></td>
-        <td><input type="checkbox" class="on" checked></td></tr>`;
+        <td><input type="checkbox" class="on" ${i < sheet.thumbs.length ? 'checked' : ''}></td></tr>`;
     });
     $('slots').innerHTML = rows.join('');
+    const few = sheet.thumbs.length < 14 && !ow;
+    msg($('tFew'), few ? 'warn' : '', few ? `이 시트는 칸이 ${sheet.thumbs.length}개라 새 테마(14칸 필요)로는 못 올려요. 기존 테마의 그림 몇 개만 바꿀 때는 "기존 테마 덮어쓰기"를 쓰세요.` : '');
     $('slots').querySelectorAll('.cell').forEach((sel) => sel.addEventListener('change', () => { sel.closest('tr').querySelector('.newimg').src = sheet.thumbs[Number(sel.value) - 1]; }));
   }
   document.querySelectorAll('input[name=tmode]').forEach((r) => r.addEventListener('change', renderSlots));

@@ -36,6 +36,8 @@ function inWww(...parts) {
   if (p !== WWW && !p.startsWith(WWW + path.sep)) throw fail('허용되지 않은 경로예요.');
   return p;
 }
+// 칸 수 직접 지정 (1~8)
+function b2grid(c, r) { c = Number(c); r = Number(r); return Number.isInteger(c) && Number.isInteger(r) && c >= 1 && r >= 1 && c <= 8 && r <= 8 && c * r >= 2 ? { cols: c, rows: r } : null; }
 const idOk = (id) => /^[a-z0-9][a-z0-9_-]{1,19}$/.test(id || '');
 const clean = (s, max) => String(s == null ? '' : s).replace(/[\r\n\t]+/g, ' ').trim().slice(0, max);
 function getSheet(id) { const s = sheets.get(id); if (!s) throw fail('올린 시트를 찾지 못했어요. 다시 올려 주세요.'); return s; }
@@ -50,14 +52,15 @@ const api = {
     const buf = Buffer.from(String(body.data || '').replace(/^data:[^,]*,/, ''), 'base64');
     if (buf.length < 1000) throw fail('이미지를 읽지 못했어요.');
     let found;
-    try { found = await lib.findCells(buf); } catch (e) { throw fail('이미지 파일이 아니에요. (png, jpg, webp)'); }
+    const g = b2grid(body.cols, body.rows);
+    try { found = await lib.findCells(buf, g); } catch (e) { throw fail(e.message && /칸/.test(e.message) ? e.message : '이미지 파일이 아니에요. (png, jpg, webp)'); }
     if (found.width < 400 || found.height < 400) throw fail('이미지가 너무 작아요.');
     const id = crypto.randomBytes(6).toString('hex');
-    sheets.set(id, { buf, cells: found.cells });
+    sheets.set(id, { buf, cells: found.cells, cols: found.cols, rows: found.rows });
     if (sheets.size > 8) sheets.delete(sheets.keys().next().value);
     const thumbs = [];
     for (const c of found.cells) thumbs.push(await lib.thumb(buf, c, 140));
-    return { sheetId: id, warn: found.warn, thumbs, size: [found.width, found.height] };
+    return { sheetId: id, warn: found.warn, thumbs, size: [found.width, found.height], cols: found.cols, rows: found.rows };
   },
 
   // 타일 테마 저장 (새 테마 / 기존 테마 덮어쓰기)
@@ -68,7 +71,7 @@ const api = {
     const id = String(b.id || '');
     const log = [];
     const slots = (b.slots || []).filter((s) => SLOTS.includes(String(s.slot)));
-    for (const s of slots) if (s.on && !(Number.isInteger(s.cell) && s.cell >= 1 && s.cell <= 16)) throw fail('칸 번호는 1~16이에요.');
+    for (const s of slots) if (s.on && !(Number.isInteger(s.cell) && s.cell >= 1 && s.cell <= sheet.cells.length)) throw fail(`칸 번호는 1~${sheet.cells.length}이에요.`);
     const names = {};
     VALUES.forEach((v) => { const s = slots.find((x) => String(x.slot) === String(v)); const n = clean(s && s.name, 24); if (n) names[v] = n; });
 
@@ -119,7 +122,7 @@ const api = {
     if (!items.length) throw fail('올릴 칸을 하나 이상 고르세요.');
     const seen = new Set();
     for (const i of items) {
-      if (!(Number.isInteger(i.cell) && i.cell >= 1 && i.cell <= 16)) throw fail('칸 번호가 이상해요.');
+      if (!(Number.isInteger(i.cell) && i.cell >= 1 && i.cell <= sheet.cells.length)) throw fail('칸 번호가 이상해요.');
       if (!/^[a-z0-9][a-z0-9_-]{0,19}$/.test(i.id || '')) throw fail(`id 를 확인하세요: '${i.id || ''}' (영문 소문자/숫자/_- 20자 이하)`);
       if (seen.has(i.id)) throw fail(`id 가 겹쳐요: ${i.id}`);
       seen.add(i.id);

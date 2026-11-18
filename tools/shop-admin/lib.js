@@ -15,26 +15,45 @@ function bands(isDark, len, other) {
   return out;
 }
 
-// 칸 16개의 위치를 돌려줘요 (왼쪽 위부터 가로로). 격자선을 못 찾으면 균등하게 나누고 warn 을 채워요.
-async function findCells(buf) {
+// 칸의 위치를 돌려줘요 (왼쪽 위부터 가로로). 격자선에서 칸 수(가로x세로)를 자동으로 알아내요.
+// grid = { cols, rows } 를 주면 그 칸 수로 균등하게 나눠요 (격자선이 안 보이는 이미지용).
+async function findCells(buf, grid) {
   const { data, info } = await sharp(buf).removeAlpha().raw().toBuffer({ resolveWithObject: true });
   const W = info.width, H = info.height;
   const dark = (x, y) => { const p = (y * W + x) * 3; return data[p] + data[p + 1] + data[p + 2] < 90; };
-  const cols = bands((x, y) => dark(x, y), W, H), rows = bands((y, x) => dark(x, y), H, W);
-  let xs, ys, warn = '';
-  if (cols.length === 5 && rows.length === 5) { xs = cols; ys = rows; }
-  else {
-    warn = `격자선을 못 찾아서(가로 ${cols.length}개, 세로 ${rows.length}개) 칸을 균등하게 나눴어요. 미리보기를 꼭 확인하세요.`;
+  const MIN = 20;
+  const build = (xs, ys, nc, nr) => {
+    const cells = [];
+    for (let r = 0; r < nr; r++) for (let c = 0; c < nc; c++) {
+      const left = xs[c][1] + 3, top = ys[r][1] + 3, w = xs[c + 1][0] - 2 - left, h = ys[r + 1][0] - 2 - top, size = Math.min(w, h);
+      if (!(size >= MIN)) return null;
+      cells.push({ left, top, size });
+    }
+    return cells;
+  };
+  const even = (nc, nr) => {
     const m = Math.round(W * 0.004), g = Math.round(W * 0.005);
-    xs = [[0, m]]; for (let i = 1; i < 4; i++) xs.push([Math.round(W * i / 4) - g, Math.round(W * i / 4) + g]); xs.push([W - m, W]);
-    ys = [[0, m]]; for (let i = 1; i < 4; i++) ys.push([Math.round(H * i / 4) - g, Math.round(H * i / 4) + g]); ys.push([H - m, H]);
+    const xs = [[0, m]]; for (let i = 1; i < nc; i++) xs.push([Math.round(W * i / nc) - g, Math.round(W * i / nc) + g]); xs.push([W - m, W]);
+    const ys = [[0, m]]; for (let i = 1; i < nr; i++) ys.push([Math.round(H * i / nr) - g, Math.round(H * i / nr) + g]); ys.push([H - m, H]);
+    return build(xs, ys, nc, nr);
+  };
+  const forced = grid && Number.isInteger(grid.cols) && Number.isInteger(grid.rows);
+  let cells = null, nc, nr, warn = '', auto = false;
+  if (forced) {
+    nc = grid.cols; nr = grid.rows; cells = even(nc, nr);
+    if (!cells) throw new Error('칸이 너무 작아요. 칸 수를 확인하세요.');
+  } else {
+    const cols = bands((x, y) => dark(x, y), W, H), rows = bands((y, x) => dark(x, y), H, W);
+    if (cols.length >= 2 && rows.length >= 2 && cols.length <= 9 && rows.length <= 9 && (cols.length - 1) * (rows.length - 1) >= 2) {
+      nc = cols.length - 1; nr = rows.length - 1; cells = build(cols, rows, nc, nr); auto = !!cells;
+    }
+    if (!cells) {
+      nc = 4; nr = 4; cells = even(4, 4);
+      warn = `격자선을 못 찾아서(가로 ${cols.length}개, 세로 ${rows.length}개) 칸을 4x4로 균등하게 나눴어요. 칸 수가 다르면 위에서 바꾸고, 미리보기를 꼭 확인하세요.`;
+      if (!cells) throw new Error('칸을 나누지 못했어요. 이미지가 너무 작아요.');
+    }
   }
-  const cells = [];
-  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
-    const left = xs[c][1] + 3, top = ys[r][1] + 3, w = xs[c + 1][0] - 2 - left, h = ys[r + 1][0] - 2 - top, size = Math.min(w, h);
-    cells.push({ left, top, size });
-  }
-  return { cells, warn, width: W, height: H };
+  return { cells, cols: nc, rows: nr, warn, auto, width: W, height: H };
 }
 
 const cellImage = (buf, cell, px) => sharp(buf).extract({ left: cell.left, top: cell.top, width: cell.size, height: cell.size }).resize(px, px, { kernel: 'lanczos3' });
