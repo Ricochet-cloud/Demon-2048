@@ -32,6 +32,23 @@
     }
   ];
 
+  LIST.push({
+    id: 'items', name: '귀멸 도구', desc: '귀멸의 칼날에 나오는 도구와 동물이에요', dir: './images/themes/items/', full: true, values: pow(8192),
+    names: {
+      2: '숯', 4: '대나무 입마개', 8: '하나후다 귀걸이', 16: '참새 츄타로', 32: '카스가가라스', 64: '멧돼지 가면', 128: '여우 가면',
+      256: '등꽃', 512: '무한열차', 1024: '비파', 2048: '일륜도', 4096: '쓰즈미 북', 8192: '태양'
+    },
+    bigName: '도구 모음'
+  });
+  LIST.push({
+    id: 'hwatu', name: '화투', desc: '1월부터 12월까지, 화투 그림이에요', dir: './images/themes/hwatu/', full: true, values: pow(8192),
+    names: {
+      2: '1월 송학', 4: '2월 매조', 8: '3월 벚꽃', 16: '4월 흑싸리', 32: '5월 난초', 64: '6월 모란', 128: '7월 홍싸리',
+      256: '8월 공산', 512: '9월 국화', 1024: '10월 단풍', 2048: '11월 오동', 4096: '12월 비', 8192: '광'
+    },
+    bigName: '화투판'
+  });
+
   LIST.push({ id: 'plain', name: '기본 숫자', desc: '그림 없이 숫자만 보이는 깔끔한 타일이에요', dir: '', full: false, values: [], names: {}, bigName: '', plain: true });
 
   const byId = (id) => LIST.find((t) => t.id === id) || LIST[0];
