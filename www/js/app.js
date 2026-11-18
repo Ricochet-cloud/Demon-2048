@@ -5,7 +5,7 @@
 (() => {
   'use strict';
 
-  const SCREENS = ['home', 'game', 'profile', 'dex', 'shop', 'settings', 'login'];
+  const SCREENS = ['home', 'modes', 'game', 'profile', 'dex', 'shop', 'settings', 'login'];
   // 프로필 사진 목록 — images/avatars/<id>.webp. price 가 있으면 상점에서 골드로 사야 쓸 수 있어요 (없으면 처음부터 무료)
   // 사진을 늘리려면 여기에 한 줄 추가하고 파일을 넣어요. 가격은 여기서만 바꾸면 돼요.
   const AVATARS = [
@@ -97,19 +97,13 @@
   }
 
   function refreshHome() {
-    const g = readSaved().game;
-    const el = $('homeResume');
-    if (g && g.score > 0) { el.textContent = `진행 중인 판 이어하기 · ${g.score}점`; el.hidden = false; }
-    else el.hidden = true;
     // 로그인했는데 닉네임이 아직 없으면 안내
     $('homeHint').hidden = !(C.enabled && C.loaded && (!C.nickname || !knownAvatar(C.avatar)));
     const th = T.dexTheme(), got = T.discovered(readSaved().bestTile, th).length;
     $('homeDex').textContent = `${got} / ${th.values.length}`;
     $('homeGold').textContent = G.gold;
     $('homeShopTag').hidden = G.claimable() === 0;
-    const ch = window.Game2048.challengeState();
-    $('homeChallengeSub').textContent = ch.done ? `완료 · ${ch.score}점` : ch.started ? `진행 중 · ${ch.score}점` : '하루 한 판 · 모두 같은 판';
-    $('homeChallengeTag').hidden = ch.done;
+    $('homeChallengeTag').hidden = window.Game2048.challengeState().done;   // 오늘의 도전을 아직 안 했으면 표시
     refreshHomeRank();
   }
 
@@ -662,6 +656,39 @@
     $('guestCard').hidden = online;   // 로그인 없이 쓰는 중일 때만 안내 문구
   }
 
+  // 게임 모드 목록 — 새 모드는 여기에 { id, name, sub(), tag(), start() } 한 덩어리만 추가하면 돼요
+  // (start 에서 window.Game2048.setMode('모드 id') 를 부르고 go('game') 으로 게임 화면으로 가요. 모드 규칙은 game.js 의 setMode 쪽에 추가해요)
+  const MODES = [
+    {
+      id: 'normal', name: '일반',
+      sub: () => { const g = readSaved().game; return g && g.score > 0 ? `진행 중인 판 이어하기 · ${g.score}점` : '끝없이 이어서 즐겨요'; },
+      tag: () => '',
+      start: () => { window.Game2048.setMode('normal'); go('game'); }
+    },
+    {
+      id: 'challenge', name: '오늘의 도전',
+      sub: () => { const c = window.Game2048.challengeState(); return c.done ? `완료 · ${c.score}점` : c.started ? `진행 중 · ${c.score}점` : '하루 한 판 · 모두 같은 판'; },
+      tag: () => (window.Game2048.challengeState().done ? '' : '도전 가능'),
+      start: () => { window.Game2048.setMode('challenge'); go('game'); }
+    }
+  ];
+
+  function refreshModes() {
+    const box = $('modeList');
+    box.textContent = '';
+    MODES.forEach((m, i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'menu__btn' + (i === 0 ? ' menu__btn--main' : '');
+      const sp = document.createElement('span'); sp.textContent = m.name;
+      const sub = document.createElement('small'); sub.className = 'menu__sub'; sub.textContent = m.sub();
+      sp.appendChild(sub); b.appendChild(sp);
+      const t = m.tag();
+      if (t) { const e = document.createElement('em'); e.className = 'tag tag--alert'; e.textContent = t; b.appendChild(e); }
+      b.addEventListener('click', m.start);
+      box.appendChild(b);
+    });
+  }
+
   function refreshSettings() {
     const online = A.enabled && !!A.user;
     $('stAccount').textContent = online ? `로그인: ${A.user.email}` : '로그인 없이 이 기기에서만 쓰는 중이에요.';
@@ -674,6 +701,7 @@
     document.querySelectorAll('.screen').forEach((el) => el.classList.toggle('active', el.dataset.screen === name));
     window.scrollTo(0, 0);
     if (name === 'home') refreshHome();
+    if (name === 'modes') refreshModes();
     if (name === 'profile') refreshProfile();
     if (name === 'settings') refreshSettings();
     if (name === 'dex') { dexThemeId = null; refreshDex(); }
@@ -695,12 +723,11 @@
 
   document.addEventListener('click', (e) => {
     const g = e.target.closest('[data-go]');
-    if (g) { if (g.dataset.go === 'game') window.Game2048.setMode('normal'); go(g.dataset.go); return; }
+    if (g) { go(g.dataset.go); return; }
     if (e.target.closest('[data-back]')) back();
   });
   window.addEventListener('popstate', render);
   // 오늘의 도전
-  $('homeChallenge').addEventListener('click', () => { window.Game2048.setMode('challenge'); go('game'); });
   window.addEventListener('game2048:exit', () => { if (effective() === 'game') back(); });
   // 골드·미션이 바뀌면 지금 보는 화면을 새로 그려요
   window.addEventListener('gold:change', () => { const n = effective(); if (n === 'home') refreshHome(); if (n === 'shop') refreshShop(); });

@@ -66,10 +66,9 @@
         <div class="rank" id="homeRankList"></div>
       </button>
       <nav class="menu">
-        <button class="menu__btn menu__btn--main" data-go="game">
-          <span>게임 시작<small class="menu__sub" id="homeResume" hidden></small></span>
+        <button class="menu__btn menu__btn--main" data-go="modes">
+          <span>게임 시작</span><em class="tag tag--alert" id="homeChallengeTag" hidden>오늘의 도전</em>
         </button>
-        <button class="menu__btn" id="homeChallenge"><span>오늘의 도전<small class="menu__sub" id="homeChallengeSub"></small></span><em class="tag tag--alert" id="homeChallengeTag" hidden>도전 가능</em></button>
         <button class="menu__btn" data-go="profile"><span>프로필</span></button>
         <button class="menu__btn" data-go="dex"><span>도감<small class="menu__sub" id="homeDex"></small></span></button>
         <button class="menu__btn" data-go="shop"><span>상점</span><em class="tag tag--alert" id="homeShopTag" hidden>보상 받기</em></button>
@@ -79,10 +78,22 @@
     </div>
   </section>
 
+  <!-- 게임 모드 고르기 (새 모드는 app.js 의 MODES 에 한 덩어리만 추가하면 여기에 나와요) -->
+  <section class="screen screen--modes" data-screen="modes">
+    <div class="topbar">
+      <button class="topbar__back" data-back>홈</button>
+      <div class="topbar__title">게임 모드</div>
+      <button class="sound-btn" data-sound-toggle aria-label="소리 켜기 끄기"></button>
+    </div>
+    <div class="wrap">
+      <nav class="menu" id="modeList"></nav>
+    </div>
+  </section>
+
   <!-- 게임 -->
   <section class="screen screen--game" data-screen="game" id="screen-game">
     <div class="topbar">
-      <button class="topbar__back" data-back>홈</button>
+      <button class="topbar__back" data-back>뒤로</button>
       <div class="topbar__title">2048</div>
       <button class="sound-btn" data-sound-toggle aria-label="소리 켜기 끄기"></button>
     </div>
