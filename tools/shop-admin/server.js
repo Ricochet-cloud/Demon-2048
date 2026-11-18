@@ -81,6 +81,7 @@ const api = {
       if (!CATS.includes(b.cat)) throw fail('분류를 골라 주세요.');
       if (SLOTS.some((k) => !slots.some((s) => String(s.slot) === k && s.on))) throw fail('새 테마는 14칸(2~8192 + 큰 이미지)이 모두 필요해요.');
       theme = { id, name, desc: clean(b.desc, 40), cat: b.cat, dir: `./images/themes/${id}/`, full: true, max: 8192, bigName: clean(b.bigName, 24), names };
+      const pr = priceOf(b.price, false, name); if (pr) theme.price = pr;   // 비우면 무료
       const plainAt = shop.themes.findIndex((t) => t.plain);   // '기본 숫자'(plain)는 항상 맨 끝에 둬요
       shop.themes.splice(plainAt < 0 ? shop.themes.length : plainAt, 0, theme);
       log.push(`새 테마 '${name}' 등록`);
@@ -91,6 +92,7 @@ const api = {
       if (b.desc != null) theme.desc = clean(b.desc, 40);
       if (CATS.includes(b.cat)) theme.cat = b.cat;
       if (b.bigName != null) theme.bigName = clean(b.bigName, 24);
+      if ('price' in b && !isLocked('themes', theme).price) { const pr = priceOf(b.price, false, theme.name); if (pr) theme.price = pr; else delete theme.price; }
       theme.names = Object.assign({}, theme.names, names);
       log.push(`기존 테마 '${theme.name}' 수정`);
     } else throw fail('모드를 골라 주세요.');
@@ -136,8 +138,112 @@ const api = {
     lib.save(DATA, shop);
     log.push('shopdata.js 저장');
     return { ok: true, log };
+  },
+
+  // ---- 3단계: 이미 있는 물건 관리 ----
+  // 이름·가격·판매 중지 한꺼번에 저장 (바뀐 줄만 보내요)
+  async 'POST /api/items/save'(req) {
+    const b = await readJson(req);
+    const sec = SECTION[b.section];
+    if (!sec) throw fail('종류를 확인하세요.');
+    const shop = lib.load(DATA);
+    const list = shop[b.section];
+    const edits = Array.isArray(b.items) ? b.items : [];
+    if (!edits.length) throw fail('바뀐 내용이 없어요.');
+    const log = [];
+    for (const e of edits) {
+      const it = list.find((x) => x.id === e.id);
+      if (!it) throw fail(`'${e.id}' 물건을 찾지 못했어요.`);
+      const locked = isLocked(b.section, it);
+      const name = clean(e.name, sec.nameMax);
+      if (!name) throw fail(`'${it.id}' 의 이름을 적어 주세요.`);
+      const was = [it.name, it.price || 0, !!it.off];
+      it.name = name;
+      if (!locked.price) {
+        const pr = priceOf(e.price, sec.priceRequired, it.name);
+        if (pr) it.price = pr; else delete it.price;
+      }
+      if (!locked.off) { if (e.off) it.off = true; else delete it.off; }
+      if (was[0] !== it.name || was[1] !== (it.price || 0) || was[2] !== !!it.off) log.push(`'${it.name}' 수정${it.off ? ' (판매 중지)' : ''}${it.price ? ` · ${it.price}골드` : sec.priceRequired ? '' : ' · 무료'}`);
+    }
+    lib.save(DATA, shop);
+    log.push('shopdata.js 저장');
+    return { ok: true, log, shop };
+  },
+
+  // 완전히 지우기 (이미 산 사람은 그 물건을 못 쓰게 돼요 — 보통은 '판매 중지'를 쓰세요)
+  async 'POST /api/items/delete'(req) {
+    const b = await readJson(req);
+    const sec = SECTION[b.section];
+    if (!sec) throw fail('종류를 확인하세요.');
+    const shop = lib.load(DATA);
+    const list = shop[b.section];
+    const at = list.findIndex((x) => x.id === b.id);
+    if (at < 0) throw fail('물건을 찾지 못했어요.');
+    const it = list[at];
+    if (isLocked(b.section, it).del) throw fail('이 물건은 지울 수 없어요.');
+    const log = [];
+    list.splice(at, 1);
+    if (b.section === 'avatars') {
+      const f = inWww('images', 'avatars', it.id + '.webp');
+      if (fs.existsSync(f)) { fs.unlinkSync(f); log.push('사진 파일 삭제'); }
+    } else if (b.section === 'themes') {
+      const rel = String(it.dir || '').replace(/^\.\//, '');
+      if (rel === `images/themes/${it.id}/` && /^[a-z0-9_-]+$/.test(it.id)) {   // 테마 전용 폴더일 때만 폴더째 지워요
+        const d = inWww(rel);
+        if (fs.existsSync(d)) { fs.rmSync(d, { recursive: true, force: true }); log.push('테마 이미지 폴더 삭제'); }
+      }
+    }
+    log.unshift(`'${it.name}' 완전히 삭제`);
+    lib.save(DATA, shop);
+    log.push('shopdata.js 저장');
+    return { ok: true, log, shop };
+  },
+
+  // 새 칭호 만들기 (이름 + 골드 가격만, 조건이 필요한 칭호는 따로 만들어요)
+  async 'POST /api/title'(req) {
+    const b = await readJson(req);
+    const shop = lib.load(DATA);
+    const name = clean(b.name, SECTION.titles.nameMax);
+    if (!name) throw fail('칭호 이름을 적어 주세요.');
+    const price = priceOf(b.price, true, name);
+    const group = clean(b.group, 10) || '일반';
+    let id = clean(b.id, 20);
+    if (id) { if (!idOk(id)) throw fail('id 는 영문 소문자/숫자/_- 로 2~20자예요. (비워 두면 자동으로 만들어요)'); }
+    else { do { id = 't' + Date.now().toString(36) + Math.floor(Math.random() * 36).toString(36); } while (shop.titles.some((t) => t.id === id)); }
+    if (shop.titles.some((t) => t.id === id)) throw fail(`'${id}' 칭호가 이미 있어요.`);
+    if (shop.titles.some((t) => t.price && t.name === name)) throw fail(`'${name}' 칭호가 이미 있어요.`);
+    // 같은 묶음(group)의 마지막 칸 바로 뒤에 넣어요 (없으면 가격 있는 칭호들 맨 뒤)
+    let at = -1;
+    shop.titles.forEach((t, i) => { if (t.price && (t.group || '업적') === group) at = i; });
+    if (at < 0) shop.titles.forEach((t, i) => { if (t.price) at = i; });
+    shop.titles.splice(at + 1, 0, { id, name, price, group });
+    lib.save(DATA, shop);
+    return { ok: true, log: [`칭호 '${name}' 추가 (${price}골드, 묶음 '${group}')`, 'shopdata.js 저장'], shop };
   }
 };
+
+// 종류별 규칙
+const SECTION = {
+  avatars: { nameMax: 12, priceRequired: false },
+  frames: { nameMax: 12, priceRequired: false },
+  titles: { nameMax: 14, priceRequired: true },
+  bgs: { nameMax: 12, priceRequired: true },     // 배경·이름 꾸미기는 무료 개념이 없어서 가격이 꼭 있어야 해요
+  nameFx: { nameMax: 12, priceRequired: true },
+  themes: { nameMax: 12, priceRequired: false }
+};
+// 건드리면 안 되는 물건 (price: 가격 바꾸기 불가 / off: 판매 중지 불가 / del: 삭제 불가)
+function isLocked(section, it) {
+  if (section === 'themes' && (it.id === 'default' || it.plain)) return { price: true, off: true, del: true };   // 기본 테마들은 항상 있어야 해요
+  if (section === 'titles' && !it.price) return { price: true, off: true, del: true };                           // 업적·미션 칭호는 이름만 바꿀 수 있어요
+  return {};
+}
+function priceOf(v, required, label) {
+  const n = v === '' || v == null ? 0 : Number(v);
+  if (!Number.isInteger(n) || n < 0 || n > 100000) throw fail(`'${label}' 의 가격은 0 이상의 정수예요.`);
+  if (required && n < 1) throw fail(`'${label}' 은(는) 가격이 꼭 있어야 해요. (1골드 이상)`);
+  return n;
+}
 
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg' };
 const server = http.createServer(async (req, res) => {

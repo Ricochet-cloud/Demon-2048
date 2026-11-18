@@ -291,6 +291,8 @@
 .themecell .theme-card__prev { grid-template-columns: repeat(2, 1fr); }
 .themecell b { font-size: 13px; text-align: center; }
 .themecell__btn { min-height: 36px; padding: 0; flex: none; width: 100%; }
+.themecell__buy { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 36px; }
+.themecell__buy .buy__btn { min-height: 36px; padding: 0 14px; flex: none; }
 
 /* 도감 테마 선택: 분류 칩 + 줄바꿈되는 테마 칩 */
 #dexThemes .dexcats { margin-top: 0; }

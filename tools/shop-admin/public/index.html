@@ -44,15 +44,16 @@
 </style>
 </head>
 <body>
-<header><h1>상점 관리</h1><span class="muted">시트 이미지를 올려서 자동으로 자르고 상점에 올려요</span></header>
+<header><h1>상점 관리</h1><span class="muted">시트를 올려 상점에 올리고, 이미 있는 물건을 관리해요</span></header>
 <main>
   <div class="tabs">
     <button class="tab on" data-tab="theme">타일 테마 시트</button>
     <button class="tab" data-tab="avatar">프로필 사진 시트</button>
+    <button class="tab" data-tab="manage">물건 관리</button>
   </div>
 
   <!-- 시트 올리기 (두 탭 공용) -->
-  <div class="card">
+  <div class="card" id="sheetCard">
     <h2>1. 시트 이미지 고르기</h2>
     <div class="drop" id="drop">여기에 이미지를 끌어다 놓거나 <input type="file" id="file" accept="image/*"> 로 고르세요<br><span class="muted">4x4 정사각형 칸, 검은 격자선이 또렷한 시트 (왼쪽 위부터 가로로 1~16번)</span></div>
     <div id="sheetMsg"></div>
@@ -71,11 +72,13 @@
         <div><label>id (영문 소문자/숫자)</label><input type="text" id="tId" placeholder="animals" maxlength="20"></div>
         <div><label>이름</label><input type="text" id="tName" placeholder="일본의 귀여운 동물" maxlength="12"></div>
         <div><label>분류</label><select id="tCat"><option>일본</option><option>귀멸</option><option>기본</option></select></div>
+        <div><label>가격 (골드, 비우면 무료)</label><input type="number" id="tPrice" min="0" placeholder="무료"></div>
       </div>
       <div class="row hidden" id="tOldFields">
         <div><label>덮어쓸 테마</label><select id="tPick"></select></div>
         <div><label>이름</label><input type="text" id="tName2" maxlength="12"></div>
         <div><label>분류</label><select id="tCat2"><option>일본</option><option>귀멸</option><option>기본</option></select></div>
+        <div><label>가격 (골드, 비우면 무료)</label><input type="number" id="tPrice2" min="0" placeholder="무료"></div>
       </div>
       <div class="row"><div style="grid-column:1/-1"><label>한 줄 설명</label><input type="text" id="tDesc" maxlength="40" placeholder="귀엽고 색이 또렷한 일본의 동물들이에요"></div></div>
       <h2 style="margin-top:16px">3. 타일 이름과 그림</h2>
@@ -95,6 +98,30 @@
       <table><thead><tr><th>칸</th><th>그림</th><th>id (영문)</th><th>이름</th><th>가격</th><th>올리기</th></tr></thead><tbody id="avRows"></tbody></table>
       <div style="margin-top:14px"><button class="primary" id="aSave">상점에 올리기</button></div>
       <div id="aMsg"></div>
+    </div>
+  </section>
+
+  <!-- 물건 관리 -->
+  <section id="tab-manage" class="hidden">
+    <div class="card">
+      <div class="inline" id="mSecs"></div>
+      <p class="muted" id="mHelp" style="margin:10px 0 0"></p>
+    </div>
+    <div class="card hidden" id="mAdd">
+      <h2>새 칭호 만들기</h2>
+      <p class="muted" style="margin:0 0 6px">이름과 골드 가격만 정하면 상점 칭호 탭에 올라가요. (조건이 필요한 칭호는 따로 만들어요)</p>
+      <div class="row">
+        <div><label>이름</label><input type="text" id="nName" maxlength="14" placeholder="예) 꿈꾸는 대원"></div>
+        <div><label>가격 (골드)</label><input type="number" id="nPrice" min="1" value="100"></div>
+        <div><label>묶음 (상점 소제목)</label><input type="text" id="nGroup" maxlength="10" value="일반" list="groups"><datalist id="groups"></datalist></div>
+      </div>
+      <div style="margin-top:12px"><button class="primary" id="nSave">칭호 추가</button></div>
+      <div id="nMsg"></div>
+    </div>
+    <div class="card">
+      <table><thead><tr><th>그림</th><th>id</th><th>이름</th><th>가격 (골드)</th><th>판매 중</th><th></th></tr></thead><tbody id="mRows"></tbody></table>
+      <div style="margin-top:14px"><button class="primary" id="mSave" disabled>바뀐 내용 저장</button> <span class="muted" id="mDirty"></span></div>
+      <div id="mMsg"></div>
     </div>
   </section>
 </main>
@@ -121,6 +148,9 @@
     document.querySelectorAll('.tab').forEach((x) => x.classList.toggle('on', x === b));
     $('tab-theme').classList.toggle('hidden', tab !== 'theme');
     $('tab-avatar').classList.toggle('hidden', tab !== 'avatar');
+    $('tab-manage').classList.toggle('hidden', tab !== 'manage');
+    $('sheetCard').classList.toggle('hidden', tab === 'manage');
+    if (tab === 'manage') renderManage();
     showForms();
   }));
   function showForms() {
@@ -163,7 +193,7 @@
     const ow = mode() === 'overwrite', t = ow ? curTheme() : null;
     $('tNewFields').classList.toggle('hidden', ow); $('tOldFields').classList.toggle('hidden', !ow);
     document.querySelectorAll('.old').forEach((e) => e.classList.toggle('hidden', !ow));
-    if (ow && t) { $('tName2').value = t.name; $('tCat2').value = t.cat || '일본'; $('tDesc').value = t.desc || ''; }
+    if (ow && t) { $('tName2').value = t.name; $('tCat2').value = t.cat || '일본'; $('tDesc').value = t.desc || ''; $('tPrice2').value = t.price || ''; $('tPrice2').disabled = t.id === 'default'; }
     const rows = VALUES.map((s, i) => {
       const old = ow && t ? (s === 'big' || Number(s) <= (t.max || 0) ? `<img src="${tImg(t, s)}" alt="">` : '<div class="none">없음</div>') : '';
       const nm = s === 'big' ? (ow && t ? t.bigName : '') : (ow && t ? (t.names || {})[s] : '');
@@ -186,8 +216,8 @@
     const named = slots.map((s) => ({ ...s }));
     const big = named.find((s) => s.slot === 'big');
     const body = { sheetId: sheet.sheetId, mode: mode(), slots: named, desc: $('tDesc').value, bigName: big ? big.name : '' };
-    if (ow) Object.assign(body, { id: $('tPick').value, name: $('tName2').value, cat: $('tCat2').value });
-    else Object.assign(body, { id: $('tId').value.trim(), name: $('tName').value, cat: $('tCat').value });
+    if (ow) Object.assign(body, { id: $('tPick').value, name: $('tName2').value, cat: $('tCat2').value, price: $('tPrice2').value });
+    else Object.assign(body, { id: $('tId').value.trim(), name: $('tName').value, cat: $('tCat').value, price: $('tPrice').value });
     if (ow && !confirm(`'${$('tPick').selectedOptions[0].textContent}' 의 그림을 새 그림으로 바꿔요. 계속할까요?\n(되돌리려면 git 이전 커밋으로 돌아가면 돼요)`)) return;
     $('tSave').disabled = true; msg($('tMsg'), 'warn', '저장하는 중…');
     try {
@@ -222,6 +252,89 @@
       shop = await call('GET', '/api/shop');
     } catch (e) { msg($('aMsg'), 'bad', esc(e.message)); }
     $('aSave').disabled = false;
+  });
+
+  // ----- 물건 관리 -----
+  const MSEC = [
+    { k: 'avatars', n: '프로필 사진', max: 12, req: false, help: '가격을 비우면 무료예요. 무료였던 물건에 가격을 붙이면 지금 쓰는 사람만 계속 쓰고, 다른 사람은 사야 해요.' },
+    { k: 'frames', n: '프레임', max: 12, req: false, help: '모양(CSS)은 app.css 에 있어요. 여기서는 이름·가격·판매 중지만 바꿔요. 새 프레임은 클로드에게 만들어 달라고 하세요.' },
+    { k: 'titles', n: '칭호', max: 14, req: true, help: '골드로 파는 칭호만 가격을 바꿀 수 있어요. 업적·미션 칭호(가격 없음)는 이름만 바꿀 수 있어요.' },
+    { k: 'bgs', n: '카드 배경', max: 12, req: true, help: '가격은 꼭 있어야 해요. 새 배경은 클로드에게 만들어 달라고 하세요.' },
+    { k: 'nameFx', n: '이름 꾸미기', max: 12, req: true, help: '가격은 꼭 있어야 해요. 새 효과는 클로드에게 만들어 달라고 하세요.' },
+    { k: 'themes', n: '타일 테마', max: 12, req: false, help: '가격을 비우면 무료예요. 가격이 있으면 상점에서 골드로 사야 써요. 기본 테마(12귀월, 기본 숫자)는 바꿀 수 없어요.' }
+  ];
+  let msec = 'avatars';
+  const lockOf = (k, it) => {
+    if (k === 'themes' && (it.id === 'default' || it.plain)) return { price: true, off: true, del: true };
+    if (k === 'titles' && !it.price) return { price: true, off: true, del: true };
+    return {};
+  };
+  const mThumb = (k, it) => {
+    if (k === 'avatars') return `<img src="/files/images/avatars/${esc(it.id)}.webp?${it.ver || 0}" alt="">`;
+    if (k === 'themes' && !it.plain) { const d = String(it.dir).replace(/^\.\//, ''); return `<div style="display:flex;gap:2px"><img src="/files/${esc(d)}2.webp?${it.ver || 0}" alt="" style="width:40px;height:40px"><img src="/files/${esc(d)}big.webp?${it.ver || 0}" alt="" style="width:40px;height:40px" onerror="this.style.display='none'"></div>`; }
+    return '<div class="none">-</div>';
+  };
+  function renderManage() {
+    if (!shop) { call('GET', '/api/shop').then((s) => { shop = s; renderManage(); }); return; }
+    const cur = MSEC.find((x) => x.k === msec);
+    $('mSecs').innerHTML = MSEC.map((x) => `<button class="tab ${x.k === msec ? 'on' : ''}" data-sec="${x.k}">${x.n} (${shop[x.k].length})</button>`).join('');
+    $('mSecs').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { msec = b.dataset.sec; msg($('mMsg'), '', ''); renderManage(); }));
+    $('mHelp').textContent = cur.help + ' · "판매 중"을 끄면 상점에서 사라지지만 이미 가진 사람은 계속 써요. 완전히 지우면 가진 사람도 못 써요.';
+    $('mAdd').classList.toggle('hidden', msec !== 'titles');
+    $('groups').innerHTML = [...new Set(shop.titles.filter((t) => t.price).map((t) => t.group || '업적'))].map((g) => `<option value="${esc(g)}">`).join('');
+    $('mRows').innerHTML = shop[msec].map((it) => {
+      const lk = lockOf(msec, it);
+      return `<tr data-id="${esc(it.id)}"><td>${mThumb(msec, it)}</td><td class="muted">${esc(it.id)}${it.cond ? ' <span title="업적 조건">★</span>' : ''}</td>
+        <td><input type="text" class="mn" maxlength="${cur.max}" value="${esc(it.name)}"></td>
+        <td><input type="number" class="mp" min="${cur.req ? 1 : 0}" value="${it.price || ''}" placeholder="${cur.req ? '' : '무료'}" style="width:100px" ${lk.price ? 'disabled' : ''}></td>
+        <td><input type="checkbox" class="mo" ${it.off ? '' : 'checked'} ${lk.off ? 'disabled' : ''}></td>
+        <td><button class="md" ${lk.del ? 'disabled' : ''}>완전 삭제</button></td></tr>`;
+    }).join('');
+    $('mRows').querySelectorAll('input').forEach((i) => i.addEventListener('input', markDirty));
+    $('mRows').querySelectorAll('.mo').forEach((i) => i.addEventListener('change', markDirty));
+    $('mRows').querySelectorAll('.md').forEach((b) => b.addEventListener('click', () => delItem(b.closest('tr').dataset.id)));
+    markDirty();
+  }
+  const rowEdit = (tr) => ({ id: tr.dataset.id, name: tr.querySelector('.mn').value, price: tr.querySelector('.mp').value, off: !tr.querySelector('.mo').checked });
+  const changed = (tr) => {
+    const it = shop[msec].find((x) => x.id === tr.dataset.id), e = rowEdit(tr);
+    return !it || e.name.trim() !== it.name || Number(e.price || 0) !== (it.price || 0) || e.off !== !!it.off;
+  };
+  function markDirty() {
+    let n = 0;
+    $('mRows').querySelectorAll('tr').forEach((tr) => { const c = changed(tr); tr.style.background = c ? '#2a2112' : ''; if (c) n++; });
+    $('mSave').disabled = !n; $('mDirty').textContent = n ? `${n}개 바뀜` : '';
+  }
+  $('mSave').addEventListener('click', async () => {
+    const rows = [...$('mRows').querySelectorAll('tr')].filter(changed);
+    const items = rows.map(rowEdit);
+    const warn = items.filter((e) => { const it = shop[msec].find((x) => x.id === e.id); return it && !it.price && Number(e.price || 0) > 0; });
+    if (warn.length && !confirm(`무료였던 ${warn.map((e) => e.name).join(', ')} 에 가격이 붙어요.\n지금 쓰는 사람은 그대로 쓰고, 다른 사람은 골드로 사야 해요. 계속할까요?`)) return;
+    $('mSave').disabled = true; msg($('mMsg'), 'warn', '저장하는 중…');
+    try {
+      const r = await call('POST', '/api/items/save', { section: msec, items });
+      shop = r.shop; renderManage();
+      msg($('mMsg'), 'ok', '<b>저장했어요!</b><br>' + r.log.map(esc).join('<br>') + gitBox('상점 물건 수정'));
+    } catch (e) { msg($('mMsg'), 'bad', esc(e.message)); markDirty(); }
+  });
+  async function delItem(id) {
+    const it = shop[msec].find((x) => x.id === id);
+    if (!it || !confirm(`'${it.name}' 을(를) 완전히 지울까요?\n이미 산 사람도 못 쓰게 돼요. 보통은 "판매 중"을 끄는 게 안전해요.\n(되돌리려면 git 이전 커밋으로 돌아가면 돼요)`)) return;
+    msg($('mMsg'), 'warn', '지우는 중…');
+    try {
+      const r = await call('POST', '/api/items/delete', { section: msec, id });
+      shop = r.shop; renderManage();
+      msg($('mMsg'), 'ok', '<b>지웠어요.</b><br>' + r.log.map(esc).join('<br>') + gitBox('상점 물건 삭제'));
+    } catch (e) { msg($('mMsg'), 'bad', esc(e.message)); }
+  }
+  $('nSave').addEventListener('click', async () => {
+    $('nSave').disabled = true; msg($('nMsg'), 'warn', '저장하는 중…');
+    try {
+      const r = await call('POST', '/api/title', { name: $('nName').value, price: $('nPrice').value, group: $('nGroup').value });
+      shop = r.shop; $('nName').value = ''; renderManage();
+      msg($('nMsg'), 'ok', '<b>추가했어요!</b><br>' + r.log.map(esc).join('<br>') + gitBox('칭호 추가'));
+    } catch (e) { msg($('nMsg'), 'bad', esc(e.message)); }
+    $('nSave').disabled = false;
   });
   call('GET', '/api/shop').then((s) => { shop = s; }).catch(() => {});
 })();

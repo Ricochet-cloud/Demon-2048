@@ -239,9 +239,9 @@
     box.appendChild(renderStreak());
   }
 
-  async function buy(label, price, itemId, done) {
+  async function buy(label, price, itemId, doneMsg) {
     if (!window.confirm(`${label} — ${price}골드에 살까요?`)) return;
-    try { await G.spend(price, itemId); showMsg(`${label} 구매 완료! 프로필에서 고를 수 있어요.`); }
+    try { await G.spend(price, itemId); showMsg(`${label} 구매 완료! ${doneMsg || '프로필에서 고를 수 있어요.'}`); }
     catch (err) { showMsg(err.user ? err.message : '사지 못했어요. 잠시 뒤에 다시 눌러 주세요.'); }
     if (effective() === 'shop') refreshShop();
   }
@@ -423,7 +423,9 @@
     });
     return prev;
   }
-  function useTheme(id) { T.set(id); dexThemeId = null; refreshShop(); }
+  // 쓸 수 있는 테마: 무료이거나, 샀거나, 지금 쓰고 있는 테마 (가격이 새로 붙어도 쓰던 사람은 계속 써요)
+  const ownsTheme = (t) => !t.price || G.owns('theme:' + t.id) || t.id === T.get().id;
+  function useTheme(id) { const t = T.byId(id); if (!ownsTheme(t)) return; T.set(id); dexThemeId = null; refreshShop(); }
 
   function renderThemes() {
     const box = $('themeList');
@@ -450,9 +452,16 @@
     T.list.filter((t) => t.id !== cur.id && !t.off && (themeFilter === '전체' || themeCat(t.id) === themeFilter)).forEach((t) => {
       const card = document.createElement('div'); card.className = 'card themecell';
       const nm = document.createElement('b'); nm.textContent = t.name;
-      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn themecell__btn'; btn.textContent = '바꾸기';
-      btn.addEventListener('click', () => useTheme(t.id));
-      card.appendChild(themePreview(t, [2, 512])); card.appendChild(nm); card.appendChild(btn);
+      card.appendChild(themePreview(t, [2, 512])); card.appendChild(nm);
+      if (ownsTheme(t)) {
+        const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn themecell__btn'; btn.textContent = '바꾸기';
+        btn.addEventListener('click', () => useTheme(t.id));
+        card.appendChild(btn);
+      } else {
+        const row = document.createElement('div'); row.className = 'themecell__buy';
+        row.appendChild(buyTag(false, t.price, () => buy(`${t.name} 테마`, t.price, 'theme:' + t.id, '아래 목록에서 "바꾸기"를 누르면 써요.')));
+        card.appendChild(row);
+      }
       grid.appendChild(card);
     });
     if (!grid.children.length) { const e = document.createElement('p'); e.className = 'dex__note'; e.textContent = '이 분류에는 바꿀 수 있는 테마가 없어요.'; grid.appendChild(e); }
