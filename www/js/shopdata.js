@@ -48,7 +48,12 @@ window.SHOP = {
     { id: 'moon', name: '달빛', price: 160 },
     { id: 'thunder', name: '번개', price: 180 },
     { id: 'blood', name: '혈귀', price: 220 },
-    { id: 'sun', name: '일륜', price: 350 }
+    { id: 'sun', name: '일륜', price: 350 },
+    { id: 'bamboo', name: '대나무', price: 120 },
+    { id: 'ink', name: '먹', price: 100 },
+    { id: 'neon', name: '네온', price: 170 },
+    { id: 'starlight', name: '별빛', price: 180 },
+    { id: 'aurora', name: '오로라', price: 220 }
   ],
   titles: [
     { id: 'beginner', name: '귀살대 신입', price: 50, group: '일반' },
@@ -85,7 +90,12 @@ window.SHOP = {
     { id: 'infinity', name: '무한성', price: 200 },
     { id: 'moon', name: '상현의 밤', price: 200 },
     { id: 'blood', name: '혈귀', price: 250 },
-    { id: 'sun', name: '일륜도', price: 300 }
+    { id: 'sun', name: '일륜도', price: 300 },
+    { id: 'dusk', name: '노을', price: 120 },
+    { id: 'seigaiha', name: '청해파', price: 130 },
+    { id: 'snow', name: '눈 내리는 밤', price: 100 },
+    { id: 'lantern', name: '등불 거리', price: 150 },
+    { id: 'grove', name: '대숲', price: 100 }
   ],
   nameFx: [
     { id: 'gold', name: '금빛', price: 80 },
