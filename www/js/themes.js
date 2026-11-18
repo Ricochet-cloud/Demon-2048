@@ -49,6 +49,23 @@
     bigName: '화투판'
   });
 
+  LIST.push({
+    id: 'yokai', name: '요괴', desc: '일본 전설 속 요괴들이 숫자가 커질수록 강해져요', dir: './images/themes/yokai/', full: true, values: pow(8192),
+    names: {
+      2: '카라카사 오바케', 4: '츠쿠모가미 등롱', 8: '카파', 16: '타누키', 32: '로쿠로쿠비', 64: '유키온나', 128: '텐구',
+      256: '구미호', 512: '츠치구모', 1024: '오니', 2048: '야마타노오로치', 4096: '가샤도쿠로', 8192: '용신'
+    },
+    bigName: '백귀야행'
+  });
+  LIST.push({
+    id: 'food', name: '일본 음식', desc: '주먹밥에서 가이세키 정식까지, 점점 호화로워져요', dir: './images/themes/food/', full: true, values: pow(8192),
+    names: {
+      2: '오니기리', 4: '타코야키', 8: '미소시루', 16: '타마고야키', 32: '라멘', 64: '카레라이스', 128: '돈카츠',
+      256: '우나기 덮밥', 512: '덴푸라 모둠', 1024: '스시 모둠', 2048: '사시미 모둠', 4096: '스키야키', 8192: '가이세키 정식'
+    },
+    bigName: '일본 음식 한 상'
+  });
+
   LIST.push({ id: 'plain', name: '기본 숫자', desc: '그림 없이 숫자만 보이는 깔끔한 타일이에요', dir: '', full: false, values: [], names: {}, bigName: '', plain: true });
 
   const byId = (id) => LIST.find((t) => t.id === id) || LIST[0];
