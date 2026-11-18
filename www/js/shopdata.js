@@ -34,7 +34,10 @@ window.SHOP = {
     { id: 'tanjiro-nezuko', name: '탄지로·네즈코', price: 150 },
     { id: 'yushiro-tamayo', name: '유시로·타마요', price: 200 },
     { id: 'hakuji-koyuki', name: '하쿠지·코유키', price: 200 },
-    { id: 'tengen-wives', name: '텐겐의 아내들', price: 250 }
+    { id: 'tengen-wives', name: '텐겐의 아내들', price: 250 },
+    { id: 'me', name: '나', price: 10 },
+    { id: 'gf', name: '김혜원', price: 10 },
+    { id: 'sis', name: '예똥', price: 10 }
   ],
   frames: [
     { id: 'silver', name: '은색' },
