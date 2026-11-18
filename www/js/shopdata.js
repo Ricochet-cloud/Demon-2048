@@ -110,7 +110,11 @@ window.SHOP = {
     { id: 'sun', name: '일륜', price: 300 }
   ],
   themes: [
-    { id: 'default', name: '12귀월', desc: '십이귀월과 싸워 올라가요', cat: '기본', dir: './images/', full: false, max: 16384, bigName: '', names: {} },
+    { id: 'default', name: '12귀월', desc: '십이귀월과 싸워 올라가요', cat: '기본', dir: './images/', full: false, max: 16384, bigName: '', ver: 1,
+      names: {
+        2: '엔무', 4: '루이', 8: '나키메', 16: '카이가쿠', 32: '아카자', 64: '한텐구', 128: '교코',
+        256: '다키규타로', 512: '도우마', 1024: '코쿠시보', 2048: '무잔'
+      } },
     { id: 'corps', name: '귀살대', desc: '함께 싸우는 대원들이에요', cat: '귀멸', dir: './images/themes/corps/', full: true, max: 8192, bigName: '귀살대',
       names: {
         2: '아가츠마 젠이츠', 4: '하시비라 이노스케', 8: '카마도 네즈코', 16: '칸로지 미츠리', 32: '코쵸 시노부', 64: '토키토 무이치로', 128: '이구로 오바나이',
