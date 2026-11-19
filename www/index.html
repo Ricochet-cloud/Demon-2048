@@ -165,7 +165,12 @@
             <span class="photohint">내가 고른 사진으로 바로 설정돼요</span>
           </div>
         </div>
-        <div class="pick" id="avatarPick"></div>
+        <div class="pickbar" id="avatarBar" hidden>
+          <div class="chips" id="avatarChips" role="tablist" aria-label="사진 분류"></div>
+          <input class="field pickfind" id="avatarFind" type="search" placeholder="이름으로 찾기" autocomplete="off" maxlength="12">
+        </div>
+        <div class="pick pick--scroll" id="avatarPick"></div>
+        <p class="pickcount" id="avatarCount" aria-live="polite"></p>
         <p class="form-err" id="avatarMsg" role="status"></p>
       </div>
       <div class="card" id="frameCard" hidden>

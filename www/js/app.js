@@ -505,13 +505,42 @@
     return box;
   }
 
+  // 프로필 사진 고르는 창: 분류 칩 + 이름 찾기 + 작은 칸 (사진이 많아도 한눈에)
+  // 분류는 shopdata 의 avatars 항목에 group 을 적으면 그 이름으로, 없으면 "기본" / "상점에서 산 것" 으로 나뉘어요
+  let avGroup = 'all', avQuery = '', avScrolled = false;
+  const avGroupOf = (a) => a.group || (a.price ? '상점에서 산 것' : '기본');
+
   function renderAvatarPicker() {
     const pick = $('avatarPick');
     pick.textContent = '';
     const prev = $('photoPrev'); prev.textContent = '';
     prev.appendChild(avatarEl(C.avatar, C.nickname, C.frame, C.photo));
     $('photoClear').hidden = !C.photo;
-    AVATARS.filter(ownsAvatar).forEach((a) => {
+
+    const owned = AVATARS.filter(ownsAvatar);
+    const groups = [];
+    owned.forEach((a) => { const g = avGroupOf(a); if (groups.indexOf(g) < 0) groups.push(g); });
+    if (avGroup !== 'all' && groups.indexOf(avGroup) < 0) avGroup = 'all';
+
+    const manyGroups = groups.length > 1, manyItems = owned.length >= 10;
+    $('avatarBar').hidden = !(manyGroups || manyItems);
+    const chips = $('avatarChips');
+    chips.textContent = '';
+    chips.hidden = !manyGroups;
+    [['all', '전체', owned.length]].concat(groups.map((g) => [g, g, owned.filter((a) => avGroupOf(a) === g).length])).forEach(([id, name, n]) => {
+      const c = document.createElement('button');
+      c.type = 'button'; c.dataset.avgroup = id; c.className = 'chip' + (id === avGroup ? ' on' : '');
+      c.setAttribute('role', 'tab'); c.setAttribute('aria-selected', id === avGroup ? 'true' : 'false');
+      c.textContent = `${name} ${n}`;
+      chips.appendChild(c);
+    });
+    const find = $('avatarFind');
+    find.hidden = !manyItems;
+    if (document.activeElement !== find) find.value = avQuery;
+
+    const q = avQuery.trim().toLowerCase();
+    const list = owned.filter((a) => (avGroup === 'all' || avGroupOf(a) === avGroup) && (!q || a.name.toLowerCase().indexOf(q) >= 0));
+    list.forEach((a) => {
       const sel = a.id === C.avatar && !C.photo;   // 내 사진이 설정돼 있으면 상점 사진은 선택 표시를 빼요
       const b = document.createElement('button');
       b.type = 'button'; b.dataset.avatar = a.id;
@@ -519,13 +548,28 @@
       b.setAttribute('aria-label', a.name);
       b.setAttribute('aria-pressed', sel ? 'true' : 'false');
       const img = document.createElement('img');
-      img.src = avatarSrc(a.id); img.alt = ''; img.draggable = false;
+      img.src = avatarSrc(a.id); img.alt = ''; img.draggable = false; img.loading = 'lazy';
       const label = document.createElement('span');
       label.textContent = a.name;
       b.appendChild(img); b.appendChild(label);
       pick.appendChild(b);
     });
+    if (!list.length) { const e = document.createElement('p'); e.className = 'pickempty'; e.textContent = '찾는 사진이 없어요.'; pick.appendChild(e); }
+    $('avatarCount').textContent = owned.length > list.length ? `${owned.length}장 중 ${list.length}장 보는 중` : `${owned.length}장`;
+    if (!avScrolled) {   // 처음 열 때만 지금 쓰는 사진이 보이는 곳으로
+      const on = pick.querySelector('button.on');
+      if (on) { avScrolled = true; pick.scrollTop = Math.max(0, on.offsetTop - pick.offsetTop - 8); }
+    }
   }
+
+  document.addEventListener('click', (e) => {
+    const c = e.target.closest && e.target.closest('#avatarChips .chip');
+    if (!c) return;
+    avGroup = c.dataset.avgroup; renderAvatarPicker(); $('avatarPick').scrollTop = 0;
+  });
+  document.addEventListener('input', (e) => {
+    if (e.target && e.target.id === 'avatarFind') { avQuery = e.target.value; renderAvatarPicker(); }
+  });
 
   function renderFramePicker() {
     const pick = $('framePick');
@@ -786,7 +830,7 @@
   // 오늘의 도전
   window.addEventListener('game2048:exit', () => { if (effective() === 'game') back(); });
   // 골드·미션이 바뀌면 지금 보는 화면을 새로 그려요
-  window.addEventListener('gold:change', () => { const n = effective(); if (n === 'home') refreshHome(); if (n === 'shop') refreshShop(); });
+  window.addEventListener('gold:change', () => { const n = effective(); if (n === 'home') refreshHome(); if (n === 'shop') refreshShop(); if (n === 'profile') refreshProfile(); });
   A.onChange(render);
 
   // ---------- 로그인 / 로그아웃 ----------

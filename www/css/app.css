@@ -93,6 +93,16 @@
 .pick button.on { border-color: var(--lantern); box-shadow: 0 0 12px rgba(242, 180, 90, .55); }
 .pick button.on span { color: var(--lantern); }
 .pick button:active { transform: translateY(2px); }
+.pick--scroll { grid-template-columns: repeat(4, 1fr); gap: 8px; max-height: 292px; overflow-y: auto; overscroll-behavior: contain; padding: 2px 4px 2px 2px; -webkit-overflow-scrolling: touch; }
+.pick--scroll button span { font-size: 9px; padding: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pickbar { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.pickbar .chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.pickbar .chips::-webkit-scrollbar { display: none; }
+.pickbar .chips .chip { flex: none; white-space: nowrap; }
+.pickfind { padding: 8px 10px; font-size: 13px; }
+.pickfind[hidden], .pickbar[hidden], .pickbar .chips[hidden] { display: none; }
+.pickcount { margin: 6px 0 0; font-size: 11px; color: var(--muted); text-align: right; }
+.pickempty { grid-column: 1 / -1; margin: 18px 0; font-size: 12px; color: var(--muted); text-align: center; }
 
 /* ---------- 소리 ---------- */
 .sound-btn { display: flex; align-items: center; justify-content: center; flex: none; width: 40px; height: 40px; padding: 0; color: var(--gold); background: none; border: 0; cursor: pointer; }
