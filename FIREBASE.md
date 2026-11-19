@@ -25,7 +25,7 @@
         && (!('plays' in request.resource.data) || (request.resource.data.plays is int && request.resource.data.plays >= 0))
         && (!('gold' in request.resource.data) || (request.resource.data.gold is int && request.resource.data.gold >= 0 && request.resource.data.gold <= 1000000))
         && (!('daily' in request.resource.data) || (request.resource.data.daily is map && request.resource.data.daily.keys().hasOnly(['day', 'done', 'claimed'])))
-        && (!('owned' in request.resource.data) || (request.resource.data.owned is list && request.resource.data.owned.size() <= 100))
+        && (!('owned' in request.resource.data) || (request.resource.data.owned is list && request.resource.data.owned.size() <= 400))
         && (!('frame' in request.resource.data) || (request.resource.data.frame is string && request.resource.data.frame.size() <= 20))
         && (!('title' in request.resource.data) || (request.resource.data.title is string && request.resource.data.title.size() <= 20))
         && (!('bio' in request.resource.data) || (request.resource.data.bio is string && request.resource.data.bio.size() <= 40))
