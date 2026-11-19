@@ -37,7 +37,23 @@ window.SHOP = {
     { id: 'tengen-wives', name: '텐겐의 아내들', price: 250 },
     { id: 'me', name: '나', price: 10 },
     { id: 'gf', name: '김혜원', price: 10 },
-    { id: 'sis', name: '예똥', price: 10 }
+    { id: 'sis', name: '예똥', price: 10 },
+    { id: 'luffy', name: '루피', price: 100 },
+    { id: 'naruto', name: '나루토', price: 100 },
+    { id: 'ukong', name: '손오공', price: 100 },
+    { id: 'ichigo', name: '이치고', price: 100 },
+    { id: 'tanji', name: '탄지로', price: 100 },
+    { id: 'midoriya', name: '미도리야', price: 100 },
+    { id: 'eren', name: '에렌 예거', price: 100 },
+    { id: 'gon', name: '곤', price: 100 },
+    { id: 'saitama', name: '사이타마', price: 100 },
+    { id: 'edword', name: '에드워드', price: 100 },
+    { id: 'natch', name: '나츠', price: 100 },
+    { id: 'itadori', name: '이타도리', price: 100 },
+    { id: 'denji', name: '덴지', price: 100 },
+    { id: 'asta', name: '아스타', price: 100 },
+    { id: 'roroshu', name: '를르슈', price: 100 },
+    { id: 'sailor', name: '세일러문', price: 100 }
   ],
   frames: [
     { id: 'silver', name: '은색' },
@@ -202,6 +218,11 @@ window.SHOP = {
       names: {
         2: '하쿠', 4: '자부자', 8: '오로치마루', 16: '가아라', 32: '주인 사스케', 64: '이타치', 128: '페인',
         256: '카부토', 512: '단조', 1024: '토비', 2048: '오비토', 4096: '마다라', 8192: '카구야'
+      } },
+    { id: 'hunters', name: '헌터', desc: '헌터헌터의 멋진 헌터들이에요.', cat: '일본', dir: './images/themes/hunters/', full: true, max: 8192, bigName: 'x', ver: 1,
+      names: {
+        2: '곤', 4: '키르아', 8: '크라피카', 16: '레오리오', 32: '네테로', 64: '비스케', 128: '히소카',
+        256: '카이토', 512: '클로로', 1024: '파이탄', 2048: '메르엠', 4096: '네페르피트', 8192: '우보긴'
       } },
     { id: 'plain', name: '기본 숫자', desc: '그림 없이 숫자만 보이는 깔끔한 타일이에요', cat: '기본', dir: '', full: false, plain: true, bigName: '', names: {} }
   ]
