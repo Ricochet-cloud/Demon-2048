@@ -77,12 +77,27 @@ window.SHOP = {
     { id: 'candy', name: '캔디', price: 150 },
     { id: 'steel', name: '강철', price: 140 },
     { id: 'heart', name: '하트', price: 160 },
-    { id: 'sunset', name: '석양', price: 180 }
+    { id: 'sunset', name: '석양', price: 180 },
+    { id: 'gilded', name: '금박', price: 190 },
+    { id: 'glass', name: '유리', price: 150 },
+    { id: 'pixel', name: '도트', price: 110 },
+    { id: 'leaf', name: '새싹', price: 130 },
+    { id: 'choco', name: '초코', price: 110 },
+    { id: 'ember', name: '불씨', price: 210 },
+    { id: 'prism', name: '프리즘', price: 240 }
   ],
   titles: [
     { id: 'beginner', name: '귀살대 신입', price: 50, group: '일반' },
     { id: 'hashira', name: '주 보좌', price: 100, group: '일반' },
     { id: 'flame', name: '불꽃의 후예', price: 150, group: '일반' },
+    { id: 'n2048', name: '2048 도전자', price: 60, group: '일반' },
+    { id: 'commute', name: '오늘도 출근', price: 90, group: '일반' },
+    { id: 'nightwatch', name: '야간 순찰대', price: 130, group: '일반' },
+    { id: 'tilemaker', name: '타일 장인', price: 120, group: '일반' },
+    { id: 'fan', name: '귀멸 덕후', price: 150, group: '일반' },
+    { id: 'hunter', name: '숫자 사냥꾼', price: 180, group: '일반' },
+    { id: 'merger', name: '합치기 달인', price: 200, group: '일반' },
+    { id: 'focus', name: '전집중의 호흡', price: 250, group: '일반' },
     { id: 'p-mushi', name: '蟲柱 충주', price: 200, group: '주(柱)' },
     { id: 'p-kasumi', name: '霞柱 하주', price: 250, group: '주(柱)' },
     { id: 'p-sound', name: '音柱 음주', price: 250, group: '주(柱)' },
@@ -124,7 +139,13 @@ window.SHOP = {
     { id: 'galaxy', name: '은하', price: 160 },
     { id: 'neon', name: '네온 시티', price: 150 },
     { id: 'autumn', name: '단풍', price: 120 },
-    { id: 'berry', name: '딸기밭', price: 110 }
+    { id: 'berry', name: '딸기밭', price: 110 },
+    { id: 'cloud', name: '구름', price: 100 },
+    { id: 'sunrise', name: '일출', price: 130 },
+    { id: 'firefly', name: '반딧불 숲', price: 150 },
+    { id: 'rain', name: '비 오는 날', price: 120 },
+    { id: 'hanji', name: '한지', price: 90 },
+    { id: 'meteor', name: '별똥별', price: 170 }
   ],
   nameFx: [
     { id: 'gold', name: '금빛', price: 80 },
@@ -141,7 +162,13 @@ window.SHOP = {
     { id: 'orange', name: '귤빛', price: 80 },
     { id: 'silver', name: '은빛', price: 150 },
     { id: 'dusk', name: '노을빛', price: 220 },
-    { id: 'neon', name: '네온', price: 200 }
+    { id: 'neon', name: '네온', price: 200 },
+    { id: 'pink', name: '분홍빛', price: 80 },
+    { id: 'sky', name: '하늘빛', price: 80 },
+    { id: 'lime', name: '라임빛', price: 80 },
+    { id: 'ember', name: '불씨빛', price: 180 },
+    { id: 'ocean', name: '바다빛', price: 180 },
+    { id: 'candy', name: '솜사탕', price: 230 }
   ],
   themes: [
     { id: 'default', name: '12귀월', desc: '십이귀월과 싸워 올라가요', cat: '기본', dir: './images/', full: false, max: 16384, bigName: '', ver: 1,
