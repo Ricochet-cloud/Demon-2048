@@ -33,6 +33,22 @@
   const ownsFx = (b) => G.owns('name:' + b.id) || b.id === C.nameFx;
   const frameOf = (id) => FRAMES.find((f) => f.id === id);
   const titleOf = (id) => TITLES.find((t) => t.id === id);
+  // 랭크 — 최고 점수 기준 (기준 점수는 여기만 고치면 돼요). 한 번 오르면 최고 점수가 기준이라 내려가지 않아요
+  const RANKS = [
+    { id: 'bronze', name: '브론즈', min: 2000 },
+    { id: 'silver', name: '실버', min: 5000 },
+    { id: 'gold', name: '골드', min: 12000 },
+    { id: 'platinum', name: '플래티넘', min: 25000 },
+    { id: 'diamond', name: '다이아', min: 50000 }
+  ];
+  const rankOf = (score) => { let r = null; RANKS.forEach((x) => { if ((score || 0) >= x.min) r = x; }); return r; };
+  function rankBadge(score) {
+    const r = rankOf(score), el = document.createElement('span');
+    el.className = 'rk ' + (r ? 'rk-' + r.id : 'rk-none');
+    el.textContent = r ? r.name : '언랭크';
+    el.title = r ? `최고 점수 ${r.min.toLocaleString('ko-KR')}점 이상` : `최고 점수 ${RANKS[0].min.toLocaleString('ko-KR')}점부터 랭크가 생겨요`;
+    return el;
+  }
   const ownsFrame = (f) => !f.price || G.owns('frame:' + f.id) || f.id === C.frame;
   const ownsTitle = (t) => (t.when ? t.when() : false) || G.owns('title:' + t.id) || t.id === C.title;
   const STORE_KEY = 'game2048.v1';   // game.js 와 같은 키
@@ -622,6 +638,23 @@
     $('meCard').className = 'card' + (bgOf(C.bg) ? ' bg-' + C.bg : '');
     const t = titleOf(C.title); $('meTitle').textContent = t ? t.name : ''; $('meTitle').hidden = !t;
     $('meBio').textContent = C.bio; $('meBio').hidden = !C.bio;
+    renderMeRank();
+  }
+
+  // 프로필의 랭크 줄: 뱃지 + 다음 랭크까지 남은 점수
+  function renderMeRank() {
+    const box = $('meRank'); if (!box) return;
+    const sc = readSaved().best || 0, r = rankOf(sc), next = RANKS.find((x) => x.min > sc);
+    box.textContent = '';
+    box.appendChild(rankBadge(sc));
+    const info = document.createElement('span'); info.className = 'rkinfo';
+    info.textContent = next ? `${next.name}까지 ${(next.min - sc).toLocaleString('ko-KR')}점` : '최고 랭크예요!';
+    box.appendChild(info);
+    const bar = document.createElement('div'); bar.className = 'rkprog';
+    const fill = document.createElement('i');
+    const lo = r ? r.min : 0;
+    fill.style.width = (next ? Math.max(4, Math.min(100, Math.round((sc - lo) / (next.min - lo) * 100))) : 100) + '%';
+    bar.appendChild(fill); box.appendChild(bar);
   }
 
   // ---------- 우리 기록 (닉네임·점수 목록) ----------
@@ -678,6 +711,7 @@
       const nmt = document.createElement('span');
       nmt.className = fxOf(u.nameFx) ? 'nm-' + u.nameFx : '';
       nmt.textContent = u.nickname || '이름 없음'; nm.appendChild(nmt);
+      if (rankOf(u.best)) nm.appendChild(rankBadge(u.best));
       if (u.uid === C.uid) { const t = document.createElement('small'); t.textContent = '나'; nm.appendChild(t); }
       if ((week || chal) && i === 0 && val(u) > 0) { const t = document.createElement('small'); t.className = 'rank__first'; t.textContent = '1등'; nm.appendChild(t); }
       const sub = document.createElement('span');

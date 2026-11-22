@@ -387,3 +387,21 @@
 .nm-ocean { background-image: linear-gradient(90deg, #4fd1ff, #3a7bff, #7ef0e0, #3a7bff, #4fd1ff); animation: nmrainbow 4s linear infinite; }
 .nm-candy { background-image: linear-gradient(90deg, #ff9ecb, #ffd6a5, #fdffb6, #b9fbc0, #a0c4ff, #d7b8ff, #ff9ecb); animation: nmrainbow 5s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .nm-ember, .nm-ocean, .nm-candy { animation: none; } }
+
+/* 랭크 뱃지 (최고 점수 기준: 브론즈·실버·골드·플래티넘·다이아) */
+.rk { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; padding: 0 7px 0 5px; border: 1px solid; border-radius: 10px; font-size: 10px; line-height: 16px; vertical-align: middle; white-space: nowrap; }
+.rk::before { content: ''; width: 7px; height: 7px; background: currentColor; transform: rotate(45deg); border-radius: 1px; }
+.rk-none { color: #8d8478; border-color: #4a443b; background: rgba(255, 255, 255, .04); }
+.rk-bronze { color: #e6a56e; border-color: #8a5526; background: rgba(205, 127, 50, .2); }
+.rk-silver { color: #e3e9f2; border-color: #5b6578; background: rgba(190, 200, 215, .16); }
+.rk-gold { color: #ffd75e; border-color: #94700f; background: rgba(240, 194, 74, .2); box-shadow: 0 0 6px rgba(255, 210, 90, .3); }
+.rk-platinum { color: #86f3e4; border-color: #2c8f86; background: rgba(90, 225, 210, .16); box-shadow: 0 0 7px rgba(110, 235, 220, .4); }
+.rk-diamond { color: #9cd2ff; border-color: #3f7fc4; background: rgba(110, 175, 255, .2); box-shadow: 0 0 9px rgba(120, 190, 255, .6); animation: rkshine 2s ease-in-out infinite alternate; }
+@keyframes rkshine { from { box-shadow: 0 0 5px rgba(120, 190, 255, .4); } to { box-shadow: 0 0 13px rgba(190, 225, 255, .95); } }
+@media (prefers-reduced-motion: reduce) { .rk-diamond { animation: none; } }
+.me__rank { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; margin-top: 6px; }
+.me__rank .rk { margin-left: 0; font-size: 12px; line-height: 20px; padding: 0 10px 0 8px; }
+.me__rank .rk::before { width: 8px; height: 8px; }
+.rkinfo { font-size: 11px; color: var(--muted); }
+.rkprog { flex-basis: 100%; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, .1); overflow: hidden; }
+.rkprog i { display: block; height: 100%; background: var(--lantern); border-radius: 3px; }
