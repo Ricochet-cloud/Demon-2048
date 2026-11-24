@@ -62,7 +62,7 @@
         <button class="btn btn--sub cheerbox__ok" id="cheerOk" type="button">확인</button>
       </div>
       <button class="card homerank" id="homeRank" data-go="profile" aria-label="TOP3 자세히 보기" hidden>
-        <h2>TOP3</h2>
+        <h2>TOP3 <small class="seasontag" id="homeSeason"></small></h2>
         <div class="rank" id="homeRankList"></div>
       </button>
       <nav class="menu">
@@ -212,14 +212,16 @@
       </div>
       <div class="card">
         <h2>내 기록</h2>
+        <p class="seasonline" id="seasonLine"></p>
         <div class="rows">
-          <div class="row">최고 점수<b id="pfBest">-</b></div>
+          <div class="row">이번 시즌 최고 점수<b id="pfBest">-</b></div>
+          <div class="row" id="pfPastRow" hidden>지난 시즌 최고 점수<b id="pfPast">-</b></div>
           <div class="row">최고 타일<b id="pfTile">-</b></div>
           <div class="row">플레이 횟수<b id="pfPlays">-</b></div>
         </div>
       </div>
       <div class="card" id="boardCard" hidden>
-        <h2>우리 기록</h2>
+        <h2>우리 기록 <small class="seasontag" id="boardSeason"></small></h2>
         <div class="chips" id="rankTabs"></div>
         <div class="rank" id="rankList"></div>
         <p class="dex__note" id="weekNote" hidden></p>
@@ -311,6 +313,7 @@
   <script src="./js/auth.js"></script>
   <script src="./js/shopdata.js"></script>
   <script src="./js/themes.js"></script>
+  <script src="./js/season.js"></script>
   <script src="./js/game.js"></script>
   <script src="./js/cloud.js"></script>
   <script src="./js/gold.js"></script>

@@ -33,6 +33,7 @@
   const ownsFx = (b) => G.owns('name:' + b.id) || b.id === C.nameFx;
   const frameOf = (id) => FRAMES.find((f) => f.id === id);
   const titleOf = (id) => TITLES.find((t) => t.id === id);
+  const SE = window.AppSeason;   // 시즌 (season.js)
   // 랭크 — 최고 점수 기준 (기준 점수는 여기만 고치면 돼요). 한 번 오르면 최고 점수가 기준이라 내려가지 않아요
   const RANKS = [
     { id: 'bronze', name: '브론즈', min: 2000 },
@@ -121,7 +122,8 @@
     try {
       const list = await C.loadAll();
       if (seq !== homeRankSeq || effective() !== 'home') return;
-      renderRank(list.sort((a, b) => (b.best || 0) - (a.best || 0)).slice(0, 3), $('homeRankList'), true);
+      renderRank(list.sort((a, b) => SE.bestOf(b) - SE.bestOf(a)).slice(0, 3), $('homeRankList'), true);
+      $('homeSeason').textContent = `${SE.monthNo(SE.key())}월 시즌 · ${SE.leftText()}`;
       renderHomeCheers(list);
       card.hidden = list.length === 0;
     } catch (e) { card.hidden = true; }
@@ -697,7 +699,7 @@
     box = box || $('rankList');
     box.textContent = '';
     const week = mode === 'week', wk = week ? W.key() : '', chal = mode === 'ch', cd = chal ? window.AppChallenge.day() : '';
-    const val = (u) => (week ? W.scoreOf(u, wk) : chal ? window.AppChallenge.scoreOf(u, cd) : (u.best || 0));
+    const val = (u) => (week ? W.scoreOf(u, wk) : chal ? window.AppChallenge.scoreOf(u, cd) : SE.bestOf(u));
     list.sort((a, b) => val(b) - val(a)).forEach((u, i) => {
       const item = document.createElement('div');
       item.className = 'rank__item' + (u.uid === C.uid ? ' rank__item--me' : '') + (bgOf(u.bg) ? ' bg-' + u.bg : '');
@@ -711,7 +713,7 @@
       const nmt = document.createElement('span');
       nmt.className = fxOf(u.nameFx) ? 'nm-' + u.nameFx : '';
       nmt.textContent = u.nickname || '이름 없음'; nm.appendChild(nmt);
-      if (rankOf(u.best)) nm.appendChild(rankBadge(u.best));
+      if (rankOf(SE.bestOf(u))) nm.appendChild(rankBadge(SE.bestOf(u)));
       if (u.uid === C.uid) { const t = document.createElement('small'); t.textContent = '나'; nm.appendChild(t); }
       if ((week || chal) && i === 0 && val(u) > 0) { const t = document.createElement('small'); t.className = 'rank__first'; t.textContent = '1등'; nm.appendChild(t); }
       const sub = document.createElement('span');
@@ -726,7 +728,7 @@
       const right = document.createElement('div');
       right.className = 'rank__score';
       const b = document.createElement('b'); b.textContent = val(u);
-      if (!week && !chal && u.bestJk) { const jm = document.createElement('small'); jm.className = 'jkmark'; jm.textContent = '(조커사용)'; b.appendChild(jm); }
+      if (!week && !chal && u.bestJk && SE.bestOf(u)) { const jm = document.createElement('small'); jm.className = 'jkmark'; jm.textContent = '(조커사용)'; b.appendChild(jm); }
       right.appendChild(b); right.appendChild(document.createTextNode(week ? '이번 주' : chal ? (val(u) > 0 ? '오늘' : '아직 안 했어요') : `최고 타일 ${u.bestTile || '-'}`));
       item.appendChild(left); item.appendChild(right);
       box.appendChild(item);
@@ -770,6 +772,10 @@
 
   function refreshProfile() {
     const s = readSaved();
+    $('seasonLine').textContent = `${SE.monthNo(SE.key())}월 시즌 · ${SE.leftText()} · 매달 1일 오전 6시에 점수와 랭크가 새로 시작해요`;
+    $('boardSeason').textContent = `${SE.monthNo(SE.key())}월 시즌 · ${SE.leftText()}`;
+    $('pfPastRow').hidden = !(s.pseason && s.pbest);
+    if (s.pseason && s.pbest) $('pfPast').textContent = `${s.pbest.toLocaleString('ko-KR')} (${SE.monthNo(s.pseason)}월${rankOf(s.pbest) ? ' · ' + rankOf(s.pbest).name : ''})`;
     $('pfBest').textContent = s.best || '-';
     if (s.best && s.bestJk) { const jm = document.createElement('small'); jm.className = 'jkmark'; jm.textContent = '(조커사용)'; $('pfBest').appendChild(jm); }
     $('pfTile').textContent = s.bestTile || '-';

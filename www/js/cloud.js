@@ -28,7 +28,7 @@
   async function push(extra) {
     const r = G.records();
     await mine().set(Object.assign(
-      { best: r.best, bestTile: r.bestTile, plays: r.plays, bestJk: !!r.bestJk, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
+      { best: r.best, bestTile: r.bestTile, plays: r.plays, bestJk: !!r.bestJk, season: { k: r.season || '', pk: r.pseason || '', ps: r.pbest || 0 }, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
       extra || {}
     ), { merge: true });
     if (extra) Object.assign(me, extra);
@@ -38,7 +38,9 @@
   async function reconcile() {
     const snap = await mine().get();
     me = snap.exists ? snap.data() : {};
-    G.apply({ best: me.best, bestTile: me.bestTile, plays: me.plays, bestJk: me.bestJk });
+    const S = window.AppSeason, past = S.pastOf(me);
+    // 클라우드 점수는 이번 시즌 것만 합쳐요 (지난 시즌 점수가 새 시즌으로 되돌아오지 않게)
+    G.apply({ best: S.bestOf(me), bestTile: me.bestTile, plays: me.plays, bestJk: S.bestOf(me) ? me.bestJk : false, pseason: past ? past.k : '', pbest: past ? past.s : 0 });
     await push();
     loaded = true;
     readyListeners.forEach((f) => { try { f(); } catch (e) { console.error(e); } });

@@ -20,9 +20,21 @@
   // 기록이 바뀌면 알려줘요 (클라우드 저장 쪽에서 이 이벤트를 들어요)
   const emit = (name, detail) => { try { window.dispatchEvent(new CustomEvent(name, { detail })); } catch (e) { /* 무시 */ } };
   try { saved = Object.assign(saved, JSON.parse(localStorage.getItem(STORE_KEY) || '{}')); } catch (e) { /* 저장소를 못 써도 게임은 돼요 */ }
+  // 시즌: 최고 점수는 한 달마다 새로 시작해요 (season.js). 지난 시즌 기록은 pseason/pbest 에 남아요
+  function rollover() {
+    const cur = window.AppSeason ? window.AppSeason.key() : '';
+    if (!cur) return false;
+    if (!saved.season) { saved.season = cur; return true; }   // 시즌이 생기기 전 기록은 이번 시즌으로 이어가요
+    if (saved.season === cur) return false;
+    if ((saved.best || 0) > 0 && (!saved.pseason || saved.season > saved.pseason || (saved.season === saved.pseason && saved.best > (saved.pbest || 0)))) { saved.pseason = saved.season; saved.pbest = saved.best; }
+    saved.season = cur; saved.best = 0; saved.bestJk = false;
+    return true;
+  }
   function save() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(saved)); } catch (e) { /* 무시 */ }
   }
+
+  if (rollover()) save();   // 앱을 연 사이에 달이 바뀌었으면 새 시즌으로
 
   // ============ 게임 ============
   const DIRS = { left: [0, -1], up: [-1, 0], right: [0, 1], down: [1, 0] };
@@ -185,7 +197,8 @@
 
   // ============ 기록 · 저장 ============
   function recordBest() {
-    let changed = false;
+    let changed = rollover();   // 켜 둔 채로 달이 바뀐 경우
+    if (changed) updateHud();
     if (score > saved.best) { saved.best = score; saved.bestJk = mode === 'normal' && jk > 0; changed = true; }   // 조커를 쓴 판의 기록은 (조커사용) 표시가 붙어요
     if (maxTile > saved.bestTile) { saved.bestTile = maxTile; changed = true; }
     if (changed) { save(); emit('game2048:record'); }
@@ -382,8 +395,12 @@
 
   // 다른 파일(cloud.js)이 기록을 읽고 합칠 수 있게 열어 둬요 — 기록은 올라가기만 해요
   window.Game2048 = {
-    records() { return { best: saved.best || 0, bestTile: saved.bestTile || 0, plays: saved.plays || 0, bestJk: !!saved.bestJk }; },
+    records() {
+      if (rollover()) { save(); updateHud(); }
+      return { best: saved.best || 0, bestTile: saved.bestTile || 0, plays: saved.plays || 0, bestJk: !!saved.bestJk, season: saved.season || '', pseason: saved.pseason || '', pbest: saved.pbest || 0 };
+    },
     apply(r) {
+      if (r.pseason && (!saved.pseason || r.pseason > saved.pseason || (r.pseason === saved.pseason && (r.pbest || 0) > (saved.pbest || 0)))) { saved.pseason = r.pseason; saved.pbest = r.pbest || 0; }   // 지난 시즌 기록은 더 최근/높은 쪽
       if ((r.best || 0) > (saved.best || 0)) saved.bestJk = !!r.bestJk;   // 더 높은 쪽 기록의 표시를 따라가요
       saved.best = Math.max(saved.best || 0, r.best || 0);
       saved.bestTile = Math.max(saved.bestTile || 0, r.bestTile || 0);
