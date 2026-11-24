@@ -223,8 +223,82 @@ const api = {
     shop.titles.splice(at + 1, 0, { id, name, price, group });
     lib.save(DATA, shop);
     return { ok: true, log: [`칭호 '${name}' 추가 (${price}골드, 묶음 '${group}')`, 'shopdata.js 저장'], shop };
+  },
+
+  // ---- 배팅 이벤트 ----
+  async 'GET /api/events'() { return { events: readEvents() }; },
+
+  // 이벤트 저장 (id 가 새것이면 추가, 있으면 수정). 그림은 새로 올린 것만 바꿔요
+  //   b = { id, title, start, end, reward, sides:[{name,color,img?},{...}], image? }  (img/image 는 data URL, 빈 값이면 그대로 두고, 'remove' 면 지워요)
+  async 'POST /api/events/save'(req) {
+    const b = await readJson(req);
+    const id = String(b.id || '');
+    if (!idOk(id)) throw fail('id 는 영문 소문자/숫자/_- 로 2~20자예요. 예) bm1');
+    const title = clean(b.title, 30);
+    if (!title) throw fail('이벤트 이름을 적어 주세요.');
+    if (!DAY_RE.test(b.start || '') || !DAY_RE.test(b.end || '')) throw fail('시작일과 종료일을 골라 주세요.');
+    if (dayNum(b.end) < dayNum(b.start)) throw fail('종료일이 시작일보다 빠를 수 없어요.');
+    if (dayNum(b.end) - dayNum(b.start) > 60) throw fail('기간은 60일까지예요.');
+    const reward = Number(b.reward);
+    if (!Number.isInteger(reward) || reward < 0 || reward > 100000) throw fail('보상은 0 이상의 정수(골드)예요.');
+    if (!Array.isArray(b.sides) || b.sides.length !== 2) throw fail('두 편이 필요해요.');
+    const list = readEvents();
+    const at = list.findIndex((e) => e.id === id), old = at >= 0 ? list[at] : null;
+    // 기간이 겹치면 안 돼요 (새 이벤트에 참가하면 앞 이벤트 기록이 덮여요)
+    const other = list.find((e) => e.id !== id && dayNum(b.start) <= dayNum(e.end) && dayNum(e.start) <= dayNum(b.end));
+    if (other) throw fail(`'${other.title}' (${other.start} ~ ${other.end}) 와 기간이 겹쳐요. 겹치지 않게 해 주세요.`);
+    const sides = ['a', 'b'].map((sid, i) => {
+      const s = b.sides[i] || {}, name = clean(s.name, 12);
+      if (!name) throw fail(`${i ? '두' : '첫'} 번째 편의 이름을 적어 주세요.`);
+      if (!/^#[0-9a-fA-F]{6}$/.test(s.color || '')) throw fail(`${name} 편의 색을 골라 주세요.`);
+      return { id: sid, name, color: String(s.color).toLowerCase() };
+    });
+    const ev = { id, title, start: b.start, end: b.end, reward, sides };
+    const log = [];
+    // 그림 (새로 올리면 새 파일 이름으로 저장해서 앱에 옛 그림이 남지 않아요)
+    const put = async (field, cur, name, w, h) => {
+      let out = evImgOk(cur) ? cur : '';
+      if (field === 'remove') { rmEvImg(out); return ''; }
+      if (field) { const file = `${name}-${stamp()}.webp`; await lib.writeImage(dataBuf(field), path.join(EV_DIR, file), w, h); rmEvImg(out); log.push(`그림 저장 (events/${file})`); out = file; }
+      return out;
+    };
+    const img = await put(b.image, old && old.image, id, 1000);
+    if (img) ev.image = img;
+    for (let i = 0; i < 2; i++) {
+      const o = old && old.sides && old.sides[i], v = await put(b.sides[i].img, o && o.image, `${id}-${i ? 'b' : 'a'}`, 256, 256);
+      if (v) sides[i].image = v;
+    }
+    if (at >= 0) list[at] = ev; else list.push(ev);
+    list.sort((x, y) => x.start.localeCompare(y.start));
+    writeEvents(list);
+    log.unshift(`이벤트 '${title}' ${old ? '수정' : '추가'} (${ev.start} ~ ${ev.end}, 보상 ${reward}골드)`);
+    log.push('events.json 저장');
+    return { ok: true, log, events: list };
+  },
+
+  // 이벤트 지우기 (그림 파일도 지워요. 이미 참가한 사람의 기록은 그대로 남아요)
+  async 'POST /api/events/delete'(req) {
+    const b = await readJson(req);
+    const list = readEvents(), at = list.findIndex((e) => e.id === b.id);
+    if (at < 0) throw fail('이벤트를 찾지 못했어요.');
+    const [ev] = list.splice(at, 1);
+    rmEvImg(ev.image); (ev.sides || []).forEach((s) => rmEvImg(s.image));
+    writeEvents(list);
+    return { ok: true, log: [`이벤트 '${ev.title}' 삭제`, 'events.json 저장'], events: list };
   }
 };
+
+// ---- 배팅 이벤트 (www/events/events.json + 그림) ----
+const EV_DIR = path.join(WWW, 'events');
+const EV_FILE = path.join(EV_DIR, 'events.json');
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+const readEvents = () => { try { const j = JSON.parse(fs.readFileSync(EV_FILE, 'utf8')); return Array.isArray(j.events) ? j.events : []; } catch (e) { return []; } };
+function writeEvents(list) { fs.mkdirSync(EV_DIR, { recursive: true }); fs.writeFileSync(EV_FILE, JSON.stringify({ events: list }, null, 2) + '\n'); }
+const dayNum = (k) => { const [y, m, d] = k.split('-').map(Number); return Date.UTC(y, m - 1, d) / 86400000; };
+const evImgOk = (n) => typeof n === 'string' && /^[\w-]{1,60}\.webp$/.test(n);
+const dataBuf = (v) => { const b = Buffer.from(String(v || '').replace(/^data:[^,]*,/, ''), 'base64'); if (b.length < 200) throw fail('이미지를 읽지 못했어요.'); return b; };
+const stamp = () => Date.now().toString(36);
+function rmEvImg(name) { if (evImgOk(name)) { const f = path.join(EV_DIR, name); if (fs.existsSync(f)) fs.unlinkSync(f); } }
 
 // 종류별 규칙
 const SECTION = {

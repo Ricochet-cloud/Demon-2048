@@ -50,6 +50,7 @@
     <button class="tab on" data-tab="theme">타일 테마 시트</button>
     <button class="tab" data-tab="avatar">프로필 사진 시트</button>
     <button class="tab" data-tab="manage">물건 관리</button>
+    <button class="tab" data-tab="events">이벤트</button>
   </div>
 
   <!-- 시트 올리기 (두 탭 공용) -->
@@ -103,6 +104,52 @@
     </div>
   </section>
 
+  <!-- 배팅 이벤트 -->
+  <section id="tab-events" class="hidden">
+    <div class="card">
+      <h2>이벤트 목록</h2>
+      <p class="muted" style="margin:0 0 8px">두 편으로 나뉘어 이벤트 기간 동안 모은 점수의 합으로 겨뤄요. 이긴 편을 고른 사람이 골드를 받아요. 기간이 겹치는 이벤트는 만들 수 없어요.</p>
+      <table><thead><tr><th>이벤트</th><th>기간</th><th>보상</th><th>상태</th><th></th></tr></thead><tbody id="evRows"></tbody></table>
+      <div style="margin-top:12px"><button id="evNew">+ 새 이벤트 만들기</button></div>
+    </div>
+    <div class="card hidden" id="evForm">
+      <h2 id="evFormTitle">새 이벤트</h2>
+      <div class="row">
+        <div><label>id (영문 소문자/숫자, 나중에 못 바꿔요)</label><input type="text" id="eId" maxlength="20" placeholder="bm1"></div>
+        <div><label>이벤트 이름</label><input type="text" id="eTitle" maxlength="30" placeholder="배트맨 vs 슈퍼맨"></div>
+        <div><label>시작일 (이 날 오전 6시에 시작)</label><input type="date" id="eStart" style="width:100%;background:#120d0a;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:7px 9px;font:inherit"></div>
+        <div><label>종료일 (이 날까지, 다음 날 오전 6시에 끝나요)</label><input type="date" id="eEnd" style="width:100%;background:#120d0a;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:7px 9px;font:inherit"></div>
+        <div><label>이긴 편 보상 (골드)</label><input type="number" id="eReward" min="0" max="100000" value="300"></div>
+      </div>
+      <p class="muted" id="ePeriod" style="margin:8px 0 0"></p>
+
+      <h2 style="margin-top:16px">대결 그림</h2>
+      <p class="muted" style="margin:0 0 6px">이벤트 화면 맨 위에 크게 보여요. 두 편이 맞붙는 모습을 가로로 긴 그림(예: 1000x560)으로 올려 주세요. 안 올려도 돼요.</p>
+      <div class="inline"><input type="file" id="eImgFile" accept="image/*"><button id="eImgClear" class="hidden">그림 지우기</button></div>
+      <img id="eImgPrev" class="hidden" alt="" style="margin-top:8px;max-width:420px;width:100%;border:1px solid var(--line);border-radius:6px">
+
+      <div class="row" style="margin-top:16px">
+        <div class="card" style="margin:0">
+          <h2>첫 번째 편</h2>
+          <label>이름 (12글자까지)</label><input type="text" id="eNameA" maxlength="12" placeholder="배트맨">
+          <label>색 (밝은 색이 잘 보여요)</label><input type="color" id="eColorA" value="#4f86f7" style="width:80px;height:34px;padding:0;background:none;border:1px solid var(--line)">
+          <label>작은 그림 (선택, 정사각형으로 잘려요)</label><input type="file" id="eImgA" accept="image/*">
+          <div class="inline" style="margin-top:6px"><img id="eImgAPrev" class="hidden" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:6px"><button id="eImgAClear" class="hidden">지우기</button></div>
+        </div>
+        <div class="card" style="margin:0">
+          <h2>두 번째 편</h2>
+          <label>이름 (12글자까지)</label><input type="text" id="eNameB" maxlength="12" placeholder="슈퍼맨">
+          <label>색 (밝은 색이 잘 보여요)</label><input type="color" id="eColorB" value="#ff6b5b" style="width:80px;height:34px;padding:0;background:none;border:1px solid var(--line)">
+          <label>작은 그림 (선택, 정사각형으로 잘려요)</label><input type="file" id="eImgB" accept="image/*">
+          <div class="inline" style="margin-top:6px"><img id="eImgBPrev" class="hidden" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:6px"><button id="eImgBClear" class="hidden">지우기</button></div>
+        </div>
+      </div>
+      <div style="margin-top:14px"><button class="primary" id="eSave">저장</button> <button id="eCancel">닫기</button></div>
+      <div id="eMsg"></div>
+    </div>
+    <div id="evMsg"></div>
+  </section>
+
   <!-- 물건 관리 -->
   <section id="tab-manage" class="hidden">
     <div class="card">
@@ -151,8 +198,10 @@
     $('tab-theme').classList.toggle('hidden', tab !== 'theme');
     $('tab-avatar').classList.toggle('hidden', tab !== 'avatar');
     $('tab-manage').classList.toggle('hidden', tab !== 'manage');
-    $('sheetCard').classList.toggle('hidden', tab === 'manage');
+    $('tab-events').classList.toggle('hidden', tab !== 'events');
+    $('sheetCard').classList.toggle('hidden', tab === 'manage' || tab === 'events');
     if (tab === 'manage') renderManage();
+    if (tab === 'events') loadEvents();
     showForms();
   }));
   function showForms() {
@@ -259,6 +308,73 @@
       shop = await call('GET', '/api/shop');
     } catch (e) { msg($('aMsg'), 'bad', esc(e.message)); }
     $('aSave').disabled = false;
+  });
+
+
+  // ----- 배팅 이벤트 -----
+  // 그림 칸 하나의 상태: cur = 지금 저장된 파일 이름, data = 새로 고른 그림(data URL), gone = 지우기
+  const ev = { list: [], editing: null, img: {} };
+  const EVIMG = [{ k: 'main', file: 'eImgFile', prev: 'eImgPrev', clr: 'eImgClear' }, { k: 'a', file: 'eImgA', prev: 'eImgAPrev', clr: 'eImgAClear' }, { k: 'b', file: 'eImgB', prev: 'eImgBPrev', clr: 'eImgBClear' }];
+  const todayKey = () => { const d = new Date(Date.now() - 6 * 3600e3), p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
+  const evStatus = (e) => { const t = todayKey(); return t < e.start ? '예정' : t > e.end ? '종료' : '진행 중'; };
+  const evFiles = (n) => (n ? `/files/events/${n}` : '');
+
+  async function loadEvents() { const r = await call('GET', '/api/events'); ev.list = r.events; renderEvents(); }
+  function renderEvents() {
+    $('evRows').innerHTML = ev.list.length ? ev.list.map((e) => `<tr><td>${e.image ? `<img src="${evFiles(e.image)}" alt="" style="width:96px;height:54px;object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:8px">` : ''}<b>${esc(e.title)}</b> <span class="muted">${esc(e.id)}</span><br><span class="muted">${esc(e.sides[0].name)} vs ${esc(e.sides[1].name)}</span></td>
+      <td>${esc(e.start)} ~ ${esc(e.end)}</td><td>${e.reward}골드</td><td>${evStatus(e)}</td>
+      <td><button data-edit="${esc(e.id)}">수정</button> <button data-del="${esc(e.id)}">삭제</button></td></tr>`).join('') : '<tr><td colspan="5" class="muted">아직 이벤트가 없어요.</td></tr>';
+    $('evRows').querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => openEvForm(ev.list.find((e) => e.id === b.dataset.edit))));
+    $('evRows').querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => {
+      const e = ev.list.find((x) => x.id === b.dataset.del);
+      if (!confirm(`'${e.title}' 이벤트를 지울까요?\n그림도 함께 지워져요. (이미 참가한 사람의 기록은 남아요)`)) return;
+      try { const r = await call('POST', '/api/events/delete', { id: e.id }); ev.list = r.events; renderEvents(); closeEvForm(); msg($('evMsg'), 'ok', '<b>지웠어요!</b><br>' + r.log.map(esc).join('<br>') + gitBox('이벤트 삭제: ' + e.title)); }
+      catch (err) { msg($('evMsg'), 'bad', esc(err.message)); }
+    }));
+  }
+  function showImg(slot) {
+    const st = ev.img[slot.k] || {}, src = st.gone ? '' : st.data || evFiles(st.cur);
+    $(slot.prev).classList.toggle('hidden', !src); if (src) $(slot.prev).src = src;
+    $(slot.clr).classList.toggle('hidden', !src);
+  }
+  function openEvForm(e) {
+    ev.editing = e ? e.id : null;
+    $('evForm').classList.remove('hidden'); msg($('eMsg'), '', ''); msg($('evMsg'), '', '');
+    $('evFormTitle').textContent = e ? `이벤트 수정: ${e.title}` : '새 이벤트';
+    $('eId').value = e ? e.id : ''; $('eId').disabled = !!e;
+    $('eTitle').value = e ? e.title : ''; $('eStart').value = e ? e.start : ''; $('eEnd').value = e ? e.end : ''; $('eReward').value = e ? e.reward : 300;
+    $('eNameA').value = e ? e.sides[0].name : ''; $('eColorA').value = e ? e.sides[0].color : '#4f86f7';
+    $('eNameB').value = e ? e.sides[1].name : ''; $('eColorB').value = e ? e.sides[1].color : '#ff6b5b';
+    ev.img = { main: { cur: e && e.image }, a: { cur: e && e.sides[0].image }, b: { cur: e && e.sides[1].image } };
+    EVIMG.forEach((s) => { $(s.file).value = ''; showImg(s); });
+    evPeriod(); $('evForm').scrollIntoView({ behavior: 'smooth' });
+  }
+  function closeEvForm() { $('evForm').classList.add('hidden'); ev.editing = null; }
+  function evPeriod() {
+    const a = $('eStart').value, b = $('eEnd').value;
+    if (!a || !b) { $('ePeriod').textContent = ''; return; }
+    const n = Math.round((Date.parse(b) - Date.parse(a)) / 86400000) + 1;
+    $('ePeriod').textContent = n < 1 ? '종료일이 시작일보다 빨라요.' : `${a} 오전 6시 ~ ${b} 다음 날 오전 6시 (${n}일간)`;
+  }
+  $('eStart').addEventListener('change', evPeriod); $('eEnd').addEventListener('change', evPeriod);
+  $('evNew').addEventListener('click', () => openEvForm(null));
+  $('eCancel').addEventListener('click', closeEvForm);
+  EVIMG.forEach((s) => {
+    $(s.file).addEventListener('change', async (e) => { const f = e.target.files[0]; if (!f) return; ev.img[s.k] = Object.assign(ev.img[s.k] || {}, { data: await toBase64(f), gone: false }); showImg(s); });
+    $(s.clr).addEventListener('click', () => { ev.img[s.k] = { cur: (ev.img[s.k] || {}).cur, gone: true }; $(s.file).value = ''; showImg(s); });
+  });
+  const imgField = (k) => { const st = ev.img[k] || {}; return st.gone ? (st.cur ? 'remove' : '') : st.data || ''; };
+  $('eSave').addEventListener('click', async () => {
+    const body = { id: $('eId').value.trim(), title: $('eTitle').value, start: $('eStart').value, end: $('eEnd').value, reward: $('eReward').value === '' ? NaN : Number($('eReward').value),
+      image: imgField('main'), sides: [{ name: $('eNameA').value, color: $('eColorA').value, img: imgField('a') }, { name: $('eNameB').value, color: $('eColorB').value, img: imgField('b') }] };
+    $('eSave').disabled = true; msg($('eMsg'), 'warn', '저장하는 중…');
+    try {
+      const r = await call('POST', '/api/events/save', body);
+      ev.list = r.events; renderEvents(); const was = ev.editing; closeEvForm(); msg($('eMsg'), '', '');
+      msg($('evMsg'), 'ok', '<b>저장했어요!</b><br>' + r.log.map(esc).join('<br>') + gitBox((was ? '이벤트 수정: ' : '이벤트 추가: ') + body.title)
+        + '<div class="muted" style="margin-top:6px">push 하면 웹이 새로 배포돼요 (1~2분). 앱은 인터넷이 연결돼 있으면 새 APK 없이도 새 이벤트가 나와요.</div>');
+    } catch (err) { msg($('eMsg'), 'bad', esc(err.message)); }
+    $('eSave').disabled = false;
   });
 
   // ----- 물건 관리 -----

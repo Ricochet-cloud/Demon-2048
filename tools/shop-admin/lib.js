@@ -108,4 +108,11 @@ function save(file, shop) {
   fs.renameSync(file + '.tmp', file);
 }
 
-module.exports = { findCells, writeCell, thumb, load, save, serialize };
+// 한 장짜리 그림 저장: w 만 주면 가로 w 이하로 줄이고(비율 유지), w·h 를 주면 그 크기로 꽉 채워 잘라요
+async function writeImage(buf, out, w, h) {
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  const img = sharp(buf).rotate();
+  await (h ? img.resize(w, h, { fit: 'cover', kernel: 'lanczos3' }) : img.resize({ width: w, withoutEnlargement: true, kernel: 'lanczos3' })).webp({ quality: 86, effort: 6 }).toFile(out);
+}
+
+module.exports = { findCells, writeCell, writeImage, thumb, load, save, serialize };
