@@ -83,7 +83,6 @@
     $('homeGold').textContent = G.gold;
     $('homeShopTag').hidden = G.claimable() === 0;
     $('homeChallengeTag').hidden = window.Game2048.challengeState().done;   // 오늘의 도전을 아직 안 했으면 표시
-    refreshEventBtn();
     refreshHomeRank();
   }
 
@@ -138,17 +137,14 @@
   const toastMsg = (msg) => { const t = $('toast'); if (!t) return; t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3200); };
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 
-  // 홈의 '이벤트' 버튼: 보여줄 이벤트가 있을 때만 나와요
+  // 게임 모드 목록의 '이벤트' 줄: 보여줄 이벤트가 있을 때만 나와요 (보상 받을 게 있는지는 기록을 받을 때 알아 둬요)
+  let evClaimable = false;
   function refreshEventBtn(list) {
-    const b = $('homeEvent'), ev = B.ready && A.enabled && C.enabled ? B.current() : null;
-    b.hidden = !ev;
-    if (!ev) return;
-    const ph = B.phase(ev);
-    $('homeEventName').textContent = ev.title;
-    let tag = ph === 'live' ? '진행 중' : ph === 'upcoming' ? '곧 시작' : '결과';
-    if (ph === 'ended' && list && B.mine(ev, list, C.uid).claimable) tag = '보상 받기';
-    $('homeEventTag').textContent = tag;
+    const ev = B.ready && A.enabled && C.enabled ? B.current() : null;
+    if (ev && list) evClaimable = B.phase(ev) === 'ended' && B.mine(ev, list, C.uid).claimable;
+    if (effective() === 'modes') refreshModes();
   }
+  const modeEvent = () => (B.ready && A.enabled && C.enabled ? B.current() : null);
 
   function sideFace(side) {
     const f = el('div', 'evface');
@@ -263,7 +259,7 @@
       note.hidden = true; drawEvent(ev, list); refreshEventBtn(list);
     } catch (e) { console.warn('이벤트 불러오기 실패', e); if (seq === evSeq) say('이벤트를 불러오지 못했어요. 잠시 뒤에 다시 열어 주세요'); }
   }
-  window.addEventListener('events:ready', () => { const n = effective(); if (n === 'home') refreshEventBtn(); });
+  window.addEventListener('events:ready', () => { const n = effective(); if (n === 'home') refreshHomeRank(); if (n === 'modes') refreshModes(); });
 
   // ---------- 도감 (만든 타일 모으기) ----------
   let dexThemeId = null;   // 도감에서 보고 있는 테마 (지금 쓰는 테마가 기본)
@@ -946,13 +942,19 @@
       sub: () => { const c = window.Game2048.challengeState(); return c.done ? `완료 · ${c.score}점` : c.started ? `진행 중 · ${c.score}점` : '하루 한 판 · 모두 같은 판'; },
       tag: () => (window.Game2048.challengeState().done ? '' : '도전 가능'),
       start: () => { window.Game2048.setMode('challenge'); go('game'); }
+    },
+    {
+      id: 'event', name: '배팅 이벤트', show: () => !!modeEvent(),
+      sub: () => { const ev = modeEvent(); return ev ? `${ev.title} · ${B.period(ev)}` : ''; },
+      tag: () => { const ev = modeEvent(); if (!ev) return ''; const ph = B.phase(ev); return ph === 'ended' ? (evClaimable ? '보상 받기' : '결과') : ph === 'live' ? '진행 중' : '곧 시작'; },
+      start: () => go('event')
     }
   ];
 
   function refreshModes() {
     const box = $('modeList');
     box.textContent = '';
-    MODES.forEach((m, i) => {
+    MODES.filter((m) => !m.show || m.show()).forEach((m, i) => {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'menu__btn' + (i === 0 ? ' menu__btn--main' : '');
       const sp = document.createElement('span'); sp.textContent = m.name;
