@@ -69,6 +69,7 @@
         <button class="menu__btn menu__btn--main" data-go="modes">
           <span>게임 시작</span><em class="tag tag--alert" id="homeChallengeTag" hidden>오늘의 도전</em>
         </button>
+        <button class="menu__btn menu__btn--event" id="homeEvent" data-go="event" hidden><span>이벤트<small class="menu__sub" id="homeEventName"></small></span><em class="tag tag--alert" id="homeEventTag"></em></button>
         <button class="menu__btn" data-go="profile"><span>프로필</span></button>
         <button class="menu__btn" data-go="dex"><span>도감<small class="menu__sub" id="homeDex"></small></span></button>
         <button class="menu__btn" data-go="shop"><span>상점</span><em class="tag tag--alert" id="homeShopTag" hidden>보상 받기</em></button>
@@ -134,6 +135,19 @@
         <button class="btn" id="continueBtn" style="display:none;margin-bottom:8px">계속하기</button>
         <button class="btn" id="againBtn">새 판</button>
       </div>
+    </div>
+  </section>
+
+  <!-- 배팅 이벤트 (두 편으로 나뉘어 점수 합으로 겨뤄요) -->
+  <section class="screen screen--event" data-screen="event">
+    <div class="topbar">
+      <button class="topbar__back" data-back>홈</button>
+      <div class="topbar__title">이벤트</div>
+      <button class="sound-btn" data-sound-toggle aria-label="소리 켜기 끄기"></button>
+    </div>
+    <div class="wrap">
+      <p class="foot" id="evNote" hidden></p>
+      <div id="evBody"></div>
     </div>
   </section>
 
@@ -318,6 +332,7 @@
   <script src="./js/cloud.js"></script>
   <script src="./js/gold.js"></script>
   <script src="./js/weekly.js"></script>
+  <script src="./js/betting.js"></script>
   <script src="./js/challenge.js"></script>
   <script src="./js/sound.js"></script>
   <script src="./js/app.js"></script>

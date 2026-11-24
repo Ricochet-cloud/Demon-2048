@@ -5,7 +5,7 @@
 (() => {
   'use strict';
 
-  const SCREENS = ['home', 'modes', 'game', 'profile', 'dex', 'shop', 'settings', 'login'];
+  const SCREENS = ['home', 'modes', 'game', 'profile', 'dex', 'shop', 'settings', 'event', 'login'];
   // 상점 물건(프로필 사진·프레임·칭호·배경·이름·테마)의 이름과 가격은 js/shopdata.js 에서 바꿔요.
   // 프로필 사진은 images/avatars/<id>.webp, price 가 있으면 상점에서 골드로 사야 쓸 수 있어요 (없으면 처음부터 무료)
   const SHOP = window.SHOP;   // 상점 물건 목록은 js/shopdata.js
@@ -59,6 +59,7 @@
   const T = window.AppThemes;
   const G = window.AppGold;
   const W = window.AppWeekly;
+  const B = window.AppBetting;   // 배팅 이벤트 (betting.js)
 
   function readSaved() {
     try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}') || {}; } catch (e) { return {}; }
@@ -82,6 +83,7 @@
     $('homeGold').textContent = G.gold;
     $('homeShopTag').hidden = G.claimable() === 0;
     $('homeChallengeTag').hidden = window.Game2048.challengeState().done;   // 오늘의 도전을 아직 안 했으면 표시
+    refreshEventBtn();
     refreshHomeRank();
   }
 
@@ -125,9 +127,143 @@
       renderRank(list.sort((a, b) => SE.bestOf(b) - SE.bestOf(a)).slice(0, 3), $('homeRankList'), true);
       $('homeSeason').textContent = `${SE.monthNo(SE.key())}월 시즌 · ${SE.leftText()}`;
       renderHomeCheers(list);
+      refreshEventBtn(list);
       card.hidden = list.length === 0;
     } catch (e) { card.hidden = true; }
   }
+
+
+  // ---------- 배팅 이벤트 ----------
+  const nf = (n) => Number(n).toLocaleString('ko-KR');
+  const toastMsg = (msg) => { const t = $('toast'); if (!t) return; t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3200); };
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+  // 홈의 '이벤트' 버튼: 보여줄 이벤트가 있을 때만 나와요
+  function refreshEventBtn(list) {
+    const b = $('homeEvent'), ev = B.ready && A.enabled && C.enabled ? B.current() : null;
+    b.hidden = !ev;
+    if (!ev) return;
+    const ph = B.phase(ev);
+    $('homeEventName').textContent = ev.title;
+    let tag = ph === 'live' ? '진행 중' : ph === 'upcoming' ? '곧 시작' : '결과';
+    if (ph === 'ended' && list && B.mine(ev, list, C.uid).claimable) tag = '보상 받기';
+    $('homeEventTag').textContent = tag;
+  }
+
+  function sideFace(side) {
+    const f = el('div', 'evface');
+    f.style.setProperty('--c', side.color);
+    if (side.image) { const i = document.createElement('img'); i.src = side.image; i.alt = ''; i.draggable = false; f.appendChild(i); }
+    else f.textContent = [...side.name][0];
+    return f;
+  }
+
+  function drawEvent(ev, list) {
+    const body = $('evBody'); body.textContent = '';
+    const ph = B.phase(ev), t = B.tally(ev, list), my = B.mine(ev, list, C.uid), tot = t.a.total + t.b.total;
+    const card = el('div', 'card evcard');
+    if (ev.image) { const i = document.createElement('img'); i.className = 'ev__banner'; i.src = ev.image; i.alt = ''; i.draggable = false; i.addEventListener('error', () => i.remove()); card.appendChild(i); }
+    card.appendChild(el('h2', 'ev__title', ev.title));
+    const left = B.leftText(ev);
+    card.appendChild(el('p', 'ev__meta', `${B.period(ev)}${left ? ' · ' + left : ''}${ev.reward ? ' · 이긴 편 골드 ' + nf(ev.reward) : ''}`));
+
+    const vs = el('div', 'evvs');
+    [t.a, t.b].forEach((x, i) => {
+      const s = el('div', 'evside' + (i ? ' evside--r' : '') + (my.side === x.side.id ? ' evside--me' : '') + (ph === 'ended' && t.winners.includes(x.side.id) ? ' evside--win' : ''));
+      s.style.setProperty('--c', x.side.color);
+      s.appendChild(sideFace(x.side));
+      s.appendChild(el('b', 'evside__name', x.side.name));
+      s.appendChild(el('span', 'evside__score', `${nf(x.total)}점`));
+      s.appendChild(el('small', 'evside__n', `${x.members.length}명${my.side === x.side.id ? ' · 내 편' : ''}`));
+      vs.appendChild(s);
+      if (!i) vs.appendChild(el('div', 'evvs__vs', 'VS'));
+    });
+    card.appendChild(vs);
+
+    const bar = el('div', 'evbar');
+    const pa = tot ? Math.max(6, Math.min(94, t.a.total / tot * 100)) : 50;
+    const ba = el('i', 'evbar__a'), bb = el('i', 'evbar__b');
+    ba.style.width = pa + '%'; ba.style.background = t.a.side.color; bb.style.width = (100 - pa) + '%'; bb.style.background = t.b.side.color;
+    bar.appendChild(ba); bar.appendChild(bb); card.appendChild(bar);
+    const lead = ph === 'upcoming' ? '아직 시작 전이에요. 시작하면 점수가 쌓여요'
+      : !tot ? '아직 아무도 점수를 모으지 못했어요'
+      : !t.lead ? (ph === 'ended' ? '무승부! 두 편 모두 이겼어요' : '똑같아요! 팽팽해요')
+      : ph === 'ended' ? `${t.lead.side.name} 편이 이겼어요!`
+      : `${t.lead.side.name} 편이 ${nf(Math.abs(t.a.total - t.b.total))}점 앞서고 있어요`;
+    card.appendChild(el('p', 'ev__lead', lead));
+
+    const act = el('div', 'evact');
+    if (ph === 'ended') {
+      if (my.claimable) {
+        const b = el('button', 'btn btn--wide', `보상 받기 · 골드 ${nf(ev.reward)}`); b.type = 'button';
+        b.addEventListener('click', async () => {
+          b.disabled = true;
+          try { await G.claimEvent(ev.id, ev.reward); toastMsg(`이겼어요! 골드 ${nf(ev.reward)}을 받았어요`); }
+          catch (e) { toastMsg(e.user ? e.message : '받지 못했어요. 잠시 뒤에 다시 해 주세요.'); }
+          refreshEvent();
+        });
+        act.appendChild(b);
+      } else act.appendChild(el('p', 'ev__state', my.win && my.claimed ? '보상을 받았어요' : my.win ? '이겼어요!' : my.side ? (t.winners.length ? '아쉽게 졌어요' : '결과가 없어요') : '이번 이벤트에는 참가하지 않았어요'));
+    } else if (my.side) {
+      const mine = ev.sides.find((s) => s.id === my.side);
+      act.appendChild(el('p', 'ev__state', `내 편: ${mine.name}${ph === 'live' ? ` · 내 점수 ${nf(my.score)}점` : ''}`));
+    } else {
+      act.appendChild(el('p', 'ev__ask', '어느 편이 이길까요? 한 번 고르면 바꿀 수 없어요'));
+      const row = el('div', 'evpick');
+      ev.sides.forEach((s) => {
+        const b = el('button', 'btn evpick__btn', `${s.name} 편 들기`); b.type = 'button'; b.style.setProperty('--c', s.color);
+        b.addEventListener('click', async () => {
+          if (!window.confirm(`${s.name} 편으로 정할까요?\n한 번 정하면 바꿀 수 없어요.`)) return;
+          row.querySelectorAll('button').forEach((x) => { x.disabled = true; });
+          try { await B.join(ev, s.id); toastMsg(`${s.name} 편이 됐어요!`); }
+          catch (e) { toastMsg(e.user ? e.message : '정하지 못했어요. 인터넷 연결을 확인해 주세요.'); }
+          refreshEvent();
+        });
+        row.appendChild(b);
+      });
+      act.appendChild(row);
+    }
+    card.appendChild(act);
+    body.appendChild(card);
+
+    // 응원단: 편마다 누가 얼마나 모았는지
+    const teams = el('div', 'card evteams');
+    teams.appendChild(el('h2', null, '응원단'));
+    const cols = el('div', 'evteams__cols');
+    [t.a, t.b].forEach((x) => {
+      const col = el('div', 'evteam'); col.style.setProperty('--c', x.side.color);
+      col.appendChild(el('h3', null, x.side.name));
+      if (!x.members.length) col.appendChild(el('p', 'evteam__none', '아직 없어요'));
+      x.members.forEach((m) => {
+        const r = el('div', 'evmem' + (m.user.uid === C.uid ? ' evmem--me' : ''));
+        r.appendChild(avatarEl(m.user.avatar, m.user.nickname, m.user.frame, m.user.photo));
+        const nm = el('span', 'evmem__name', m.user.nickname || '이름 없음');
+        r.appendChild(nm); r.appendChild(el('b', null, nf(m.score)));
+        col.appendChild(r);
+      });
+      cols.appendChild(col);
+    });
+    teams.appendChild(cols); body.appendChild(teams);
+  }
+
+  let evSeq = 0;
+  async function refreshEvent() {
+    const seq = ++evSeq, note = $('evNote'), body = $('evBody');
+    const say = (m) => { body.textContent = ''; note.hidden = !m; note.textContent = m || ''; };
+    if (!(A.enabled && C.enabled)) { say('로그인하면 이벤트에 참가할 수 있어요'); return; }
+    if (!C.loaded) { say(C.failed ? '기록을 불러오지 못했어요. 인터넷 연결을 확인해 주세요' : '불러오는 중이에요'); return; }
+    try {
+      await B.load(true);
+      if (seq !== evSeq || effective() !== 'event') return;
+      const ev = B.current();
+      if (!ev) { say('지금은 열린 이벤트가 없어요'); return; }
+      await B.flush();   // 방금 얻은 점수까지 올린 뒤에 불러와요
+      const list = await C.loadAll();
+      if (seq !== evSeq || effective() !== 'event') return;
+      note.hidden = true; drawEvent(ev, list); refreshEventBtn(list);
+    } catch (e) { console.warn('이벤트 불러오기 실패', e); if (seq === evSeq) say('이벤트를 불러오지 못했어요. 잠시 뒤에 다시 열어 주세요'); }
+  }
+  window.addEventListener('events:ready', () => { const n = effective(); if (n === 'home') refreshEventBtn(); });
 
   // ---------- 도감 (만든 타일 모으기) ----------
   let dexThemeId = null;   // 도감에서 보고 있는 테마 (지금 쓰는 테마가 기본)
@@ -846,6 +982,7 @@
     if (name === 'settings') refreshSettings();
     if (name === 'dex') { dexThemeId = null; dexCat = null; dexCatAuto = true; refreshDex(); }
     if (name === 'shop') refreshShop();
+    if (name === 'event') refreshEvent();
     if (name === 'login') $('loginErr').textContent = '';
     window.dispatchEvent(new CustomEvent('screenchange', { detail: name }));   // 화면에 맞는 BGM 으로 바꿀 때 쓰여요
   }
@@ -870,7 +1007,7 @@
   // 오늘의 도전
   window.addEventListener('game2048:exit', () => { if (effective() === 'game') back(); });
   // 골드·미션이 바뀌면 지금 보는 화면을 새로 그려요
-  window.addEventListener('gold:change', () => { const n = effective(); if (n === 'home') refreshHome(); if (n === 'shop') refreshShop(); if (n === 'profile') refreshProfile(); });
+  window.addEventListener('gold:change', () => { const n = effective(); if (n === 'home') refreshHome(); if (n === 'shop') refreshShop(); if (n === 'profile') refreshProfile(); if (n === 'event') refreshEvent(); });
   A.onChange(render);
 
   // ---------- 로그인 / 로그아웃 ----------
@@ -1023,7 +1160,7 @@
 
   // 클라우드 기록을 다 받아오면 지금 보고 있는 화면을 새로 그려요
   window.addEventListener('cloud:failed', () => { if (effective() === 'profile') refreshProfile(); });
-  window.addEventListener('cloud:ready', () => { const n = effective(); if (n === 'home') refreshHome(); if (n === 'profile') refreshProfile(); if (n === 'dex') refreshDex(); });
+  window.addEventListener('cloud:ready', () => { const n = effective(); if (n === 'home') refreshHome(); if (n === 'profile') refreshProfile(); if (n === 'dex') refreshDex(); if (n === 'event') refreshEvent(); });
 
   $('logoutBtn').addEventListener('click', async () => {
     if (!window.confirm('로그아웃할까요?')) return;

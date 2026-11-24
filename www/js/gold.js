@@ -39,7 +39,7 @@
 
   // ============ 이 기기에 저장된 상태 ============
   // owner: 이 상태가 어느 계정 것인지 (null 이면 로그인 없이 모은 것)
-  let S = { gold: 0, day: '', done: [], claimed: [], owned: [], owner: null, streak: null, weekClaim: '', chDone: '', chClaim: '', jokers: {} };
+  let S = { gold: 0, day: '', done: [], claimed: [], owned: [], owner: null, streak: null, weekClaim: '', chDone: '', chClaim: '', evClaim: '', jokers: {} };
   try { S = Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* 저장소를 못 써도 돼요 */ }
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* 무시 */ } };
   const changed = () => { save(); window.dispatchEvent(new Event('gold:change')); };
@@ -85,12 +85,13 @@
         weekClaim: typeof d.weekClaim === 'string' ? d.weekClaim : '',
         chDone: typeof d.chDone === 'string' ? d.chDone : '',
         chClaim: typeof d.chClaim === 'string' ? d.chClaim : '',
+        evClaim: typeof d.evClaim === 'string' ? d.evClaim : '',
         streak: (d.streak && typeof d.streak.n === 'number') ? d.streak : (guest ? S.streak : null),
         claimed: same ? [...(d.daily.claimed || [])] : (guest && typeof d.gold !== 'number' && S.day === day ? S.claimed : [])
       };
       if (cur.done.includes('play')) cur.streak = bump(cur.streak, day);   // 오늘 한 판을 끝냈으면 출석
       const nx = mutate(cur);
-      t.set(ref, { gold: nx.gold, owned: nx.owned, jokers: normJk(nx.jokers), weekClaim: nx.weekClaim || '', chDone: nx.chDone || '', chClaim: nx.chClaim || '', streak: nx.streak || newStreak(), daily: { day, done: nx.done, claimed: nx.claimed } }, { merge: true });
+      t.set(ref, { gold: nx.gold, owned: nx.owned, jokers: normJk(nx.jokers), weekClaim: nx.weekClaim || '', chDone: nx.chDone || '', chClaim: nx.chClaim || '', evClaim: nx.evClaim || '', streak: nx.streak || newStreak(), daily: { day, done: nx.done, claimed: nx.claimed } }, { merge: true });
       return nx;
     });
     S = Object.assign(S, next, { owner: C.uid });
@@ -109,7 +110,7 @@
       catch (e) { if (e.user) throw e; console.warn('골드 저장 실패', e); throw needNet(); }
     }
     const day = ensureToday();
-    const nx = mutate({ gold: S.gold, owned: [...S.owned], jokers: normJk(S.jokers), day, done: [...S.done], claimed: [...S.claimed], weekClaim: S.weekClaim || '', chDone: S.chDone || '', chClaim: S.chClaim || '', streak: S.done.includes('play') ? bump(S.streak, day) : S.streak });
+    const nx = mutate({ gold: S.gold, owned: [...S.owned], jokers: normJk(S.jokers), day, done: [...S.done], claimed: [...S.claimed], weekClaim: S.weekClaim || '', chDone: S.chDone || '', chClaim: S.chClaim || '', evClaim: S.evClaim || '', streak: S.done.includes('play') ? bump(S.streak, day) : S.streak });
     S = Object.assign(S, nx); changed();
     return nx;
   }
@@ -215,7 +216,7 @@
     // 주간 1등 보상 (같은 주는 한 번만)
     // field 에 key 를 적어 두고 골드를 줘요 (같은 key 로는 한 번만) — 주간 1등(weekClaim), 오늘의 도전 완료(chDone)/전날 1등(chClaim)
     async claimOnce(field, key, reward) {
-      if (!['weekClaim', 'chDone', 'chClaim'].includes(field)) throw userError('받을 수 없는 보상이에요.');
+      if (!['weekClaim', 'chDone', 'chClaim', 'evClaim'].includes(field)) throw userError('받을 수 없는 보상이에요.');
       await update((cur) => {
         if (cur[field] === key) throw userError('이미 받았어요.');
         return Object.assign(cur, { gold: (cur.gold || 0) + reward, [field]: key });
@@ -223,6 +224,7 @@
       return reward;
     },
     claimWeekly(weekKey, reward) { return this.claimOnce('weekClaim', weekKey, reward); },
+    claimEvent(eventId, reward) { return this.claimOnce('evClaim', eventId, reward); },   // 배팅 이벤트 승리 보상
     // 상점에서 쓸 구매 (골드를 내고 itemId 를 가져요) — 아직 파는 물건은 없지만 구조만 만들어 둬요
     async spend(price, itemId) {
       if (!Number.isInteger(price) || price < 0 || !/^[a-z0-9:_-]{1,40}$/.test(String(itemId))) throw userError('살 수 없는 물건이에요.');
