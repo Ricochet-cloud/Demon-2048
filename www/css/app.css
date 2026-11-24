@@ -201,7 +201,7 @@
 /* 홈의 작은 '우리 기록' 카드 */
 .homerank { display: block; width: 100%; margin: 0 0 14px; padding: 10px 12px; text-align: left; cursor: pointer; color: inherit; font: inherit; }
 .homerank h2 { margin: 0 0 6px; font-size: 12px; }
-.homerank .rank__item { padding: 6px 0; }
+.homerank .rank__item { padding: 6px 10px; }
 .homerank .avatar { width: 36px; height: 36px; font-size: 16px; }
 .homerank[hidden] { display: none; }
 .homerank:active { transform: translateY(2px); }
