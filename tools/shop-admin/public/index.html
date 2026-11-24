@@ -51,6 +51,7 @@
     <button class="tab" data-tab="avatar">프로필 사진 시트</button>
     <button class="tab" data-tab="manage">물건 관리</button>
     <button class="tab" data-tab="events">이벤트</button>
+    <button class="tab" data-tab="polls">투표</button>
   </div>
 
   <!-- 시트 올리기 (두 탭 공용) -->
@@ -150,6 +151,32 @@
     <div id="evMsg"></div>
   </section>
 
+  <!-- 테마 투표 -->
+  <section id="tab-polls" class="hidden">
+    <div class="card">
+      <h2>투표 목록</h2>
+      <p class="muted" style="margin:0 0 8px">앱의 "테마 투표"에서 사용자들이 보고 한 표씩 던지는 투표예요. 아이디어 게시판의 댓글을 보고 괜찮은 아이디어를 후보로 올려 주세요. 기간이 겹치는 투표는 만들 수 없어요.</p>
+      <table><thead><tr><th>투표</th><th>기간</th><th>후보</th><th>상태</th><th></th></tr></thead><tbody id="pvRows"></tbody></table>
+      <div style="margin-top:12px"><button id="pvNew">+ 새 투표 만들기</button></div>
+    </div>
+    <div class="card hidden" id="pvForm">
+      <h2 id="pvFormTitle">새 투표</h2>
+      <div class="row">
+        <div><label>id (영문 소문자/숫자, 나중에 못 바꿔요)</label><input type="text" id="pId" maxlength="20" placeholder="theme1"></div>
+        <div><label>투표 이름</label><input type="text" id="pTitle" maxlength="30" placeholder="다음 타일 테마는?"></div>
+        <div><label>시작일 (이 날 오전 6시에 시작)</label><input type="date" id="pStart" style="width:100%;background:#120d0a;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:7px 9px;font:inherit"></div>
+        <div><label>마감일 (이 날까지, 다음 날 오전 6시에 끝나요)</label><input type="date" id="pEnd" style="width:100%;background:#120d0a;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:7px 9px;font:inherit"></div>
+      </div>
+      <h2 style="margin-top:16px">후보 (2~8개)</h2>
+      <p class="muted" style="margin:0 0 6px">이름은 16글자, 설명은 40글자까지예요. 그림은 선택이고 정사각형으로 잘려요 (컨셉 이미지를 올려도 좋아요). 이미 표가 있는 투표를 고칠 때는 후보를 지우거나 순서를 바꾸지 않는 게 좋아요.</p>
+      <div id="pvOpts"></div>
+      <div style="margin-top:8px"><button id="pvAdd">+ 후보 추가</button></div>
+      <div style="margin-top:14px"><button class="primary" id="pvSave">저장</button> <button id="pvCancel">닫기</button></div>
+      <div id="pvMsg"></div>
+    </div>
+    <div id="pvTopMsg"></div>
+  </section>
+
   <!-- 물건 관리 -->
   <section id="tab-manage" class="hidden">
     <div class="card">
@@ -199,9 +226,11 @@
     $('tab-avatar').classList.toggle('hidden', tab !== 'avatar');
     $('tab-manage').classList.toggle('hidden', tab !== 'manage');
     $('tab-events').classList.toggle('hidden', tab !== 'events');
-    $('sheetCard').classList.toggle('hidden', tab === 'manage' || tab === 'events');
+    $('tab-polls').classList.toggle('hidden', tab !== 'polls');
+    $('sheetCard').classList.toggle('hidden', tab === 'manage' || tab === 'events' || tab === 'polls');
     if (tab === 'manage') renderManage();
     if (tab === 'events') loadEvents();
+    if (tab === 'polls') loadPolls();
     showForms();
   }));
   function showForms() {
@@ -375,6 +404,69 @@
         + '<div class="muted" style="margin-top:6px">push 하면 웹이 새로 배포돼요 (1~2분). 앱은 인터넷이 연결돼 있으면 새 APK 없이도 새 이벤트가 나와요.</div>');
     } catch (err) { msg($('eMsg'), 'bad', esc(err.message)); }
     $('eSave').disabled = false;
+  });
+
+
+  // ----- 테마 투표 -----
+  const pv = { list: [], editing: null, opts: [] };
+  const pvStatus = (e) => { const t = todayKey(); return t < e.start ? '예정' : t > e.end ? '종료' : '진행 중'; };
+  async function loadPolls() { const r = await call('GET', '/api/polls'); pv.list = r.polls; renderPolls(); }
+  function renderPolls() {
+    $('pvRows').innerHTML = pv.list.length ? pv.list.map((e) => `<tr><td><b>${esc(e.title)}</b> <span class="muted">${esc(e.id)}</span></td><td>${esc(e.start)} ~ ${esc(e.end)}</td>
+      <td>${e.options.map((o) => esc(o.name)).join(', ')}</td><td>${pvStatus(e)}</td>
+      <td><button data-pedit="${esc(e.id)}">수정</button> <button data-pdel="${esc(e.id)}">삭제</button></td></tr>`).join('') : '<tr><td colspan="5" class="muted">아직 투표가 없어요.</td></tr>';
+    $('pvRows').querySelectorAll('[data-pedit]').forEach((b) => b.addEventListener('click', () => openPvForm(pv.list.find((e) => e.id === b.dataset.pedit))));
+    $('pvRows').querySelectorAll('[data-pdel]').forEach((b) => b.addEventListener('click', async () => {
+      const e = pv.list.find((x) => x.id === b.dataset.pdel);
+      if (!confirm(`'${e.title}' 투표를 지울까요?\n후보 그림도 함께 지워져요. (사용자가 던진 표 기록은 남지만 앱에서는 안 보여요)`)) return;
+      try { const r = await call('POST', '/api/polls/delete', { id: e.id }); pv.list = r.polls; renderPolls(); closePvForm(); msg($('pvTopMsg'), 'ok', '<b>지웠어요!</b><br>' + r.log.map(esc).join('<br>') + gitBox('투표 삭제: ' + e.title)); }
+      catch (err) { msg($('pvTopMsg'), 'bad', esc(err.message)); }
+    }));
+  }
+  function renderPvOpts() {
+    $('pvOpts').innerHTML = pv.opts.map((o, i) => {
+      const src = o.gone ? '' : o.data || evFiles(o.cur);
+      return `<div class="card" style="margin:0 0 8px;padding:10px" data-i="${i}"><div class="row">
+        <div><label>${i + 1}번 후보 이름</label><input type="text" class="po-name" maxlength="16" value="${esc(o.name)}" placeholder="고양이"></div>
+        <div><label>한 줄 설명 (선택)</label><input type="text" class="po-desc" maxlength="40" value="${esc(o.desc)}" placeholder="귀여운 고양이 타일"></div>
+        <div><label>그림 (선택)</label><input type="file" class="po-file" accept="image/*"></div></div>
+        <div class="inline" style="margin-top:6px">${src ? `<img src="${src}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:6px"><button class="po-clr">그림 지우기</button>` : ''}
+        <button class="po-del" ${pv.opts.length <= 2 ? 'disabled' : ''}>후보 삭제</button></div></div>`;
+    }).join('');
+    $('pvOpts').querySelectorAll('[data-i]').forEach((box) => {
+      const i = Number(box.dataset.i), o = pv.opts[i];
+      box.querySelector('.po-name').addEventListener('input', (e) => { o.name = e.target.value; });
+      box.querySelector('.po-desc').addEventListener('input', (e) => { o.desc = e.target.value; });
+      box.querySelector('.po-file').addEventListener('change', async (e) => { const f = e.target.files[0]; if (!f) return; o.data = await toBase64(f); o.gone = false; renderPvOpts(); });
+      const c = box.querySelector('.po-clr'); if (c) c.addEventListener('click', () => { o.data = ''; o.gone = true; renderPvOpts(); });
+      box.querySelector('.po-del').addEventListener('click', () => { pv.opts.splice(i, 1); renderPvOpts(); });
+    });
+    $('pvAdd').disabled = pv.opts.length >= 8;
+  }
+  const blankOpt = () => ({ id: '', name: '', desc: '', cur: '', data: '', gone: false });
+  function openPvForm(e) {
+    pv.editing = e ? e.id : null;
+    $('pvForm').classList.remove('hidden'); msg($('pvMsg'), '', ''); msg($('pvTopMsg'), '', '');
+    $('pvFormTitle').textContent = e ? `투표 수정: ${e.title}` : '새 투표';
+    $('pId').value = e ? e.id : ''; $('pId').disabled = !!e; $('pTitle').value = e ? e.title : ''; $('pStart').value = e ? e.start : ''; $('pEnd').value = e ? e.end : '';
+    pv.opts = e ? e.options.map((o) => ({ id: o.id, name: o.name, desc: o.desc || '', cur: o.image || '', data: '', gone: false })) : [blankOpt(), blankOpt(), blankOpt()];
+    renderPvOpts(); $('pvForm').scrollIntoView({ behavior: 'smooth' });
+  }
+  function closePvForm() { $('pvForm').classList.add('hidden'); pv.editing = null; }
+  $('pvNew').addEventListener('click', () => openPvForm(null));
+  $('pvCancel').addEventListener('click', closePvForm);
+  $('pvAdd').addEventListener('click', () => { if (pv.opts.length < 8) { pv.opts.push(blankOpt()); renderPvOpts(); } });
+  $('pvSave').addEventListener('click', async () => {
+    const body = { id: $('pId').value.trim(), title: $('pTitle').value, start: $('pStart').value, end: $('pEnd').value,
+      options: pv.opts.map((o) => ({ id: o.id, name: o.name, desc: o.desc, img: o.gone ? (o.cur ? 'remove' : '') : o.data || '' })) };
+    $('pvSave').disabled = true; msg($('pvMsg'), 'warn', '저장하는 중…');
+    try {
+      const r = await call('POST', '/api/polls/save', body);
+      pv.list = r.polls; renderPolls(); const was = pv.editing; closePvForm(); msg($('pvMsg'), '', '');
+      msg($('pvTopMsg'), 'ok', '<b>저장했어요!</b><br>' + r.log.map(esc).join('<br>') + gitBox((was ? '투표 수정: ' : '투표 추가: ') + body.title)
+        + '<div class="muted" style="margin-top:6px">push 하면 웹이 새로 배포돼요 (1~2분). 앱은 인터넷이 연결돼 있으면 새 APK 없이도 새 투표가 나와요.</div>');
+    } catch (err) { msg($('pvMsg'), 'bad', esc(err.message)); }
+    $('pvSave').disabled = false;
   });
 
   // ----- 물건 관리 -----

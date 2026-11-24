@@ -285,6 +285,66 @@ const api = {
     rmEvImg(ev.image); (ev.sides || []).forEach((s) => rmEvImg(s.image));
     writeEvents(list);
     return { ok: true, log: [`이벤트 '${ev.title}' 삭제`, 'events.json 저장'], events: list };
+  },
+
+  // ---- 테마 투표 (www/events/polls.json + 후보 그림) ----
+  async 'GET /api/polls'() { return { polls: readPolls() }; },
+
+  // 투표 저장 (id 가 새것이면 추가, 있으면 수정). 후보 그림은 새로 올린 것만 바꿔요
+  //   b = { id, title, start, end, options:[{ id?, name, desc, img? }] }  (img 는 data URL, 빈 값이면 그대로 두고, 'remove' 면 지워요)
+  async 'POST /api/polls/save'(req) {
+    const b = await readJson(req);
+    const id = String(b.id || '');
+    if (!idOk(id)) throw fail('id 는 영문 소문자/숫자/_- 로 2~20자예요. 예) theme1');
+    const title = clean(b.title, 30);
+    if (!title) throw fail('투표 이름을 적어 주세요.');
+    if (!DAY_RE.test(b.start || '') || !DAY_RE.test(b.end || '')) throw fail('시작일과 마감일을 골라 주세요.');
+    if (dayNum(b.end) < dayNum(b.start)) throw fail('마감일이 시작일보다 빠를 수 없어요.');
+    if (dayNum(b.end) - dayNum(b.start) > 60) throw fail('기간은 60일까지예요.');
+    if (!Array.isArray(b.options) || b.options.length < 2 || b.options.length > 8) throw fail('후보는 2~8개가 필요해요.');
+    const list = readPolls();
+    const at = list.findIndex((p) => p.id === id), old = at >= 0 ? list[at] : null;
+    const other = list.find((p) => p.id !== id && dayNum(b.start) <= dayNum(p.end) && dayNum(p.start) <= dayNum(b.end));
+    if (other) throw fail(`'${other.title}' (${other.start} ~ ${other.end}) 와 기간이 겹쳐요. 겹치지 않게 해 주세요.`);
+    // 후보 id: 수정할 때는 원래 id 를 지켜요 (이미 던진 표가 어느 후보인지 알아야 해서)
+    const used = new Set(b.options.map((o) => o && o.id).filter((x) => /^[a-z0-9_-]{1,20}$/.test(x || '')));
+    let seq = 0;
+    const nextId = () => { let k; do { k = 'o' + (++seq); } while (used.has(k)); used.add(k); return k; };
+    const options = b.options.map((o, i) => {
+      const name = clean(o && o.name, 16);
+      if (!name) throw fail(`${i + 1}번 후보의 이름을 적어 주세요.`);
+      const oid = /^[a-z0-9_-]{1,20}$/.test((o && o.id) || '') && (!old || old.options.some((x) => x.id === o.id)) ? o.id : nextId();
+      const r = { id: oid, name };
+      const desc = clean(o && o.desc, 40); if (desc) r.desc = desc;
+      return r;
+    });
+    if (new Set(options.map((o) => o.id)).size !== options.length) throw fail('후보 id 가 겹쳐요. 다시 시도해 주세요.');
+    const poll = { id, title, start: b.start, end: b.end, options };
+    const log = [];
+    for (let i = 0; i < options.length; i++) {
+      const prev = old && old.options.find((x) => x.id === options[i].id), field = b.options[i].img;
+      let img = prev && evImgOk(prev.image) ? prev.image : '';
+      if (field === 'remove') { rmEvImg(img); img = ''; }
+      else if (field) { const file = `${id}-${options[i].id}-${stamp()}.webp`; await lib.writeImage(dataBuf(field), path.join(EV_DIR, file), 384, 384); rmEvImg(img); img = file; log.push(`그림 저장 (events/${file})`); }
+      if (img) options[i].image = img;
+    }
+    if (old) old.options.forEach((x) => { if (!options.some((o) => o.id === x.id)) rmEvImg(x.image); });   // 빠진 후보의 그림은 지워요
+    if (at >= 0) list[at] = poll; else list.push(poll);
+    list.sort((x, y) => x.start.localeCompare(y.start));
+    writePolls(list);
+    log.unshift(`투표 '${title}' ${old ? '수정' : '추가'} (${poll.start} ~ ${poll.end}, 후보 ${options.length}개)`);
+    log.push('polls.json 저장');
+    return { ok: true, log, polls: list };
+  },
+
+  async 'POST /api/polls/delete'(req) {
+    const b = await readJson(req);
+    const list = readPolls(), at = list.findIndex((p) => p.id === b.id);
+    if (at < 0) throw fail('투표를 찾지 못했어요.');
+    const [p] = list.splice(at, 1);
+    p.options.forEach((o) => rmEvImg(o.image));
+    writePolls(list);
+    return { ok: true, log: [`투표 '${p.title}' 삭제`, 'polls.json 저장'], polls: list };
   }
 };
 
@@ -297,6 +357,9 @@ function writeEvents(list) { fs.mkdirSync(EV_DIR, { recursive: true }); fs.write
 const dayNum = (k) => { const [y, m, d] = k.split('-').map(Number); return Date.UTC(y, m - 1, d) / 86400000; };
 const evImgOk = (n) => typeof n === 'string' && /^[\w-]{1,60}\.webp$/.test(n);
 const dataBuf = (v) => { const b = Buffer.from(String(v || '').replace(/^data:[^,]*,/, ''), 'base64'); if (b.length < 200) throw fail('이미지를 읽지 못했어요.'); return b; };
+const POLL_FILE = path.join(EV_DIR, 'polls.json');
+const readPolls = () => { try { const j = JSON.parse(fs.readFileSync(POLL_FILE, 'utf8')); return Array.isArray(j.polls) ? j.polls : []; } catch (e) { return []; } };
+function writePolls(list) { fs.mkdirSync(EV_DIR, { recursive: true }); fs.writeFileSync(POLL_FILE, JSON.stringify({ polls: list }, null, 2) + '\n'); }
 const stamp = () => Date.now().toString(36);
 function rmEvImg(name) { if (evImgOk(name)) { const f = path.join(EV_DIR, name); if (fs.existsSync(f)) fs.unlinkSync(f); } }
 
