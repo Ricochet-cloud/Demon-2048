@@ -1,9 +1,11 @@
 name: Build APK
 
+# APK는 지금 안 써서 push 때 자동으로 빌드하지 않아요.
+# 다시 필요하면 Actions 탭에서 Run workflow 로 수동 실행하거나, 아래 push 줄의 주석을 풀어 주세요.
 on:
-  push:
-    branches: [main, master]
-  workflow_dispatch:   # Actions 탭에서 수동 실행도 가능
+  # push:
+  #   branches: [main, master]
+  workflow_dispatch:   # Actions 탭에서 수동 실행
 
 jobs:
   build:
