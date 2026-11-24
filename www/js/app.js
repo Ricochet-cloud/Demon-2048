@@ -433,7 +433,7 @@
     });
     chips.appendChild(row1); chips.appendChild(row2);
     $('dexCount').textContent = `${got.length} / ${th.values.length}`;
-    const grid = $('dexGrid');
+    const grid = $('dexGrid'), canPhoto = A.enabled && !!A.user && C.enabled;
     grid.textContent = '';
     const cells = th.values.map((v) => ({ v, label: th.names[v] || '', img: T.imgOf(v, th), on: v <= best }));
     const bigFrom = th.values[th.values.length - 1] * 2;
@@ -447,8 +447,16 @@
       const num = document.createElement('b'); num.textContent = c.v;
       cap.appendChild(num); cap.appendChild(document.createTextNode(c.on ? c.label : '???'));
       f.appendChild(img); f.appendChild(cap);
+      // 해금한 타일을 누르면 그 그림을 프로필 사진으로 쓸 수 있어요 (로그인했을 때만)
+      if (c.on && canPhoto) {
+        f.classList.add('pickable'); f.tabIndex = 0; f.setAttribute('role', 'button'); f.setAttribute('aria-label', `${c.label || c.v} 타일을 프로필 사진으로`);
+        const go = () => cropOpen(null, c.img);
+        f.addEventListener('click', go);
+        f.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+      }
       grid.appendChild(f);
     });
+    $('dexNote').textContent = canPhoto ? '처음 만든 타일이 여기에 등록돼요. 해금한 타일을 누르면 프로필 사진으로 쓸 수 있어요.' : '처음 만든 타일이 여기에 등록돼요.';
   }
 
   // ---------- 상점 (미션 · 테마) ----------
@@ -1231,15 +1239,15 @@
     const s = crop.base * crop.zoom, mx = Math.max(0, (crop.img.width * s - CROP) / 2), my = Math.max(0, (crop.img.height * s - CROP) / 2);
     crop.ox = Math.max(-mx, Math.min(mx, crop.ox)); crop.oy = Math.max(-my, Math.min(my, crop.oy));
   }
-  function cropOpen(file) {
-    const url = URL.createObjectURL(file), im = new Image();
+  function cropOpen(file, src) {   // file: 올린 사진 / src: 앱 안의 그림 주소 (도감 타일)
+    const url = src || URL.createObjectURL(file), im = new Image();
     im.onload = () => {
-      URL.revokeObjectURL(url);
+      if (!src) URL.revokeObjectURL(url);
       crop.img = im; crop.base = Math.max(CROP / im.width, CROP / im.height); crop.zoom = 1; crop.ox = 0; crop.oy = 0;
       $('cropZoom').value = 100; $('cropNote').textContent = '끌어서 위치를 맞추세요';
       $('cropOk').disabled = false; $('cropper').classList.add('show'); cropDraw();
     };
-    im.onerror = () => { URL.revokeObjectURL(url); const m = $('avatarMsg'); m.className = 'form-err'; m.textContent = '이 사진은 열 수 없어요. 다른 사진을 골라 주세요.'; };
+    im.onerror = () => { if (!src) URL.revokeObjectURL(url); const m = $('avatarMsg'); m.className = 'form-err'; m.textContent = '이 사진은 열 수 없어요. 다른 사진을 골라 주세요.'; showMsg('이 그림은 열 수 없어요.'); };
     im.src = url;
   }
   function cropEncode() {   // 정사각형으로 잘라서 256px, 글자 수가 상한을 넘으면 품질 → 크기를 낮춰요
@@ -1263,6 +1271,7 @@
       await C.savePhoto(d);
       renderAvatarPicker(); renderFramePicker(); renderMe(); refreshRank(); refreshHome();
       msg.className = 'form-err form-ok'; msg.textContent = d ? '내 사진으로 바꿨어요.' : '내 사진을 내렸어요.';
+      if (effective() === 'dex') showMsg(d ? '프로필 사진으로 바꿨어요!' : '내 사진을 내렸어요.');
     } catch (err) {
       msg.textContent = '저장하지 못했어요. 인터넷 연결이나 보안 규칙(photo 필드)을 확인해 주세요.';
     }
