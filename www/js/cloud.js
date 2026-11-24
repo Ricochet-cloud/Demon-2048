@@ -7,7 +7,7 @@
 
   const A = window.AppAuth, G = window.Game2048;
   const COL = 'game2048_users';
-  const NICK_MAX = 12;
+  const NICK_MAX = 5;
   const BIO_MAX = 20;
   const PHOTO_MAX = 60000;   // 직접 올린 사진(작게 줄인 data URL) 글자 수 상한 — 규칙과 같아야 해요
   const PHOTO_RE = /^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/;

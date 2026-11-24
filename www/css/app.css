@@ -573,9 +573,10 @@
 .evblind { padding: 10px 12px; }
 .evmem__gold { margin-left: auto; padding-right: 8px; font-size: 10px; color: var(--muted); }
 
-/* 1등: 프로필 카드 전체 테두리가 불타는 효과 (패왕) */
-.rank__item--king { position: relative; border: 2px solid transparent; background: linear-gradient(rgba(44, 16, 8, .96), rgba(24, 14, 11, .96)) padding-box, linear-gradient(90deg, #ff3c00, #ffd24a, #ff6a00, #ffe27a, #ff3c00) border-box; background-size: 100% 100%, 300% 100%; animation: kingedge 2.2s linear infinite, kingglow 1.4s ease-in-out infinite alternate; }
-@keyframes kingedge { to { background-position: 0 0, 300% 0; } }
+/* 1등: 프로필 카드 전체 테두리가 불타는 효과 (패왕) — 카드 배경은 건드리지 않고 테두리만 따로 그린다 */
+.rank__item--king { position: relative; border-color: transparent; animation: kingglow 1.4s ease-in-out infinite alternate; }
+.rank__item--king::after { content: ''; position: absolute; inset: -1px; padding: 2px; pointer-events: none; background: linear-gradient(90deg, #ff3c00, #ffd24a, #ff6a00, #ffe27a, #ff3c00) 0 0 / 300% 100%; -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); animation: kingedge 2.2s linear infinite; }
+@keyframes kingedge { to { background-position: 300% 0; } }
 @keyframes kingglow { from { box-shadow: 0 0 10px rgba(255, 90, 20, .45), 0 -4px 16px rgba(255, 120, 30, .3); } to { box-shadow: 0 0 22px rgba(255, 150, 40, .8), 0 -8px 26px rgba(255, 90, 20, .5); } }
 .kingflames { position: absolute; left: 0; right: 0; top: 0; height: 0; pointer-events: none; }
 .kingflames i { position: absolute; bottom: 0; width: 16px; height: 28px; margin-left: -8px; background: radial-gradient(ellipse at 50% 88%, #fff2a8 0 16%, #ffb347 38%, #ff4d1a 68%, transparent 74%); border-radius: 50% 50% 50% 50% / 72% 72% 28% 28%; opacity: 0; transform-origin: 50% 100%; animation: kingflame 1.2s ease-in infinite; }
@@ -590,4 +591,4 @@
 .kingflames i:nth-child(9) { left: 96%; animation-delay: .4s; height: 24px; }
 @keyframes kingflame { 0% { opacity: 0; transform: translateY(8px) scale(.5); } 25% { opacity: .95; } 100% { opacity: 0; transform: translateY(-20px) scale(1.1); } }
 .rank__name small.rank__king { padding: 0 5px; border: 1px solid #ff7a2a; border-radius: 3px; color: #ffd27a; background: rgba(160, 40, 10, .6); text-shadow: 0 0 6px #ff7a2a; }
-@media (prefers-reduced-motion: reduce) { .rank__item--king, .kingflames i { animation: none; } .kingflames i { opacity: .8; } }
+@media (prefers-reduced-motion: reduce) { .rank__item--king, .rank__item--king::after, .kingflames i { animation: none; } .kingflames i { opacity: .8; } }
