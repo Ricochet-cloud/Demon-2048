@@ -197,8 +197,7 @@
       if (ph === 'live' && !my.side) text = ev.stake ? `골드를 걸고 편을 골라 보세요! (${left})` : `지금 진행 중이에요! 편을 골라 보세요 (${left})`;
       else if (ph === 'live') {
         const t = B.tally(ev, list), mine = ev.sides.find((s) => s.id === my.side);
-        text = ev.stake ? `내 편: ${mine.name} · 건 골드 ${my.stake.toLocaleString('ko-KR')} · 결과는 끝나면 공개 (${left})`   // 골드 걸기는 블라인드라 앞서는지 알려 주지 않아요
-          : `내 편: ${mine.name} · ${!t.lead ? '팽팽해요' : t.lead.side.id === my.side ? '앞서고 있어요' : '뒤지고 있어요'} (${left})`;
+        text = `내 편: ${mine.name}${ev.stake ? ' · 건 골드 ' + my.stake.toLocaleString('ko-KR') : ''} · ${!t.lead ? '팽팽해요' : t.lead.side.id === my.side ? '앞서고 있어요' : '뒤지고 있어요'} (${left})`;
       } else if (ph === 'upcoming') text = `곧 시작해요 (${left})`;
       else if (my.claimable) text = ev.stake ? `정산이 끝났어요! 골드 ${my.payout.toLocaleString('ko-KR')}을 받아 가세요` : `이겼어요! 보상 골드 ${ev.reward.toLocaleString('ko-KR')}을 받아 가세요`;
     }
@@ -218,7 +217,7 @@
   function drawEvent(ev, list) {
     const body = $('evBody'); body.textContent = '';
     const ph = B.phase(ev), t = B.tally(ev, list), my = B.mine(ev, list, C.uid), tot = t.a.total + t.b.total;
-    const blind = !!ev.stake && ph !== 'ended';   // 골드 걸기는 끝날 때까지 편별 점수·인원을 숨겨요
+    const blind = !!ev.stake && ph !== 'ended' && !my.side;   // 골드 걸기는 참가하기 전까지 편별 점수·인원을 숨겨요 (골라서 건 뒤에는 보여요)
     const card = el('div', 'card evcard');
     if (ev.image) { const i = document.createElement('img'); i.className = 'ev__banner'; i.src = ev.image; i.alt = ''; i.draggable = false; i.addEventListener('error', () => i.remove()); card.appendChild(i); }
     card.appendChild(el('h2', 'ev__title', ev.title));
@@ -232,7 +231,7 @@
       s.appendChild(sideFace(x.side));
       s.appendChild(el('b', 'evside__name', x.side.name));
       s.appendChild(el('span', 'evside__score', blind ? '비공개' : `${nf(x.total)}점`));
-      s.appendChild(el('small', 'evside__n', `${blind ? '' : x.members.length + '명'}${my.side === x.side.id ? (blind ? '내 편' : ' · 내 편') : ''}`));
+      s.appendChild(el('small', 'evside__n', `${blind ? '' : x.members.length + '명'}${!blind && ev.stake ? ' · 건 골드 ' + nf(x.gold) : ''}${my.side === x.side.id ? (blind ? '내 편' : ' · 내 편') : ''}`));
       vs.appendChild(s);
       if (!i) vs.appendChild(el('div', 'evvs__vs', 'VS'));
     });
@@ -243,7 +242,7 @@
     const ba = el('i', 'evbar__a'), bb = el('i', 'evbar__b');
     ba.style.width = pa + '%'; ba.style.background = t.a.side.color; bb.style.width = (100 - pa) + '%'; bb.style.background = t.b.side.color;
     bar.appendChild(ba); bar.appendChild(bb); if (!blind) card.appendChild(bar);
-    const lead = blind && ph === 'live' ? `블라인드 이벤트예요. 참가 ${t.a.members.length + t.b.members.length}명 · 결과는 끝난 뒤에 공개돼요`
+    const lead = blind && ph === 'live' ? `블라인드 이벤트예요. 참가 ${t.a.members.length + t.b.members.length}명 · 편을 고르고 골드를 걸면 현재 상황이 보여요`
       : ev.stake && ph === 'ended' && !my.refunded && t.winners.length === 1 && t.a.gold && t.b.gold ? `${t.lead.side.name} 편이 이겼어요! 진 편이 잃은 골드의 절반을 이긴 편이 건 금액대로 나눠 가졌어요`
       : ev.stake && ph === 'ended' && (t.winners.length !== 1 || !t.a.gold || !t.b.gold) ? '무승부이거나 한쪽에만 걸어서, 건 골드를 모두 돌려받아요'
       : ph === 'upcoming' ? '아직 시작 전이에요. 시작하면 점수가 쌓여요'
@@ -280,7 +279,7 @@
         wrap.appendChild(el('span', null, '걸 골드')); wrap.appendChild(amt);
         wrap.appendChild(el('small', null, `${nf(ev.stake.min)}~${nf(ev.stake.max)} · 보유 ${nf(G.gold)}`));
         act.appendChild(wrap);
-        act.appendChild(el('p', 'ev__rule', '이기면 건 골드와 함께 진 편이 잃은 골드의 절반을 나눠 받고, 지면 건 골드의 절반을 돌려받아요. 결과는 끝날 때까지 비공개예요.'));
+        act.appendChild(el('p', 'ev__rule', '이기면 건 골드와 함께 진 편이 잃은 골드의 절반을 나눠 받고, 지면 건 골드의 절반을 돌려받아요. 현재 상황은 편을 고르고 골드를 건 뒤에 볼 수 있어요.'));
       }
       const row = el('div', 'evpick');
       ev.sides.forEach((s) => {
@@ -302,7 +301,7 @@
     body.appendChild(card);
 
     // 응원단: 편마다 누가 얼마나 모았는지 (골드 걸기는 끝난 뒤에 공개)
-    if (blind) { body.appendChild(el('p', 'ev__rule evblind', '편별 점수와 응원단, 건 골드는 이벤트가 끝나면 공개돼요.')); return; }
+    if (blind) { body.appendChild(el('p', 'ev__rule evblind', '편별 점수와 응원단, 건 골드는 편을 고르고 골드를 건 뒤에 보여요.')); return; }
     const teams = el('div', 'card evteams');
     teams.appendChild(el('h2', null, '응원단'));
     const cols = el('div', 'evteams__cols');
@@ -314,7 +313,7 @@
         const r = el('div', 'evmem' + (m.user.uid === C.uid ? ' evmem--me' : ''));
         r.appendChild(avatarEl(m.user.avatar, m.user.nickname, m.user.frame, m.user.photo));
         const nm = el('span', 'evmem__name', m.user.nickname || '이름 없음');
-        r.appendChild(nm); r.appendChild(el('b', null, nf(m.score)));
+        r.appendChild(nm); if (ev.stake) r.appendChild(el('small', 'evmem__gold', `골드 ${nf(m.gold)}`)); r.appendChild(el('b', null, nf(m.score)));
         col.appendChild(r);
       });
       cols.appendChild(col);

@@ -571,3 +571,4 @@
 .evstake small { color: var(--muted); font-size: 11px; }
 .evcard .ev__rule, .ev__rule { margin: 8px 0 0; font-size: 11px; line-height: 1.5; color: var(--muted); text-align: center; }
 .evblind { padding: 10px 12px; }
+.evmem__gold { margin-left: auto; padding-right: 8px; font-size: 10px; color: var(--muted); }
