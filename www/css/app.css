@@ -561,3 +561,6 @@
 /* 프로필 카드: 이벤트 전적 */
 .me__ev { width: fit-content; max-width: 100%; margin-top: 6px; padding: 2px 9px; font-size: 11px; color: var(--lantern); border: 1px solid rgba(201, 162, 75, .5); background: rgba(0, 0, 0, .25); }
 .me__ev[hidden] { display: none; }
+
+/* 순위표: 이벤트 전적 */
+.rank__ev { display: block; margin-top: 3px; font-size: 10px; color: var(--lantern); opacity: .9; }

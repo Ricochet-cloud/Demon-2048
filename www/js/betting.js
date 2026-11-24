@@ -209,11 +209,13 @@
   }
 
   // 내 전적: { w: 이긴 수, l: 진 수, streak: 지금 연승, best: 최고 연승 } — 기록은 이벤트 시작 순서로 세요
-  function stats() {
-    const G = window.AppGold; let w = 0, l = 0, streak = 0, best = 0;
+  // owned 를 넘기면 그 사람(순위표의 다른 사용자)의 전적을 세요. 안 넘기면 나예요
+  function stats(owned) {
+    const has = Array.isArray(owned) ? (k) => owned.includes(k) : (k) => window.AppGold.owns(k);
+    let w = 0, l = 0, streak = 0, best = 0;
     [...events].sort((a, b) => String(a.start).localeCompare(String(b.start))).forEach((e) => {
-      if (G.owns('ew:' + e.id)) { w++; streak++; best = Math.max(best, streak); }
-      else if (G.owns('el:' + e.id)) { l++; streak = 0; }
+      if (has('ew:' + e.id)) { w++; streak++; best = Math.max(best, streak); }
+      else if (has('el:' + e.id)) { l++; streak = 0; }
     });
     return { w, l, streak, best };
   }

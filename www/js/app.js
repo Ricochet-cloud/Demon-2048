@@ -1054,6 +1054,8 @@
       const tt = titleOf(u.title);
       if (tt) { const e = document.createElement('span'); e.className = 'rank__title'; e.textContent = tt.name; txt.appendChild(e); }
       if (u.bio) { const e = document.createElement('span'); e.className = 'rank__bio'; e.textContent = u.bio; txt.appendChild(e); }
+      const es = window.AppBetting && window.AppBetting.stats ? window.AppBetting.stats(u.owned || []) : null;
+      if (es && es.w + es.l) { const e = document.createElement('span'); e.className = 'rank__ev'; e.textContent = `이벤트 ${es.w}승 ${es.l}패` + (es.streak >= 2 ? ` · ${es.streak}연승` : ''); txt.appendChild(e); }
       if (!compact) txt.appendChild(sub);
       left.appendChild(txt);
       const right = document.createElement('div');
