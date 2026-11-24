@@ -194,7 +194,8 @@
 .me__txt { min-width: 0; }
 .me__name { font-size: 18px; color: var(--paper); }
 .me__title, .rank__title { display: block; margin-top: 3px; font-size: 11px; color: var(--lantern); }
-.me__bio, .rank__bio { display: block; margin-top: 3px; font-size: 11px; color: var(--muted); word-break: break-all; }
+.me__bio, .rank__bio { display: block; width: fit-content; max-width: 100%; box-sizing: border-box; margin-top: 5px; padding: 3px 9px; font-size: 11px; line-height: 1.45; color: #f3ead6; word-break: break-all;
+  background: rgba(14, 9, 7, .78); border: 1px solid rgba(255, 255, 255, .16); border-radius: 9px; text-shadow: none; box-shadow: 0 1px 4px rgba(0, 0, 0, .35); }   /* 화려한 배경 위에서도 읽히는 말풍선 상자 */
 .me__title[hidden], .me__bio[hidden] { display: none; }
 
 /* 홈의 작은 '우리 기록' 카드 */
