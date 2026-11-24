@@ -84,7 +84,17 @@ window.SHOP = {
     { id: 'leaf', name: '새싹', price: 130 },
     { id: 'choco', name: '초코', price: 110 },
     { id: 'ember', name: '불씨', price: 210 },
-    { id: 'prism', name: '프리즘', price: 240 }
+    { id: 'prism', name: '프리즘', price: 240 },
+    { id: 'round', name: '동글', price: 110 },
+    { id: 'squish', name: '말랑', price: 120 },
+    { id: 'cane', name: '사탕지팡이', price: 130 },
+    { id: 'circuit', name: '회로', price: 170 },
+    { id: 'royal', name: '로열', price: 200 },
+    { id: 'vine', name: '덩굴', price: 120 },
+    { id: 'spark', name: '반짝', price: 190 },
+    { id: 'ghost', name: '유령불', price: 210 },
+    { id: 'scroll', name: '두루마리', price: 130 },
+    { id: 'glitch', name: '글리치', price: 240 }
   ],
   titles: [
     { id: 'beginner', name: '귀살대 신입', price: 50, group: '일반' },
@@ -145,7 +155,17 @@ window.SHOP = {
     { id: 'firefly', name: '반딧불 숲', price: 150 },
     { id: 'rain', name: '비 오는 날', price: 120 },
     { id: 'hanji', name: '한지', price: 90 },
-    { id: 'meteor', name: '별똥별', price: 170 }
+    { id: 'meteor', name: '별똥별', price: 170 },
+    { id: 'polar', name: '극광의 밤', price: 170 },
+    { id: 'lava', name: '용암', price: 160 },
+    { id: 'circuit', name: '회로판', price: 140 },
+    { id: 'synth', name: '레트로 석양', price: 190 },
+    { id: 'bubble', name: '비눗방울', price: 120 },
+    { id: 'dune', name: '사막 노을', price: 130 },
+    { id: 'mist', name: '안개 숲', price: 110 },
+    { id: 'crystal', name: '수정 동굴', price: 150 },
+    { id: 'kraft', name: '크래프트', price: 90 },
+    { id: 'tidal', name: '밀물', price: 120 }
   ],
   nameFx: [
     { id: 'gold', name: '금빛', price: 80 },
@@ -168,7 +188,24 @@ window.SHOP = {
     { id: 'lime', name: '라임빛', price: 80 },
     { id: 'ember', name: '불씨빛', price: 180 },
     { id: 'ocean', name: '바다빛', price: 180 },
-    { id: 'candy', name: '솜사탕', price: 230 }
+    { id: 'candy', name: '솜사탕', price: 230 },
+    { id: 'lavender', name: '라벤더', price: 80 },
+    { id: 'peach', name: '복숭아', price: 80 },
+    { id: 'emerald', name: '에메랄드', price: 90 },
+    { id: 'coral', name: '산호', price: 80 },
+    { id: 'lemon', name: '레몬', price: 80 },
+    { id: 'ice', name: '얼음', price: 110 },
+    { id: 'violet', name: '보랏빛', price: 100 },
+    { id: 'twilight', name: '황혼', price: 160 },
+    { id: 'boreal', name: '극광빛', price: 200 },
+    { id: 'gilt', name: '금박', price: 260 },
+    { id: 'chrome', name: '크롬', price: 190 },
+    { id: 'glitchfx', name: '글리치', price: 240 },
+    { id: 'duo', name: '투톤', price: 140 },
+    { id: 'holo', name: '홀로그램', price: 250 },
+    { id: 'outline', name: '외곽선', price: 150 },
+    { id: 'popfx', name: '입체', price: 170 },
+    { id: 'twinkle', name: '별빛', price: 180 }
   ],
   themes: [
     { id: 'default', name: '12귀월', desc: '십이귀월과 싸워 올라가요', cat: '기본', dir: './images/', full: false, max: 16384, bigName: '', ver: 1,
