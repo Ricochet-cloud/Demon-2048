@@ -194,12 +194,13 @@
     let text = '';
     if (ev && list) {
       const ph = B.phase(ev), my = B.mine(ev, list, C.uid), left = B.leftText(ev);
-      if (ph === 'live' && !my.side) text = `지금 진행 중이에요! 편을 골라 보세요 (${left})`;
+      if (ph === 'live' && !my.side) text = ev.stake ? `골드를 걸고 편을 골라 보세요! (${left})` : `지금 진행 중이에요! 편을 골라 보세요 (${left})`;
       else if (ph === 'live') {
         const t = B.tally(ev, list), mine = ev.sides.find((s) => s.id === my.side);
-        text = `내 편: ${mine.name} · ${!t.lead ? '팽팽해요' : t.lead.side.id === my.side ? '앞서고 있어요' : '뒤지고 있어요'} (${left})`;
+        text = ev.stake ? `내 편: ${mine.name} · 건 골드 ${my.stake.toLocaleString('ko-KR')} · 결과는 끝나면 공개 (${left})`   // 골드 걸기는 블라인드라 앞서는지 알려 주지 않아요
+          : `내 편: ${mine.name} · ${!t.lead ? '팽팽해요' : t.lead.side.id === my.side ? '앞서고 있어요' : '뒤지고 있어요'} (${left})`;
       } else if (ph === 'upcoming') text = `곧 시작해요 (${left})`;
-      else if (my.claimable) text = `이겼어요! 보상 골드 ${ev.reward.toLocaleString('ko-KR')}을 받아 가세요`;
+      else if (my.claimable) text = ev.stake ? `정산이 끝났어요! 골드 ${my.payout.toLocaleString('ko-KR')}을 받아 가세요` : `이겼어요! 보상 골드 ${ev.reward.toLocaleString('ko-KR')}을 받아 가세요`;
     }
     card.hidden = !text;
     if (text) { $('homeEvTitle').textContent = ev.title; $('homeEvText').textContent = text; }
@@ -217,11 +218,12 @@
   function drawEvent(ev, list) {
     const body = $('evBody'); body.textContent = '';
     const ph = B.phase(ev), t = B.tally(ev, list), my = B.mine(ev, list, C.uid), tot = t.a.total + t.b.total;
+    const blind = !!ev.stake && ph !== 'ended';   // 골드 걸기는 끝날 때까지 편별 점수·인원을 숨겨요
     const card = el('div', 'card evcard');
     if (ev.image) { const i = document.createElement('img'); i.className = 'ev__banner'; i.src = ev.image; i.alt = ''; i.draggable = false; i.addEventListener('error', () => i.remove()); card.appendChild(i); }
     card.appendChild(el('h2', 'ev__title', ev.title));
     const left = B.leftText(ev);
-    card.appendChild(el('p', 'ev__meta', `${B.period(ev)}${left ? ' · ' + left : ''}${ev.reward ? ' · 이긴 편 골드 ' + nf(ev.reward) : ''}`));
+    card.appendChild(el('p', 'ev__meta', `${B.period(ev)}${left ? ' · ' + left : ''}${ev.reward ? ' · 이긴 편 골드 ' + nf(ev.reward) : ''}${ev.stake ? ' · 골드 걸기 ' + nf(ev.stake.min) + '~' + nf(ev.stake.max) : ''}`));
 
     const vs = el('div', 'evvs');
     [t.a, t.b].forEach((x, i) => {
@@ -229,8 +231,8 @@
       s.style.setProperty('--c', x.side.color);
       s.appendChild(sideFace(x.side));
       s.appendChild(el('b', 'evside__name', x.side.name));
-      s.appendChild(el('span', 'evside__score', `${nf(x.total)}점`));
-      s.appendChild(el('small', 'evside__n', `${x.members.length}명${my.side === x.side.id ? ' · 내 편' : ''}`));
+      s.appendChild(el('span', 'evside__score', blind ? '비공개' : `${nf(x.total)}점`));
+      s.appendChild(el('small', 'evside__n', `${blind ? '' : x.members.length + '명'}${my.side === x.side.id ? (blind ? '내 편' : ' · 내 편') : ''}`));
       vs.appendChild(s);
       if (!i) vs.appendChild(el('div', 'evvs__vs', 'VS'));
     });
@@ -240,8 +242,11 @@
     const pa = tot ? Math.max(6, Math.min(94, t.a.total / tot * 100)) : 50;
     const ba = el('i', 'evbar__a'), bb = el('i', 'evbar__b');
     ba.style.width = pa + '%'; ba.style.background = t.a.side.color; bb.style.width = (100 - pa) + '%'; bb.style.background = t.b.side.color;
-    bar.appendChild(ba); bar.appendChild(bb); card.appendChild(bar);
-    const lead = ph === 'upcoming' ? '아직 시작 전이에요. 시작하면 점수가 쌓여요'
+    bar.appendChild(ba); bar.appendChild(bb); if (!blind) card.appendChild(bar);
+    const lead = blind && ph === 'live' ? `블라인드 이벤트예요. 참가 ${t.a.members.length + t.b.members.length}명 · 결과는 끝난 뒤에 공개돼요`
+      : ev.stake && ph === 'ended' && !my.refunded && t.winners.length === 1 && t.a.gold && t.b.gold ? `${t.lead.side.name} 편이 이겼어요! 진 편이 잃은 골드의 절반을 이긴 편이 건 금액대로 나눠 가졌어요`
+      : ev.stake && ph === 'ended' && (t.winners.length !== 1 || !t.a.gold || !t.b.gold) ? '무승부이거나 한쪽에만 걸어서, 건 골드를 모두 돌려받아요'
+      : ph === 'upcoming' ? '아직 시작 전이에요. 시작하면 점수가 쌓여요'
       : !tot ? '아직 아무도 점수를 모으지 못했어요'
       : !t.lead ? (ph === 'ended' ? '무승부! 두 편 모두 이겼어요' : '똑같아요! 팽팽해요')
       : ph === 'ended' ? `${t.lead.side.name} 편이 이겼어요!`
@@ -251,27 +256,41 @@
     const act = el('div', 'evact');
     if (ph === 'ended') {
       if (my.claimable) {
-        const b = el('button', 'btn btn--wide', `보상 받기 · 골드 ${nf(ev.reward)}`); b.type = 'button';
+        const amount = ev.stake ? my.payout : ev.reward;
+        const b = el('button', 'btn btn--wide', `${ev.stake ? '정산 받기' : '보상 받기'} · 골드 ${nf(amount)}`); b.type = 'button';
         b.addEventListener('click', async () => {
           b.disabled = true;
-          try { await G.claimEvent(ev.id, ev.reward); toastMsg(`이겼어요! 골드 ${nf(ev.reward)}을 받았어요`); }
+          try { await G.claimEvent(ev.id, amount); toastMsg(ev.stake ? `정산 골드 ${nf(amount)}을 받았어요` : `이겼어요! 골드 ${nf(amount)}을 받았어요`); }
           catch (e) { toastMsg(e.user ? e.message : '받지 못했어요. 잠시 뒤에 다시 해 주세요.'); }
           refreshEvent();
         });
         act.appendChild(b);
-      } else act.appendChild(el('p', 'ev__state', my.win && my.claimed ? '보상을 받았어요' : my.win ? '이겼어요!' : my.side ? (t.winners.length ? '아쉽게 졌어요' : '결과가 없어요') : '이번 이벤트에는 참가하지 않았어요'));
+      } else if (ev.stake && my.side) act.appendChild(el('p', 'ev__state', my.claimed ? `정산을 받았어요 (골드 ${nf(my.payout)})` : '정산할 골드가 없어요'));
+      else act.appendChild(el('p', 'ev__state', my.win && my.claimed ? '보상을 받았어요' : my.win ? '이겼어요!' : my.side ? (t.winners.length ? '아쉽게 졌어요' : '결과가 없어요') : '이번 이벤트에는 참가하지 않았어요'));
     } else if (my.side) {
       const mine = ev.sides.find((s) => s.id === my.side);
-      act.appendChild(el('p', 'ev__state', `내 편: ${mine.name}${ph === 'live' ? ` · 내 점수 ${nf(my.score)}점` : ''}`));
+      act.appendChild(el('p', 'ev__state', `내 편: ${mine.name}${ev.stake ? ` · 건 골드 ${nf(my.stake)}` : ''}${ph === 'live' ? ` · 내 점수 ${nf(my.score)}점` : ''}`));
     } else {
-      act.appendChild(el('p', 'ev__ask', '어느 편이 이길까요? 한 번 고르면 바꿀 수 없어요'));
+      act.appendChild(el('p', 'ev__ask', ev.stake ? '어느 편이 이길까요? 골드를 걸고 한 번 고르면 바꿀 수 없어요' : '어느 편이 이길까요? 한 번 고르면 바꿀 수 없어요'));
+      let amt = null;
+      if (ev.stake) {
+        const wrap = el('div', 'evstake');
+        amt = document.createElement('input'); amt.type = 'number'; amt.className = 'field evstake__in'; amt.inputMode = 'numeric';
+        amt.min = ev.stake.min; amt.max = ev.stake.max; amt.step = 1; amt.value = ev.stake.min; amt.setAttribute('aria-label', '걸 골드');
+        wrap.appendChild(el('span', null, '걸 골드')); wrap.appendChild(amt);
+        wrap.appendChild(el('small', null, `${nf(ev.stake.min)}~${nf(ev.stake.max)} · 보유 ${nf(G.gold)}`));
+        act.appendChild(wrap);
+        act.appendChild(el('p', 'ev__rule', '이기면 건 골드와 함께 진 편이 잃은 골드의 절반을 나눠 받고, 지면 건 골드의 절반을 돌려받아요. 결과는 끝날 때까지 비공개예요.'));
+      }
       const row = el('div', 'evpick');
       ev.sides.forEach((s) => {
         const b = el('button', 'btn evpick__btn', `${s.name} 편 들기`); b.type = 'button'; b.style.setProperty('--c', s.color);
         b.addEventListener('click', async () => {
-          if (!window.confirm(`${s.name} 편으로 정할까요?\n한 번 정하면 바꿀 수 없어요.`)) return;
+          const stake = amt ? Math.floor(Number(amt.value)) : 0;
+          if (amt && !(stake >= ev.stake.min && stake <= ev.stake.max)) { toastMsg(`골드는 ${nf(ev.stake.min)}~${nf(ev.stake.max)} 사이로 걸 수 있어요.`); return; }
+          if (!window.confirm(`${s.name} 편에 ${amt ? '골드 ' + nf(stake) + '을 걸고 ' : ''}정할까요?\n한 번 정하면 바꿀 수 없어요.`)) return;
           row.querySelectorAll('button').forEach((x) => { x.disabled = true; });
-          try { const got = await B.join(ev, s.id); toastMsg(got && got.length ? `앞 이벤트 보상 골드 ${got.reduce((n, e) => n + e.reward, 0).toLocaleString('ko-KR')}을 받고, ${s.name} 편이 됐어요!` : `${s.name} 편이 됐어요!`); }
+          try { const got = await B.join(ev, s.id, stake); toastMsg(got && got.length ? `앞 이벤트 보상 골드 ${got.reduce((n, e) => n + e.reward, 0).toLocaleString('ko-KR')}을 받고, ${s.name} 편이 됐어요!` : `${s.name} 편이 됐어요!`); }
           catch (e) { toastMsg(e.user ? e.message : '정하지 못했어요. 인터넷 연결을 확인해 주세요.'); }
           refreshEvent();
         });
@@ -282,7 +301,8 @@
     card.appendChild(act);
     body.appendChild(card);
 
-    // 응원단: 편마다 누가 얼마나 모았는지
+    // 응원단: 편마다 누가 얼마나 모았는지 (골드 걸기는 끝난 뒤에 공개)
+    if (blind) { body.appendChild(el('p', 'ev__rule evblind', '편별 점수와 응원단, 건 골드는 이벤트가 끝나면 공개돼요.')); return; }
     const teams = el('div', 'card evteams');
     teams.appendChild(el('h2', null, '응원단'));
     const cols = el('div', 'evteams__cols');

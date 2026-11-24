@@ -86,13 +86,17 @@
         chDone: typeof d.chDone === 'string' ? d.chDone : '',
         chClaim: typeof d.chClaim === 'string' ? d.chClaim : '',
         evClaim: typeof d.evClaim === 'string' ? d.evClaim : '',
+        evDoc: d.ev && typeof d.ev === 'object' ? d.ev : null,   // 지금 참가 중인 이벤트 기록 (골드 걸기에서 확인용)
         streak: (d.streak && typeof d.streak.n === 'number') ? d.streak : (guest ? S.streak : null),
         claimed: same ? [...(d.daily.claimed || [])] : (guest && typeof d.gold !== 'number' && S.day === day ? S.claimed : [])
       };
       if (cur.done.includes('play')) cur.streak = bump(cur.streak, day);   // 오늘 한 판을 끝냈으면 출석
       const nx = mutate(cur);
-      t.set(ref, { gold: nx.gold, owned: nx.owned, jokers: normJk(nx.jokers), weekClaim: nx.weekClaim || '', chDone: nx.chDone || '', chClaim: nx.chClaim || '', evClaim: nx.evClaim || '', streak: nx.streak || newStreak(), daily: { day, done: nx.done, claimed: nx.claimed } }, { merge: true });
-      return nx;
+      const out = { gold: nx.gold, owned: nx.owned, jokers: normJk(nx.jokers), weekClaim: nx.weekClaim || '', chDone: nx.chDone || '', chClaim: nx.chClaim || '', evClaim: nx.evClaim || '', streak: nx.streak || newStreak(), daily: { day, done: nx.done, claimed: nx.claimed } };
+      if (nx.evNew) out.ev = nx.evNew;   // 골드를 걸고 편을 고를 때: 골드 빼기와 참가 기록을 한 번에 저장해요
+      t.set(ref, out, { merge: true });
+      const keep = Object.assign({}, nx); delete keep.evNew; delete keep.evDoc;
+      return keep;
     });
     S = Object.assign(S, next, { owner: C.uid });
     changed();
@@ -217,6 +221,7 @@
     // field 에 key 를 적어 두고 골드를 줘요 (같은 key 로는 한 번만) — 주간 1등(weekClaim), 오늘의 도전 완료(chDone)/전날 1등(chClaim)
     async claimOnce(field, key, reward) {
       if (!['weekClaim', 'chDone', 'chClaim', 'evClaim'].includes(field)) throw userError('받을 수 없는 보상이에요.');
+      if (!Number.isInteger(reward) || reward < 0 || reward > 1000000) throw userError('받을 수 없는 보상이에요.');
       await update((cur) => {
         if (cur[field] === key) throw userError('이미 받았어요.');
         return Object.assign(cur, { gold: (cur.gold || 0) + reward, [field]: key });
@@ -242,6 +247,16 @@
       await update((cur) => {
         if (cur.owned.includes('ew:' + id) || cur.owned.includes('el:' + id)) throw userError('이미 기록했어요.');
         return Object.assign(cur, { owned: [...cur.owned, mark] });
+      });
+    },
+    // 골드를 걸고 편 고르기: 골드를 빼는 것과 참가 기록(ev.g = 건 골드)을 한 번에 저장해요. 규칙은 betting.js 에서 확인해서 min/max 를 넘겨요
+    async joinStake(eventId, sideId, stake, min, max) {
+      if (!/^[a-z0-9_-]{1,20}$/.test(String(eventId)) || !/^[a-z0-9_-]{1,20}$/.test(String(sideId))) throw userError('참가할 수 없는 이벤트예요.');
+      if (!Number.isInteger(stake) || stake < min || stake > max) throw userError(`골드는 ${min}~${max} 사이로 걸 수 있어요.`);
+      await update((cur) => {
+        if (cur.evDoc && cur.evDoc.id === eventId) throw userError('이미 편을 골랐어요. 바꿀 수 없어요.');
+        if ((cur.gold || 0) < stake) throw userError('골드가 모자라요.');
+        return Object.assign(cur, { gold: cur.gold - stake, evNew: { id: eventId, side: sideId, s: 0, g: stake } });
       });
     },
     claimEvent(eventId, reward) { return this.claimOnce('evClaim', eventId, reward); },   // 배팅 이벤트 승리 보상

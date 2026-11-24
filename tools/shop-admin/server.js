@@ -254,6 +254,11 @@ const api = {
       return { id: sid, name, color: String(s.color).toLowerCase() };
     });
     const ev = { id, title, start: b.start, end: b.end, reward, sides };
+    if (b.stake) {
+      const mn = Number(b.stake.min), mx = Number(b.stake.max);
+      if (!Number.isInteger(mn) || !Number.isInteger(mx) || mn < 1 || mx < mn || mx > 100000) throw fail('걸 수 있는 골드는 1 이상, 최소 ≤ 최대 (최대 100000)로 정해 주세요.');
+      ev.stake = { min: mn, max: mx }; ev.reward = 0;
+    }
     const log = [];
     // 그림 (새로 올리면 새 파일 이름으로 저장해서 앱에 옛 그림이 남지 않아요)
     const put = async (field, cur, name, w, h) => {
@@ -271,7 +276,7 @@ const api = {
     if (at >= 0) list[at] = ev; else list.push(ev);
     list.sort((x, y) => x.start.localeCompare(y.start));
     writeEvents(list);
-    log.unshift(`이벤트 '${title}' ${old ? '수정' : '추가'} (${ev.start} ~ ${ev.end}, 보상 ${reward}골드)`);
+    log.unshift(`이벤트 '${title}' ${old ? '수정' : '추가'} (${ev.start} ~ ${ev.end}, ${ev.stake ? `골드 걸기 ${ev.stake.min}~${ev.stake.max}` : `보상 ${reward}골드`})`);
     log.push('events.json 저장');
     return { ok: true, log, events: list };
   },

@@ -122,6 +122,9 @@
         <div><label>시작일 (이 날 오전 6시에 시작)</label><input type="date" id="eStart" style="width:100%;background:#120d0a;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:7px 9px;font:inherit"></div>
         <div><label>종료일 (이 날까지, 다음 날 오전 6시에 끝나요)</label><input type="date" id="eEnd" style="width:100%;background:#120d0a;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:7px 9px;font:inherit"></div>
         <div><label>이긴 편 보상 (골드)</label><input type="number" id="eReward" min="0" max="100000" value="300"></div>
+        <div style="grid-column:1/-1"><label><input type="checkbox" id="eStake"> 골드 걸기 방식으로 하기 (참가할 때 골드를 걸어요. 켜면 위의 "이긴 편 보상"은 쓰지 않아요)</label>
+          <div id="eStakeBox" class="hidden" style="margin-top:6px"><span class="muted">걸 수 있는 골드</span> <input type="number" id="eMin" min="1" max="100000" value="10" style="width:90px"> ~ <input type="number" id="eMax" min="1" max="100000" value="200" style="width:90px">
+          <div class="muted" style="margin-top:4px">끝나면 이긴 편은 건 골드와 함께 진 편이 잃은 골드의 절반을 건 금액 비율로 나눠 받고, 진 편은 건 골드의 절반을 돌려받아요. 무승부이거나 한쪽에만 걸면 전부 돌려받아요. 진행 중에는 편별 점수·인원이 비공개예요.</div></div></div>
       </div>
       <p class="muted" id="ePeriod" style="margin:8px 0 0"></p>
 
@@ -365,7 +368,7 @@
   async function loadEvents() { const r = await call('GET', '/api/events'); ev.list = r.events; renderEvents(); }
   function renderEvents() {
     $('evRows').innerHTML = ev.list.length ? ev.list.map((e) => `<tr><td>${e.image ? `<img src="${evFiles(e.image)}" alt="" style="width:96px;height:54px;object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:8px">` : ''}<b>${esc(e.title)}</b> <span class="muted">${esc(e.id)}</span><br><span class="muted">${esc(e.sides[0].name)} vs ${esc(e.sides[1].name)}</span></td>
-      <td>${esc(e.start)} ~ ${esc(e.end)}</td><td>${e.reward}골드</td><td>${evStatus(e)}</td>
+      <td>${esc(e.start)} ~ ${esc(e.end)}</td><td>${e.stake ? `걸기 ${e.stake.min}~${e.stake.max}` : e.reward + '골드'}</td><td>${evStatus(e)}</td>
       <td><button data-edit="${esc(e.id)}">수정</button> <button data-del="${esc(e.id)}">삭제</button></td></tr>`).join('') : '<tr><td colspan="5" class="muted">아직 이벤트가 없어요.</td></tr>';
     $('evRows').querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => openEvForm(ev.list.find((e) => e.id === b.dataset.edit))));
     $('evRows').querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => {
@@ -386,6 +389,7 @@
     $('evFormTitle').textContent = e ? `이벤트 수정: ${e.title}` : '새 이벤트';
     $('eId').value = e ? e.id : ''; $('eId').disabled = !!e;
     $('eTitle').value = e ? e.title : ''; $('eStart').value = e ? e.start : ''; $('eEnd').value = e ? e.end : ''; $('eReward').value = e ? e.reward : 300;
+    $('eStake').checked = !!(e && e.stake); $('eMin').value = e && e.stake ? e.stake.min : 10; $('eMax').value = e && e.stake ? e.stake.max : 200; $('eStakeBox').classList.toggle('hidden', !$('eStake').checked);
     $('eNameA').value = e ? e.sides[0].name : ''; $('eColorA').value = e ? e.sides[0].color : '#4f86f7';
     $('eNameB').value = e ? e.sides[1].name : ''; $('eColorB').value = e ? e.sides[1].color : '#ff6b5b';
     ev.img = { main: { cur: e && e.image }, a: { cur: e && e.sides[0].image }, b: { cur: e && e.sides[1].image } };
@@ -406,9 +410,10 @@
     $(s.file).addEventListener('change', async (e) => { const f = e.target.files[0]; if (!f) return; ev.img[s.k] = Object.assign(ev.img[s.k] || {}, { data: await toBase64(f), gone: false }); showImg(s); });
     $(s.clr).addEventListener('click', () => { ev.img[s.k] = { cur: (ev.img[s.k] || {}).cur, gone: true }; $(s.file).value = ''; showImg(s); });
   });
+  $('eStake').addEventListener('change', () => $('eStakeBox').classList.toggle('hidden', !$('eStake').checked));
   const imgField = (k) => { const st = ev.img[k] || {}; return st.gone ? (st.cur ? 'remove' : '') : st.data || ''; };
   $('eSave').addEventListener('click', async () => {
-    const body = { id: $('eId').value.trim(), title: $('eTitle').value, start: $('eStart').value, end: $('eEnd').value, reward: $('eReward').value === '' ? NaN : Number($('eReward').value),
+    const body = { id: $('eId').value.trim(), title: $('eTitle').value, start: $('eStart').value, end: $('eEnd').value, reward: $('eReward').value === '' ? NaN : Number($('eReward').value), stake: $('eStake').checked ? { min: Number($('eMin').value), max: Number($('eMax').value) } : null,
       image: imgField('main'), sides: [{ name: $('eNameA').value, color: $('eColorA').value, img: imgField('a') }, { name: $('eNameB').value, color: $('eColorB').value, img: imgField('b') }] };
     $('eSave').disabled = true; msg($('eMsg'), 'warn', '저장하는 중…');
     try {

@@ -564,3 +564,10 @@
 
 /* 순위표: 이벤트 전적 */
 .rank__ev { display: block; margin-top: 3px; font-size: 10px; color: var(--lantern); opacity: .9; }
+
+/* 골드 걸기 이벤트 */
+.evstake { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; color: var(--paper); }
+.evstake__in { width: 110px; flex: none; text-align: right; }
+.evstake small { color: var(--muted); font-size: 11px; }
+.evcard .ev__rule, .ev__rule { margin: 8px 0 0; font-size: 11px; line-height: 1.5; color: var(--muted); text-align: center; }
+.evblind { padding: 10px 12px; }

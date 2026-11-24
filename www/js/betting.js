@@ -4,6 +4,11 @@
 //   → 새 이벤트는 git push 만 하면 앱을 새로 깔지 않아도 나타나요
 // - 내 문서의 ev 필드: { id: 이벤트 id, side: 내가 고른 편, s: 내가 모은 점수 }  (편은 한 번 고르면 못 바꿔요)
 // - 이긴 편(점수 합이 높은 편)을 고른 사람이 이벤트가 끝난 뒤 골드를 한 번 받아요 (evClaim 에 받은 이벤트 id 를 적어 둬요)
+// - '골드 걸기' 이벤트(events.json 에 stake: {min, max} 가 있는 것): 편을 고를 때 골드를 걸어요 (ev.g = 건 골드)
+//   · 끝나면 이긴 편(점수 합이 높은 편)은 건 골드를 돌려받고, 진 편이 잃은 골드의 절반을 이긴 편이 건 금액 비율대로 나눠 가져요
+//   · 진 편은 건 골드의 절반을 돌려받아요. 골드가 새로 생기지 않아요
+//   · 무승부이거나 한쪽에만 걸었으면 전부 돌려받아요 (참가자 2명 미만도 같아요)
+//   · 진행 중에는 편별 점수·인원·건 골드를 숨겨요 (끝나면 공개)
 // - 서버 없이 앱이 계산하는 방식이라 기술적으로는 조작이 가능해요 (친구끼리 쓰는 용도)
 (() => {
   'use strict';
@@ -36,7 +41,9 @@
     }));
     if (!sides[0].id || !sides[1].id || sides[0].id === sides[1].id) return null;
     const ev = { id: String(e.id), title: String(e.title || '이벤트').slice(0, 30), start: e.start, end: e.end, image: url(e.image), sides,
-      reward: Math.max(0, Math.min(100000, Number.isInteger(e.reward) ? e.reward : 0)) };
+      reward: Math.max(0, Math.min(100000, Number.isInteger(e.reward) ? e.reward : 0)), stake: null };
+    const st = e.stake;
+    if (st && Number.isInteger(st.min) && Number.isInteger(st.max) && st.min >= 1 && st.max >= st.min && st.max <= 100000) { ev.stake = { min: st.min, max: st.max }; ev.reward = 0; }
     return endsAt(ev) > startsAt(ev) ? ev : null;
   }
 
@@ -92,12 +99,13 @@
   // ---------- 집계 ----------
   // list: 모두의 문서. 편마다 { total, members(점수 높은 순) } 를 만들고, 이긴 편을 가려요 (같으면 둘 다 이겨요)
   function tally(ev, list) {
-    const out = {}; ev.sides.forEach((s) => { out[s.id] = { side: s, total: 0, members: [] }; });
+    const out = {}; ev.sides.forEach((s) => { out[s.id] = { side: s, total: 0, gold: 0, members: [] }; });
     (list || []).forEach((u) => {
       const e = u.ev;
       if (!e || e.id !== ev.id || !out[e.side]) return;
       const s = Math.max(0, Number.isInteger(e.s) ? e.s : 0);
-      out[e.side].total += s; out[e.side].members.push({ user: u, score: s });
+      const g = ev.stake && Number.isInteger(e.g) ? Math.max(0, Math.min(ev.stake.max, e.g)) : 0;
+      out[e.side].total += s; out[e.side].gold += g; out[e.side].members.push({ user: u, score: s, gold: g });
     });
     const a = out[ev.sides[0].id], b = out[ev.sides[1].id];
     [a, b].forEach((x) => x.members.sort((p, q) => q.score - p.score));
@@ -110,7 +118,23 @@
     const e = u.ev && u.ev.id === ev.id ? u.ev : null, t = tally(ev, list);
     const side = e && t.a.side.id === e.side ? t.a.side.id : e && t.b.side.id === e.side ? t.b.side.id : '';
     const win = !!side && phase(ev) === 'ended' && t.winners.includes(side);
-    return { side, score: side ? (e.s || 0) : 0, win, claimed: u.evClaim === ev.id, claimable: win && ev.reward > 0 && u.evClaim !== ev.id };
+    const claimed = u.evClaim === ev.id;
+    if (!ev.stake) return { side, score: side ? (e.s || 0) : 0, win, claimed, claimable: win && ev.reward > 0 && !claimed, stake: 0, payout: 0, refunded: false };
+    // 골드 걸기: 정산 결과 (끝난 뒤에만 의미가 있어요)
+    const g = side ? Math.max(0, Math.min(ev.stake.max, Number.isInteger(e.g) ? e.g : 0)) : 0, ended = phase(ev) === 'ended';
+    const sc = settle(ev, t), payout = side && ended ? payoutOf(sc, side, g) : 0;
+    return { side, score: side ? (e.s || 0) : 0, win: win && !sc.refund, claimed, claimable: ended && !!side && g > 0 && payout > 0 && !claimed, stake: g, payout, refunded: !!side && ended && sc.refund };
+  }
+  // 골드 걸기 정산 방법: 이긴 편이 한 편으로 가려지고 양쪽에 건 골드가 있어야 나눠요. 아니면 모두 돌려받아요
+  function settle(ev, t) {
+    const a = t.a, b = t.b;
+    if (t.winners.length !== 1 || !a.gold || !b.gold) return { refund: true };
+    const w = t.winners[0] === a.side.id ? a : b, l = w === a ? b : a;
+    return { refund: false, win: w.side.id, pool: Math.floor(l.gold / 2), winGold: w.gold };   // pool: 진 편이 잃는 골드의 절반 (이긴 편이 나눠 가져요)
+  }
+  function payoutOf(sc, side, g) {
+    if (sc.refund) return g;
+    return side === sc.win ? g + Math.floor(sc.pool * g / sc.winGold) : Math.floor(g / 2);
   }
 
   const userError = (msg) => Object.assign(new Error(msg), { user: true });
@@ -132,7 +156,9 @@
       await C.tx(async (t, ref) => {
         const snap = await t.get(ref), e = snap.exists ? snap.data().ev : null;
         if (!e || e.id !== pid || !e.side) return;   // 이 이벤트에 참가하지 않았으면 버려요
-        t.set(ref, { ev: { id: e.id, side: e.side, s: Math.max(0, (Number.isInteger(e.s) ? e.s : 0) + d) } }, { merge: true });
+        const nx = { id: e.id, side: e.side, s: Math.max(0, (Number.isInteger(e.s) ? e.s : 0) + d) };
+        if (Number.isInteger(e.g)) nx.g = e.g;   // 건 골드는 그대로 둬요
+        t.set(ref, { ev: nx }, { merge: true });
       });
       S.pending -= d; S.owner = C.uid; save();
     }).catch((e) => console.warn('이벤트 점수 저장 실패', e));
@@ -174,10 +200,11 @@
         const m = mine(e, list, C.uid);
         if (!m.side) continue;   // 참가하지 않은 이벤트
         if (m.claimable) {
-          try { await window.AppGold.claimEvent(e.id, e.reward); got.push(e); } catch (err) { if (!err.user) { console.warn('이벤트 보상 받기 실패', err); continue; } }
+          const amount = e.stake ? m.payout : e.reward;
+          try { await window.AppGold.claimEvent(e.id, amount); got.push(Object.assign({}, e, { reward: amount })); } catch (err) { if (!err.user) { console.warn('이벤트 보상 받기 실패', err); continue; } }
         }
         // 이긴 이벤트·진 이벤트 모두 전적에 남겨요 (이미 남겼으면 건너뛰어요)
-        if (!window.AppGold.owns('ew:' + e.id) && !window.AppGold.owns('el:' + e.id)) {
+        if (!m.refunded && !window.AppGold.owns('ew:' + e.id) && !window.AppGold.owns('el:' + e.id)) {   // 전액 환불된 이벤트는 승패로 세지 않아요
           try { await window.AppGold.recordEvent(e.id, m.win); } catch (err) { if (!err.user) console.warn('이벤트 전적 기록 실패', err); }
         }
       }
@@ -186,7 +213,7 @@
   }
 
   // 새 이벤트에 참가하면 내 기록이 새 이벤트로 바뀌어요. 그 전에 앞 이벤트 보상이 남아 있으면 먼저 받아요
-  async function join(ev, sideId) {
+  async function join(ev, sideId, stake) {
     if (!C.enabled) throw userError('로그인하면 참가할 수 있어요.');
     if (!C.loaded) throw needNet();
     if (phase(ev) === 'ended') throw userError('이미 끝난 이벤트예요.');
@@ -199,7 +226,8 @@
     if (prev && phase(prev) === 'ended' && !got.some((e) => e.id === prev.id) && mine(prev, list, C.uid).claimable) throw userError('앞 이벤트 보상을 먼저 받아야 해요. 잠시 뒤에 다시 해 주세요.');
     S.pending = 0; S.pid = ev.id; save();   // 참가하기 전에 얻은 점수는 세지 않아요
     try {
-      await C.tx(async (t, ref) => {
+      if (ev.stake) await window.AppGold.joinStake(ev.id, sideId, stake, ev.stake.min, ev.stake.max);   // 골드 빼기 + 참가 기록을 한 번에
+      else await C.tx(async (t, ref) => {
         const snap = await t.get(ref), d = snap.exists ? snap.data() : {};
         if (d.ev && d.ev.id === ev.id) throw userError('이미 편을 골랐어요. 바꿀 수 없어요.');
         t.set(ref, { ev: { id: ev.id, side: sideId, s: 0 } }, { merge: true });
@@ -220,6 +248,6 @@
     return { w, l, streak, best };
   }
 
-  window.AppBetting = { stats, load, current, phase, leftText, period, tally, mine, join, claimOld, flush, startsAt, endsAt,
+  window.AppBetting = { settle, stats, load, current, phase, leftText, period, tally, mine, join, claimOld, flush, startsAt, endsAt,
     get list() { return events; }, get ready() { return loadedOnce; } };
 })();
