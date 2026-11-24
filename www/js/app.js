@@ -1055,6 +1055,13 @@
       item.className = 'rank__item' + (u.uid === C.uid ? ' rank__item--me' : '') + (bgOf(u.bg) ? ' bg-' + u.bg : '');
       const left = document.createElement('div');
       left.className = 'rank__who';
+      const king = i === 0 && val(u) > 0;
+      if (king) {
+        item.classList.add('rank__item--king');
+        const fw = document.createElement('div'); fw.className = 'kingflames';
+        for (let k = 0; k < 9; k++) fw.appendChild(document.createElement('i'));
+        item.appendChild(fw);
+      }
       left.appendChild(avatarEl(u.avatar, u.nickname, u.frame, u.photo));
       const txt = document.createElement('div');
       txt.className = 'rank__txt';
@@ -1065,6 +1072,7 @@
       nmt.textContent = u.nickname || '이름 없음'; nm.appendChild(nmt);
       if (rankOf(SE.bestOf(u))) nm.appendChild(rankBadge(SE.bestOf(u)));
       if (u.uid === C.uid) { const t = document.createElement('small'); t.textContent = '나'; nm.appendChild(t); }
+      if (king) { const t = document.createElement('small'); t.className = 'rank__king'; t.textContent = '패왕'; nm.appendChild(t); }
       if ((week || chal) && i === 0 && val(u) > 0) { const t = document.createElement('small'); t.className = 'rank__first'; t.textContent = '1등'; nm.appendChild(t); }
       const sub = document.createElement('span');
       sub.className = 'rank__sub';
