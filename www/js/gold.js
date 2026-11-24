@@ -224,6 +224,16 @@
       return reward;
     },
     claimWeekly(weekKey, reward) { return this.claimOnce('weekClaim', weekKey, reward); },
+    // 시즌 보상 (시즌마다 한 번): 받았다는 표시를 산 물건 목록에 'sr:시즌' 으로 남겨요
+    async claimSeason(seasonKey, reward) {
+      const mark = 'sr:' + seasonKey;
+      if (!/^sr:\d{4}-\d{2}$/.test(mark) || !Number.isInteger(reward) || reward < 0 || reward > 100000) throw userError('받을 수 없는 보상이에요.');
+      await update((cur) => {
+        if (cur.owned.includes(mark)) throw userError('이미 받았어요.');
+        return Object.assign(cur, { gold: (cur.gold || 0) + reward, owned: [...cur.owned, mark] });
+      });
+      return reward;
+    },
     claimEvent(eventId, reward) { return this.claimOnce('evClaim', eventId, reward); },   // 배팅 이벤트 승리 보상
     // 상점에서 쓸 구매 (골드를 내고 itemId 를 가져요) — 아직 파는 물건은 없지만 구조만 만들어 둬요
     async spend(price, itemId) {

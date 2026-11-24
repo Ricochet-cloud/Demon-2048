@@ -36,11 +36,11 @@
   const SE = window.AppSeason;   // 시즌 (season.js)
   // 랭크 — 최고 점수 기준 (기준 점수는 여기만 고치면 돼요). 한 번 오르면 최고 점수가 기준이라 내려가지 않아요
   const RANKS = [
-    { id: 'bronze', name: '브론즈', min: 2000 },
-    { id: 'silver', name: '실버', min: 5000 },
-    { id: 'gold', name: '골드', min: 12000 },
-    { id: 'platinum', name: '플래티넘', min: 25000 },
-    { id: 'diamond', name: '다이아', min: 50000 }
+    { id: 'bronze', name: '브론즈', min: 2000, reward: 100 },       // reward: 시즌이 끝났을 때 이 랭크로 마치면 받는 골드
+    { id: 'silver', name: '실버', min: 5000, reward: 200 },
+    { id: 'gold', name: '골드', min: 12000, reward: 400 },
+    { id: 'platinum', name: '플래티넘', min: 25000, reward: 700 },
+    { id: 'diamond', name: '다이아', min: 50000, reward: 1200 }
   ];
   const rankOf = (score) => { let r = null; RANKS.forEach((x) => { if ((score || 0) >= x.min) r = x; }); return r; };
   function rankBadge(score) {
@@ -83,8 +83,31 @@
     $('homeGold').textContent = G.gold;
     $('homeShopTag').hidden = G.claimable() === 0;
     $('homeChallengeTag').hidden = window.Game2048.challengeState().done;   // 오늘의 도전을 아직 안 했으면 표시
+    refreshSeasonReward();
     refreshHomeRank();
   }
+
+  // ---------- 시즌 보상 ----------
+  // 지난 시즌을 마친 랭크에 따라 골드를 한 번 받아요 (바로 지난 시즌만, 받으면 'sr:시즌' 표시가 남아요)
+  function seasonRewardInfo() {
+    const s = readSaved(), pk = SE.prevKey(SE.key());
+    const r = s.pseason === pk ? rankOf(s.pbest) : null;
+    return r && !G.owns('sr:' + pk) ? { key: pk, rank: r } : null;
+  }
+  function refreshSeasonReward() {
+    const box = $('seasonReward'), info = A.enabled && C.enabled && C.loaded ? seasonRewardInfo() : null;
+    box.hidden = !info;
+    if (!info) return;
+    $('seasonRewardTitle').textContent = `${SE.monthNo(info.key)}월 시즌 보상`;
+    $('seasonRewardText').textContent = `${info.rank.name} 랭크로 마쳤어요! 골드 ${info.rank.reward.toLocaleString('ko-KR')}을 받을 수 있어요.`;
+  }
+  $('seasonRewardBtn').addEventListener('click', async () => {
+    const info = seasonRewardInfo(); if (!info) return;
+    $('seasonRewardBtn').disabled = true;
+    try { await G.claimSeason(info.key, info.rank.reward); toastMsg(`${SE.monthNo(info.key)}월 시즌 보상! 골드 ${info.rank.reward.toLocaleString('ko-KR')}을 받았어요`); }
+    catch (e) { toastMsg(e.user ? e.message : '받지 못했어요. 인터넷 연결을 확인해 주세요.'); }
+    $('seasonRewardBtn').disabled = false; refreshSeasonReward();
+  });
 
   // ---------- 응원 ----------
   const CHEER_MSGS = ['화이팅!', '오늘도 한 판?', '대단해요!', '곧 따라잡을게요', '쉬엄쉬엄 해요'];
@@ -143,6 +166,23 @@
     const ev = B.ready && A.enabled && C.enabled ? B.current() : null;
     if (ev && list) evClaimable = B.phase(ev) === 'ended' && B.mine(ev, list, C.uid).claimable;
     if (effective() === 'modes') refreshModes();
+    refreshHomeEvent(ev, list);
+  }
+  // 홈의 이벤트 알림 카드: 진행 중(편 고르기·현재 상황) / 곧 시작 / 이긴 뒤 보상 받기 때만 나와요
+  function refreshHomeEvent(ev, list) {
+    const card = $('homeEvCard');
+    let text = '';
+    if (ev && list) {
+      const ph = B.phase(ev), my = B.mine(ev, list, C.uid), left = B.leftText(ev);
+      if (ph === 'live' && !my.side) text = `지금 진행 중이에요! 편을 골라 보세요 (${left})`;
+      else if (ph === 'live') {
+        const t = B.tally(ev, list), mine = ev.sides.find((s) => s.id === my.side);
+        text = `내 편: ${mine.name} · ${!t.lead ? '팽팽해요' : t.lead.side.id === my.side ? '앞서고 있어요' : '뒤지고 있어요'} (${left})`;
+      } else if (ph === 'upcoming') text = `곧 시작해요 (${left})`;
+      else if (my.claimable) text = `이겼어요! 보상 골드 ${ev.reward.toLocaleString('ko-KR')}을 받아 가세요`;
+    }
+    card.hidden = !text;
+    if (text) { $('homeEvTitle').textContent = ev.title; $('homeEvText').textContent = text; }
   }
   const modeEvent = () => (B.ready && A.enabled && C.enabled ? B.current() : null);
 
@@ -729,7 +769,7 @@
     none.setAttribute('aria-pressed', C.frame ? 'false' : 'true');
     none.appendChild(avatarEl(C.avatar, C.nickname, '', C.photo)); none.appendChild(document.createElement('span')).textContent = '없음';
     pick.appendChild(none);
-    FRAMES.filter(ownsFrame).forEach((f) => {
+    styleFilter('framePick', 'frame', FRAMES.filter(ownsFrame)).forEach((f) => {
       const b = document.createElement('button');
       b.type = 'button'; b.dataset.frame = f.id; b.className = f.id === C.frame ? 'on' : '';
       b.setAttribute('aria-pressed', f.id === C.frame ? 'true' : 'false');
@@ -750,6 +790,38 @@
     });
   }
 
+  // 프레임·카드 배경·이름 꾸미기 분류 (목록에 없는 새 물건은 '기타'. 관리 도구에서 물건에 group 을 적으면 그 이름으로 나뉘어요)
+  const STYLE_GROUPS = {
+    frame: { '기본': 'silver gold gilded steel round scroll royal ink stitch', '자연': 'sakura wave ice wisteria bamboo leaf vine aurora sunset moon', '불·번개': 'flame thunder ember blood sun spark', '네온·빛': 'neon starlight glass prism rainbow circuit glitch ghost', '귀여움': 'candy heart choco cane squish pixel' },
+    bg: { '귀멸': 'check asanoha sakura butterfly water flame thunder infinity moon blood sun seigaiha hanji', '자연': 'dusk snow grove deep autumn cloud sunrise rain mist dune tidal firefly lava', '밤·우주': 'galaxy meteor polar crystal', '도시·무늬': 'neon lantern circuit synth berry bubble kraft' },
+    fx: { '색': 'gold sakura water wisteria red mint orange silver pink sky lime lavender peach emerald coral lemon ice violet', '그라데이션': 'dusk candy ocean twilight boreal chrome duo', '불·번개': 'flame thunder ember', '움직임·특수': 'rainbow moon sun neon gilt holo glitchfx outline popfx twinkle' }
+  };
+  const styleGroupOf = (kind, x) => x.group || Object.keys(STYLE_GROUPS[kind]).find((g) => STYLE_GROUPS[kind][g].split(' ').includes(x.id)) || '기타';
+  const styleSel = { frame: '전체', bg: '전체', fx: '전체' };
+  const STYLE_MIN = 9;   // 이만큼 이상 가졌을 때만 분류 칩을 보여줘요
+  // 칩 줄을 목록 위에 만들고, 지금 고른 분류에 맞는 물건만 돌려줘요
+  function styleFilter(boxId, kind, owned) {
+    const box = $(boxId);
+    let bar = box.previousElementSibling && box.previousElementSibling.classList.contains('stylebar') ? box.previousElementSibling : null;
+    if (!bar) { bar = document.createElement('div'); bar.className = 'stylebar chips'; box.parentNode.insertBefore(bar, box); }
+    const groups = [];
+    owned.forEach((x) => { const g = styleGroupOf(kind, x); if (!groups.includes(g)) groups.push(g); });
+    const order = Object.keys(STYLE_GROUPS[kind]);
+    groups.sort((x, y) => (order.indexOf(x) + 1 || 99) - (order.indexOf(y) + 1 || 99));
+    if (!groups.includes(styleSel[kind])) styleSel[kind] = '전체';
+    bar.textContent = '';
+    bar.hidden = owned.length < STYLE_MIN;
+    box.classList.toggle('stylepick--scroll', owned.length >= STYLE_MIN);
+    ['전체'].concat(groups).forEach((g) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip' + (g === styleSel[kind] ? ' on' : '');
+      b.textContent = g === '전체' ? `전체 ${owned.length}` : `${g} ${owned.filter((x) => styleGroupOf(kind, x) === g).length}`;
+      b.addEventListener('click', () => { styleSel[kind] = g; refreshProfile(); });
+      bar.appendChild(b);
+    });
+    return styleSel[kind] === '전체' || bar.hidden ? owned : owned.filter((x) => styleGroupOf(kind, x) === styleSel[kind]);
+  }
+
   function renderStylePicker(boxId, list, own, cur, attr, usesBg) {
     const pick = $(boxId);
     pick.textContent = '';
@@ -762,7 +834,7 @@
       pick.appendChild(b);
     };
     mk('', '없음');
-    list.filter(own).forEach((x) => mk(x.id, x.name));
+    styleFilter(boxId, usesBg ? 'bg' : 'fx', list.filter(own)).forEach((x) => mk(x.id, x.name));
   }
 
   function renderMe() {
