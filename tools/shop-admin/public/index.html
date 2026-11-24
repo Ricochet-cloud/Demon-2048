@@ -52,6 +52,7 @@
     <button class="tab" data-tab="manage">물건 관리</button>
     <button class="tab" data-tab="events">이벤트</button>
     <button class="tab" data-tab="polls">투표</button>
+    <button class="tab" data-tab="notice">공지</button>
   </div>
 
   <!-- 시트 올리기 (두 탭 공용) -->
@@ -151,6 +152,17 @@
     <div id="evMsg"></div>
   </section>
 
+  <!-- 공지 배너 -->
+  <section id="tab-notice" class="hidden">
+    <div class="card">
+      <h2>홈 맨 위 공지</h2>
+      <p class="muted" style="margin:0 0 8px">앱 홈 맨 위에 계속 흘러가는 글씨로 보여요. 여러 개가 켜져 있으면 ◆ 로 이어서 한 줄로 흘러요. 시작일·마감일은 비워도 돼요 (비우면 계속). 지금 보일 공지가 없으면 배너가 아예 안 보여요. 글은 120글자까지예요.</p>
+      <div id="ntRows"></div>
+      <div style="margin-top:12px"><button id="ntAdd">+ 공지 추가</button> <button id="ntSave">저장</button></div>
+      <div id="ntMsg"></div>
+    </div>
+  </section>
+
   <!-- 테마 투표 -->
   <section id="tab-polls" class="hidden">
     <div class="card">
@@ -227,10 +239,12 @@
     $('tab-manage').classList.toggle('hidden', tab !== 'manage');
     $('tab-events').classList.toggle('hidden', tab !== 'events');
     $('tab-polls').classList.toggle('hidden', tab !== 'polls');
-    $('sheetCard').classList.toggle('hidden', tab === 'manage' || tab === 'events' || tab === 'polls');
+    $('tab-notice').classList.toggle('hidden', tab !== 'notice');
+    $('sheetCard').classList.toggle('hidden', tab === 'manage' || tab === 'events' || tab === 'polls' || tab === 'notice');
     if (tab === 'manage') renderManage();
     if (tab === 'events') loadEvents();
     if (tab === 'polls') loadPolls();
+    if (tab === 'notice') loadNotices();
     showForms();
   }));
   function showForms() {
@@ -550,6 +564,29 @@
       msg($('nMsg'), 'ok', '<b>추가했어요!</b><br>' + r.log.map(esc).join('<br>') + gitBox('칭호 추가'));
     } catch (e) { msg($('nMsg'), 'bad', esc(e.message)); }
     $('nSave').disabled = false;
+  });
+  // ----- 공지 배너 -----
+  let nt = [];
+  async function loadNotices() { const r = await call('GET', '/api/notices'); nt = r.notices; renderNotices(); }
+  function renderNotices() {
+    $('ntRows').innerHTML = nt.length ? nt.map((n, i) => `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+      <input type="text" data-nf="text" data-i="${i}" maxlength="120" value="${esc(n.text)}" placeholder="공지 글" style="flex:1 1 260px">
+      <input type="date" data-nf="start" data-i="${i}" value="${esc(n.start || '')}" title="시작일">~<input type="date" data-nf="end" data-i="${i}" value="${esc(n.end || '')}" title="마감일">
+      <label style="white-space:nowrap"><input type="checkbox" data-nf="on" data-i="${i}" ${n.on === false ? '' : 'checked'}> 켜기</label>
+      <button data-ndel="${i}">삭제</button></div>`).join('') : '<div class="muted">공지가 없어요. 지금은 배너가 안 보여요.</div>';
+    $('ntRows').querySelectorAll('[data-nf]').forEach((el) => el.addEventListener('input', () => { const n = nt[+el.dataset.i], f = el.dataset.nf; n[f] = f === 'on' ? el.checked : el.value; }));
+    $('ntRows').querySelectorAll('[data-ndel]').forEach((el) => el.addEventListener('click', () => { nt.splice(+el.dataset.ndel, 1); renderNotices(); }));
+  }
+  $('ntAdd').addEventListener('click', () => { nt.push({ text: '', on: true }); renderNotices(); });
+  $('ntSave').addEventListener('click', async () => {
+    $('ntSave').disabled = true;
+    try {
+      const r = await call('POST', '/api/notices/save', { notices: nt });
+      nt = r.notices; renderNotices();
+      msg($('ntMsg'), 'ok', '<b>저장했어요!</b><br>' + r.log.map(esc).join('<br>') + gitBox('공지 수정')
+        + '<div class="muted" style="margin-top:6px">push 하면 웹이 새로 배포돼요 (1~2분). 앱은 인터넷이 연결돼 있으면 새 APK 없이도 바뀐 공지가 나와요.</div>');
+    } catch (e) { msg($('ntMsg'), 'bad', esc(e.message)); }
+    $('ntSave').disabled = false;
   });
   call('GET', '/api/shop').then((s) => { shop = s; }).catch(() => {});
 })();

@@ -48,6 +48,10 @@
 
   <!-- 홈 -->
   <section class="screen screen--home" data-screen="home">
+    <div class="notice" id="homeNotice" role="status" hidden>
+      <span class="notice__tag">공지</span>
+      <div class="notice__run"><div class="notice__track" id="noticeTrack"></div></div>
+    </div>
     <div class="gold gold--float" aria-label="보유 골드"><b id="homeGold">0</b></div>
     <button class="sound-btn sound-btn--float" data-sound-toggle aria-label="소리 켜기 끄기"></button>
     <div class="wrap home">
@@ -356,6 +360,7 @@
   <script src="./js/weekly.js"></script>
   <script src="./js/betting.js"></script>
   <script src="./js/vote.js"></script>
+  <script src="./js/notice.js"></script>
   <script src="./js/challenge.js"></script>
   <script src="./js/sound.js"></script>
   <script src="./js/app.js"></script>

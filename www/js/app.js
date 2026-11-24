@@ -75,7 +75,15 @@
     return name === 'login' ? 'home' : name;
   }
 
+  // 홈 맨 위 공지 배너 (events/notices.json). 읽는 동안에는 지금 있는 걸 그대로 보여줘요
+  const NT = window.AppNotice;
+  function refreshNotice() {
+    const draw = () => NT.render($('homeNotice'), $('noticeTrack'), document.querySelector('.screen--home'));
+    draw(); NT.load().then(draw).catch(() => {});
+  }
+
   function refreshHome() {
+    refreshNotice();
     // 로그인했는데 닉네임이 아직 없으면 안내
     $('homeHint').hidden = !(C.enabled && C.loaded && (!C.nickname || !(knownAvatar(C.avatar) || C.photo)));
     const th = T.dexTheme(), got = T.discovered(readSaved().bestTile, th).length;

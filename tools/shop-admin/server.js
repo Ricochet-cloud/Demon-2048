@@ -287,6 +287,27 @@ const api = {
     return { ok: true, log: [`이벤트 '${ev.title}' 삭제`, 'events.json 저장'], events: list };
   },
 
+  // ---- 공지 배너 (www/events/notices.json) — 목록 전체를 한 번에 저장해요 ----
+  async 'GET /api/notices'() { return { notices: readNotices() }; },
+  async 'POST /api/notices/save'(req) {
+    const b = await readJson(req);
+    if (!Array.isArray(b.notices) || b.notices.length > 20) throw fail('공지는 20개까지예요.');
+    const list = b.notices.map((n, i) => {
+      const text = clean(n && n.text, 120);
+      if (!text) throw fail(`${i + 1}번 공지의 글을 적어 주세요. (안 쓸 공지는 줄을 지워 주세요)`);
+      const r = { text, on: !(n && n.on === false) };
+      const s = (n && n.start) || '', e = (n && n.end) || '';
+      if (s && !DAY_RE.test(s)) throw fail(`${i + 1}번 공지의 시작일이 이상해요.`);
+      if (e && !DAY_RE.test(e)) throw fail(`${i + 1}번 공지의 마감일이 이상해요.`);
+      if (s && e && dayNum(e) < dayNum(s)) throw fail(`${i + 1}번 공지의 마감일이 시작일보다 빠를 수 없어요.`);
+      if (s) r.start = s; if (e) r.end = e;
+      return r;
+    });
+    fs.mkdirSync(EV_DIR, { recursive: true });
+    fs.writeFileSync(path.join(EV_DIR, 'notices.json'), JSON.stringify({ notices: list }, null, 2) + '\n');
+    return { ok: true, log: [`공지 ${list.length}개 저장 (notices.json)`], notices: list };
+  },
+
   // ---- 테마 투표 (www/events/polls.json + 후보 그림) ----
   async 'GET /api/polls'() { return { polls: readPolls() }; },
 
@@ -358,6 +379,7 @@ const dayNum = (k) => { const [y, m, d] = k.split('-').map(Number); return Date.
 const evImgOk = (n) => typeof n === 'string' && /^[\w-]{1,60}\.webp$/.test(n);
 const dataBuf = (v) => { const b = Buffer.from(String(v || '').replace(/^data:[^,]*,/, ''), 'base64'); if (b.length < 200) throw fail('이미지를 읽지 못했어요.'); return b; };
 const POLL_FILE = path.join(EV_DIR, 'polls.json');
+const readNotices = () => { try { const j = JSON.parse(fs.readFileSync(path.join(EV_DIR, 'notices.json'), 'utf8')); return Array.isArray(j.notices) ? j.notices : []; } catch (e) { return []; } };
 const readPolls = () => { try { const j = JSON.parse(fs.readFileSync(POLL_FILE, 'utf8')); return Array.isArray(j.polls) ? j.polls : []; } catch (e) { return []; } };
 function writePolls(list) { fs.mkdirSync(EV_DIR, { recursive: true }); fs.writeFileSync(POLL_FILE, JSON.stringify({ polls: list }, null, 2) + '\n'); }
 const stamp = () => Date.now().toString(36);
