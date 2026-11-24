@@ -964,7 +964,14 @@
     $('meCard').className = 'card' + (bgOf(C.bg) ? ' bg-' + C.bg : '');
     const t = titleOf(C.title); $('meTitle').textContent = t ? t.name : ''; $('meTitle').hidden = !t;
     $('meBio').textContent = C.bio; $('meBio').hidden = !C.bio;
-    renderMeRank();
+    renderMeRank(); renderMeEv();
+  }
+
+  // 프로필 카드의 이벤트 전적 (참가한 적이 없으면 숨겨요)
+  function renderMeEv() {
+    const es = evStat(), box = $('meEv');
+    box.hidden = !(es.w + es.l);
+    box.textContent = `이벤트 ${es.w}승 ${es.l}패` + (es.streak >= 2 ? ` · ${es.streak}연승 중` : '');
   }
 
   // 프로필의 랭크 줄: 뱃지 + 다음 랭크까지 남은 점수
@@ -1104,9 +1111,6 @@
     if (s.best && s.bestJk) { const jm = document.createElement('small'); jm.className = 'jkmark'; jm.textContent = '(조커사용)'; $('pfBest').appendChild(jm); }
     $('pfTile').textContent = s.bestTile || '-';
     $('pfPlays').textContent = s.plays || '-';
-    const es = evStat(), evRow = $('pfEvRow');
-    evRow.hidden = !(es.w + es.l);
-    $('pfEv').textContent = `${es.w}승 ${es.l}패` + (es.streak >= 2 ? ` · ${es.streak}연승 중` : '');
     const online = A.enabled && !!A.user;
     $('nickCard').hidden = !online;
     $('avatarCard').hidden = !online;
