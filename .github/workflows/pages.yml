@@ -16,16 +16,24 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  # 1) 사이트 파일을 꾸러미로 묶어 올려요
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
           path: www
+
+  # 2) 올라간 꾸러미를 배포해요. 일을 둘로 나눠서 꾸러미가 올라간 뒤에 배포가 시작되고,
+  #    배포만 실패하면 'Re-run failed jobs' 로 배포만 다시 돌려도 꾸러미가 겹치지 않아요
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - id: deployment
         uses: actions/deploy-pages@v5
