@@ -171,8 +171,15 @@
     try {
       for (const e of events) {
         if (e.id === skipId || phase(e) !== 'ended') continue;
-        if (!mine(e, list, C.uid).claimable) continue;
-        try { await window.AppGold.claimEvent(e.id, e.reward); got.push(e); } catch (err) { if (!err.user) console.warn('이벤트 보상 받기 실패', err); }
+        const m = mine(e, list, C.uid);
+        if (!m.side) continue;   // 참가하지 않은 이벤트
+        if (m.claimable) {
+          try { await window.AppGold.claimEvent(e.id, e.reward); got.push(e); } catch (err) { if (!err.user) { console.warn('이벤트 보상 받기 실패', err); continue; } }
+        }
+        // 이긴 이벤트·진 이벤트 모두 전적에 남겨요 (이미 남겼으면 건너뛰어요)
+        if (!window.AppGold.owns('ew:' + e.id) && !window.AppGold.owns('el:' + e.id)) {
+          try { await window.AppGold.recordEvent(e.id, m.win); } catch (err) { if (!err.user) console.warn('이벤트 전적 기록 실패', err); }
+        }
       }
     } finally { claiming = false; }
     return got;
@@ -201,6 +208,16 @@
     return got;
   }
 
-  window.AppBetting = { load, current, phase, leftText, period, tally, mine, join, claimOld, flush, startsAt, endsAt,
+  // 내 전적: { w: 이긴 수, l: 진 수, streak: 지금 연승, best: 최고 연승 } — 기록은 이벤트 시작 순서로 세요
+  function stats() {
+    const G = window.AppGold; let w = 0, l = 0, streak = 0, best = 0;
+    [...events].sort((a, b) => String(a.start).localeCompare(String(b.start))).forEach((e) => {
+      if (G.owns('ew:' + e.id)) { w++; streak++; best = Math.max(best, streak); }
+      else if (G.owns('el:' + e.id)) { l++; streak = 0; }
+    });
+    return { w, l, streak, best };
+  }
+
+  window.AppBetting = { stats, load, current, phase, leftText, period, tally, mine, join, claimOld, flush, startsAt, endsAt,
     get list() { return events; }, get ready() { return loadedOnce; } };
 })();

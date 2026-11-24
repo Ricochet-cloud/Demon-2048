@@ -22,7 +22,16 @@
   const dexFull = () => best() >= 8192;     // 그림 있는 도감 하나를 다 채움
   // 업적 칭호의 조건 (shopdata.js 의 cond 이름과 짝이에요)
   const CONDS = { win2048: () => best() >= 2048, dexHalf, dexFull };
-  const TITLES = SHOP.titles.map((t) => (t.cond ? Object.assign({}, t, { when: CONDS[t.cond] || (() => false) }) : t));
+  // 이벤트 전적 칭호 (shopdata.js 를 건드리지 않고 여기서 정해요). 조건은 AppBetting.stats() 로 확인해요
+  const evStat = () => (window.AppBetting && window.AppBetting.stats ? window.AppBetting.stats() : { w: 0, l: 0, streak: 0, best: 0 });
+  Object.assign(CONDS, { evPlay1: () => { const s = evStat(); return s.w + s.l >= 1; }, evWin3: () => evStat().w >= 3, evWin10: () => evStat().w >= 10, evStreak3: () => evStat().best >= 3 });
+  const EV_TITLES = [
+    { id: 'evfirst', name: '첫 승부', cond: 'evPlay1', how: '이벤트에 한 번 참가하기 (결과가 나온 뒤)' },
+    { id: 'evwin3', name: '예언가', cond: 'evWin3', how: '이벤트에서 3번 이기기' },
+    { id: 'evstreak3', name: '연승 행진', cond: 'evStreak3', how: '이벤트 3연승' },
+    { id: 'evwin10', name: '승부사', cond: 'evWin10', how: '이벤트에서 10번 이기기' }
+  ];
+  const TITLES = SHOP.titles.concat(EV_TITLES.filter((e) => !SHOP.titles.some((t) => t.id === e.id))).map((t) => (t.cond ? Object.assign({}, t, { when: CONDS[t.cond] || (() => false) }) : t));
   // 카드 배경 (우리 기록의 내 줄과 프로필 카드) — CSS 는 app.css 의 .bg-<id>
   const BGS = SHOP.bgs;
   // 이름 꾸미기 (닉네임 색과 효과) — CSS 는 app.css 의 .nm-<id>
@@ -310,7 +319,7 @@
       note.hidden = true; drawEvent(ev, list); refreshEventBtn(list);
     } catch (e) { console.warn('이벤트 불러오기 실패', e); if (seq === evSeq) say('이벤트를 불러오지 못했어요. 잠시 뒤에 다시 열어 주세요'); }
   }
-  window.addEventListener('events:ready', () => { const n = effective(); if (n === 'home') refreshHomeRank(); if (n === 'modes') refreshModes(); });
+  window.addEventListener('events:ready', () => { const n = effective(); if (n === 'home') refreshHomeRank(); if (n === 'modes') refreshModes(); if (n === 'profile') refreshProfile(); });
 
 
   // ---------- 테마 투표 ----------
@@ -1095,6 +1104,9 @@
     if (s.best && s.bestJk) { const jm = document.createElement('small'); jm.className = 'jkmark'; jm.textContent = '(조커사용)'; $('pfBest').appendChild(jm); }
     $('pfTile').textContent = s.bestTile || '-';
     $('pfPlays').textContent = s.plays || '-';
+    const es = evStat(), evRow = $('pfEvRow');
+    evRow.hidden = !(es.w + es.l);
+    $('pfEv').textContent = `${es.w}승 ${es.l}패` + (es.streak >= 2 ? ` · ${es.streak}연승 중` : '');
     const online = A.enabled && !!A.user;
     $('nickCard').hidden = !online;
     $('avatarCard').hidden = !online;

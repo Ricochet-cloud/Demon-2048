@@ -234,6 +234,16 @@
       });
       return reward;
     },
+    // 이벤트 결과 기록 (골드는 없어요): 산 물건 목록에 'ew:이벤트'(이김) 또는 'el:이벤트'(짐) 표시를 남겨요. 전적과 칭호에 써요
+    async recordEvent(eventId, win) {
+      const id = String(eventId || '');
+      if (!/^[a-z0-9_-]{1,20}$/.test(id)) throw userError('기록할 수 없는 이벤트예요.');
+      const mark = (win ? 'ew:' : 'el:') + id;
+      await update((cur) => {
+        if (cur.owned.includes('ew:' + id) || cur.owned.includes('el:' + id)) throw userError('이미 기록했어요.');
+        return Object.assign(cur, { owned: [...cur.owned, mark] });
+      });
+    },
     claimEvent(eventId, reward) { return this.claimOnce('evClaim', eventId, reward); },   // 배팅 이벤트 승리 보상
     // 상점에서 쓸 구매 (골드를 내고 itemId 를 가져요) — 아직 파는 물건은 없지만 구조만 만들어 둬요
     async spend(price, itemId) {
