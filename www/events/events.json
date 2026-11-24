@@ -1,1 +1,24 @@
-{ "events": [] }
+{
+  "events": [
+    {
+      "id": "firtst",
+      "title": "손오공 vs 사이타마",
+      "start": "2026-11-24",
+      "end": "2026-11-29",
+      "reward": 300,
+      "sides": [
+        {
+          "id": "a",
+          "name": "손오공",
+          "color": "#4f86f7"
+        },
+        {
+          "id": "b",
+          "name": "사이타마",
+          "color": "#ff6b5b"
+        }
+      ],
+      "image": "firtst-mwtzacnv.webp"
+    }
+  ]
+}
