@@ -5,7 +5,7 @@
       "title": "손오공 vs 사이타마",
       "start": "2026-11-24",
       "end": "2026-11-29",
-      "reward": 300,
+      "reward": 0,
       "sides": [
         {
           "id": "a",
@@ -18,7 +18,11 @@
           "color": "#ff6b5b"
         }
       ],
-      "image": "firtst-mwtzacnv.webp"
+      "stake": {
+        "min": 10,
+        "max": 200
+      },
+      "image": "firtst-mwuap62r.webp"
     }
   ]
 }
