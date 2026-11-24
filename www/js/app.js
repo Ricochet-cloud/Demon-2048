@@ -1088,8 +1088,8 @@
       const right = document.createElement('div');
       right.className = 'rank__score';
       const b = document.createElement('b'); b.textContent = val(u);
-      if (!week && !chal && u.bestJk && SE.bestOf(u)) { const jm = document.createElement('small'); jm.className = 'jkmark'; jm.textContent = '(조커사용)'; b.appendChild(jm); }
       right.appendChild(b); right.appendChild(document.createTextNode(week ? '이번 주' : chal ? (val(u) > 0 ? '오늘' : '아직 안 했어요') : `최고 타일 ${u.bestTile || '-'}`));
+      if (!week && !chal && u.bestJk && SE.bestOf(u)) { const jm = document.createElement('small'); jm.className = 'jkmark'; jm.textContent = '조커 사용'; right.appendChild(jm); }
       item.appendChild(left); item.appendChild(right);
       box.appendChild(item);
       if (!compact && u.uid !== C.uid) box.appendChild(cheerRow(u));
