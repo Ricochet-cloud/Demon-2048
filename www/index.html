@@ -80,6 +80,7 @@
         </button>
         <button class="menu__btn" data-go="profile"><span>프로필</span></button>
         <button class="menu__btn" data-go="dex"><span>도감<small class="menu__sub" id="homeDex"></small></span></button>
+        <button class="menu__btn" data-go="vote"><span>테마 투표<small class="menu__sub" id="homeVoteSub"></small></span><em class="tag tag--alert" id="homeVoteTag" hidden>투표하세요</em></button>
         <button class="menu__btn" data-go="shop"><span>상점</span><em class="tag tag--alert" id="homeShopTag" hidden>보상 받기</em></button>
         <button class="menu__btn" data-go="settings"><span>설정</span></button>
       </nav>
@@ -143,6 +144,19 @@
         <button class="btn" id="continueBtn" style="display:none;margin-bottom:8px">계속하기</button>
         <button class="btn" id="againBtn">새 판</button>
       </div>
+    </div>
+  </section>
+
+  <!-- 테마 투표 (아이디어 모으기 + 후보 중 한 표) -->
+  <section class="screen screen--vote" data-screen="vote">
+    <div class="topbar">
+      <button class="topbar__back" data-back>홈</button>
+      <div class="topbar__title">테마 투표</div>
+      <button class="sound-btn" data-sound-toggle aria-label="소리 켜기 끄기"></button>
+    </div>
+    <div class="wrap">
+      <p class="foot" id="voteNote" hidden></p>
+      <div id="voteBody"></div>
     </div>
   </section>
 
@@ -341,6 +355,7 @@
   <script src="./js/gold.js"></script>
   <script src="./js/weekly.js"></script>
   <script src="./js/betting.js"></script>
+  <script src="./js/vote.js"></script>
   <script src="./js/challenge.js"></script>
   <script src="./js/sound.js"></script>
   <script src="./js/app.js"></script>

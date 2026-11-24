@@ -107,6 +107,15 @@
       if (d && (!PHOTO_RE.test(d) || d.length > PHOTO_MAX)) throw new Error('사진이 너무 크거나 형식이 달라요.');
       await push({ photo: d });
     },
+    // 테마 아이디어(댓글): 하루 3개까지(문서 id 가 내uid_날짜_번호), 내 것만 지울 수 있어요
+    async loadIdeas() {
+      const qs = await store().collection('game2048_ideas').get();
+      return qs.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+    },
+    async addIdea(text, day, n) {
+      await store().collection('game2048_ideas').doc(`${A.user.uid}_${day}_${n}`).set({ uid: A.user.uid, text: String(text).slice(0, 40), at: firebase.firestore.FieldValue.serverTimestamp() });
+    },
+    async removeIdea(id) { await store().collection('game2048_ideas').doc(id).delete(); },
     // 내 문서를 읽고 고치는 트랜잭션 (골드 받기·구매처럼 한 번만 반영돼야 할 때 써요)
     async tx(fn) { return store().runTransaction((t) => fn(t, mine())); },
     async loadAll() {

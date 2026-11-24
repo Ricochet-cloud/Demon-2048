@@ -5,7 +5,7 @@
 (() => {
   'use strict';
 
-  const SCREENS = ['home', 'modes', 'game', 'profile', 'dex', 'shop', 'settings', 'event', 'login'];
+  const SCREENS = ['home', 'modes', 'game', 'profile', 'dex', 'shop', 'settings', 'event', 'vote', 'login'];
   // 상점 물건(프로필 사진·프레임·칭호·배경·이름·테마)의 이름과 가격은 js/shopdata.js 에서 바꿔요.
   // 프로필 사진은 images/avatars/<id>.webp, price 가 있으면 상점에서 골드로 사야 쓸 수 있어요 (없으면 처음부터 무료)
   const SHOP = window.SHOP;   // 상점 물건 목록은 js/shopdata.js
@@ -150,6 +150,7 @@
       $('homeSeason').textContent = `${SE.monthNo(SE.key())}월 시즌 · ${SE.leftText()}`;
       renderHomeCheers(list);
       refreshEventBtn(list);
+      refreshVoteTag(list);
       card.hidden = list.length === 0;
     } catch (e) { card.hidden = true; }
   }
@@ -302,6 +303,98 @@
     } catch (e) { console.warn('이벤트 불러오기 실패', e); if (seq === evSeq) say('이벤트를 불러오지 못했어요. 잠시 뒤에 다시 열어 주세요'); }
   }
   window.addEventListener('events:ready', () => { const n = effective(); if (n === 'home') refreshHomeRank(); if (n === 'modes') refreshModes(); });
+
+
+  // ---------- 테마 투표 ----------
+  const V = window.AppVote;
+  // 홈의 '테마 투표' 줄: 진행 중인 투표가 있는데 아직 안 했으면 표시
+  function refreshVoteTag(list) {
+    const p = V.ready && A.enabled && C.enabled ? V.current() : null;
+    $('homeVoteSub').textContent = p ? p.title : '';
+    $('homeVoteTag').hidden = !(p && list && V.phase(p) === 'live' && !V.mineOf(p, list, C.uid));
+  }
+
+  function drawVote(poll, users, ideaList) {
+    const body = $('voteBody'); body.textContent = '';
+    if (poll) {
+      const ph = V.phase(poll), t = V.tally(poll, users), my = V.mineOf(poll, users, C.uid);
+      const card = el('div', 'card votecard');
+      card.appendChild(el('h2', null, poll.title));
+      const left = V.leftText(poll);
+      card.appendChild(el('p', 'vote__meta', `${V.period(poll)}${left ? ' · ' + left : ''}${ph === 'live' ? ` · ${nf(t.total)}명 투표` : ''}`));
+      if (ph === 'ended') card.appendChild(el('p', 'vote__lead', t.winners.length ? `뽑힌 테마: ${poll.options.filter((o) => t.winners.includes(o.id)).map((o) => o.name).join(', ')}` : '투표한 사람이 없어요'));
+      if (ph === 'upcoming') card.appendChild(el('p', 'vote__lead', '아직 시작 전이에요'));
+      t.rows.forEach((r) => {
+        const o = r.option, win = ph === 'ended' && t.winners.includes(o.id), pct = t.total ? Math.round(r.votes / t.total * 100) : 0;
+        const row = el('div', 'vopt' + (my === o.id ? ' vopt--me' : '') + (win ? ' vopt--win' : ''));
+        if (o.image) { const i = document.createElement('img'); i.className = 'vopt__img'; i.src = o.image; i.alt = ''; i.draggable = false; i.addEventListener('error', () => i.remove()); row.appendChild(i); }
+        const info = el('div', 'vopt__info');
+        const nm = el('b', null, o.name); if (win) nm.appendChild(el('small', 'vopt__crown', '1위')); info.appendChild(nm);
+        if (o.desc) info.appendChild(el('span', 'vopt__desc', o.desc));
+        const bar = el('div', 'vbar'), fill = el('i'); fill.style.width = pct + '%'; bar.appendChild(fill); info.appendChild(bar);
+        info.appendChild(el('small', 'vopt__n', `${nf(r.votes)}표 · ${pct}%`));
+        row.appendChild(info);
+        if (ph === 'live') {
+          const b = el('button', 'btn btn--sub vopt__btn', my === o.id ? '내 선택' : my ? '바꾸기' : '투표'); b.type = 'button'; b.disabled = my === o.id;
+          b.addEventListener('click', async () => {
+            if (my && !window.confirm(`${o.name} 로 바꿔서 투표할까요?`)) return;
+            b.disabled = true;
+            try { await V.vote(poll, o.id); toastMsg(`${o.name} 에 투표했어요!`); } catch (e) { toastMsg(e.user ? e.message : '투표하지 못했어요.'); }
+            refreshVote();
+          });
+          row.appendChild(b);
+        }
+        card.appendChild(row);
+      });
+      body.appendChild(card);
+    }
+    // 아이디어 게시판
+    const day = G.dayKey(), mine = ideaList.filter((i) => i.uid === C.uid && i.id.includes('_' + day + '_')), box = el('div', 'card ideas');
+    box.appendChild(el('h2', null, '이런 테마 어때요?'));
+    box.appendChild(el('p', null, `다음에 만들었으면 하는 타일 테마를 적어 주세요 (하루 ${V.perDay}개까지). 좋은 아이디어는 투표로 올라가요.`));
+    const form = el('form', 'ideaform'); form.noValidate = true;
+    const inp = el('input', 'field'); inp.type = 'text'; inp.maxLength = V.ideaMax; inp.placeholder = '예) 귀여운 고양이 / 우주 / 한복'; inp.autocomplete = 'off';
+    const btn = el('button', 'btn', '올리기'); btn.type = 'submit';
+    form.appendChild(inp); form.appendChild(btn); box.appendChild(form);
+    box.appendChild(el('p', 'idea__cnt', `오늘 ${mine.length} / ${V.perDay}`));
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault(); btn.disabled = true;
+      try { await V.addIdea(inp.value, day, mine); inp.value = ''; toastMsg('올렸어요!'); } catch (err) { toastMsg(err.user ? err.message : '올리지 못했어요.'); }
+      btn.disabled = false; refreshVote();
+    });
+    const listEl = el('div', 'ideas__list');
+    if (!ideaList.length) listEl.appendChild(el('p', 'idea__none', '아직 아이디어가 없어요. 첫 번째로 올려 보세요!'));
+    ideaList.forEach((i) => {
+      const u = users.find((x) => x.uid === i.uid) || {};
+      const row = el('div', 'idea' + (i.uid === C.uid ? ' idea--me' : ''));
+      row.appendChild(avatarEl(u.avatar, u.nickname, u.frame, u.photo));
+      const tx = el('div', 'idea__txt');
+      const who = el('b', null, u.nickname || '이름 없음'); who.appendChild(el('small', null, ago(i.at))); tx.appendChild(who);
+      tx.appendChild(el('span', null, i.text)); row.appendChild(tx);
+      if (i.uid === C.uid) {
+        const d = el('button', 'idea__del', '삭제'); d.type = 'button'; d.setAttribute('aria-label', '내 아이디어 지우기');
+        d.addEventListener('click', async () => { if (!window.confirm('이 아이디어를 지울까요?')) return; try { await C.removeIdea(i.id); } catch (e) { toastMsg('지우지 못했어요.'); } refreshVote(); });
+        row.appendChild(d);
+      }
+      listEl.appendChild(row);
+    });
+    box.appendChild(listEl); body.appendChild(box);
+  }
+
+  let voteSeq = 0;
+  async function refreshVote() {
+    const seq = ++voteSeq, note = $('voteNote'), body = $('voteBody');
+    const say = (m) => { body.textContent = ''; note.hidden = !m; note.textContent = m || ''; };
+    if (!(A.enabled && C.enabled)) { say('로그인하면 투표하고 아이디어를 올릴 수 있어요'); return; }
+    if (!C.loaded) { say(C.failed ? '기록을 불러오지 못했어요. 인터넷 연결을 확인해 주세요' : '불러오는 중이에요'); return; }
+    try {
+      await V.load(true);
+      const [users, ideaList] = await Promise.all([C.loadAll(), V.ideas()]);
+      if (seq !== voteSeq || effective() !== 'vote') return;
+      note.hidden = true; drawVote(V.current(), users, ideaList); refreshVoteTag(users);
+    } catch (e) { console.warn('투표 불러오기 실패', e); if (seq === voteSeq) say('불러오지 못했어요. 잠시 뒤에 다시 열어 주세요'); }
+  }
+  window.addEventListener('polls:ready', () => { if (effective() === 'home') refreshHomeRank(); });
 
   // ---------- 도감 (만든 타일 모으기) ----------
   let dexThemeId = null;   // 도감에서 보고 있는 테마 (지금 쓰는 테마가 기본)
@@ -1059,6 +1152,7 @@
     if (name === 'dex') { dexThemeId = null; dexCat = null; dexCatAuto = true; refreshDex(); }
     if (name === 'shop') refreshShop();
     if (name === 'event') refreshEvent();
+    if (name === 'vote') refreshVote();
     if (name === 'login') $('loginErr').textContent = '';
     window.dispatchEvent(new CustomEvent('screenchange', { detail: name }));   // 화면에 맞는 BGM 으로 바꿀 때 쓰여요
   }
@@ -1083,7 +1177,7 @@
   // 오늘의 도전
   window.addEventListener('game2048:exit', () => { if (effective() === 'game') back(); });
   // 골드·미션이 바뀌면 지금 보는 화면을 새로 그려요
-  window.addEventListener('gold:change', () => { const n = effective(); if (n === 'home') refreshHome(); if (n === 'shop') refreshShop(); if (n === 'profile') refreshProfile(); if (n === 'event') refreshEvent(); });
+  window.addEventListener('gold:change', () => { const n = effective(); if (n === 'home') refreshHome(); if (n === 'shop') refreshShop(); if (n === 'profile') refreshProfile(); if (n === 'event') refreshEvent(); if (n === 'vote') refreshVote(); });
   A.onChange(render);
 
   // ---------- 로그인 / 로그아웃 ----------
@@ -1236,7 +1330,7 @@
 
   // 클라우드 기록을 다 받아오면 지금 보고 있는 화면을 새로 그려요
   window.addEventListener('cloud:failed', () => { if (effective() === 'profile') refreshProfile(); });
-  window.addEventListener('cloud:ready', () => { const n = effective(); if (n === 'home') refreshHome(); if (n === 'profile') refreshProfile(); if (n === 'dex') refreshDex(); if (n === 'event') refreshEvent(); });
+  window.addEventListener('cloud:ready', () => { const n = effective(); if (n === 'home') refreshHome(); if (n === 'profile') refreshProfile(); if (n === 'dex') refreshDex(); if (n === 'event') refreshEvent(); if (n === 'vote') refreshVote(); });
 
   $('logoutBtn').addEventListener('click', async () => {
     if (!window.confirm('로그아웃할까요?')) return;

@@ -511,3 +511,33 @@
 .stylebar .chip { flex: none; min-height: 32px; padding: 0 10px; font-size: 11px; white-space: nowrap; }
 .stylebar[hidden] { display: none; }
 .stylepick--scroll { max-height: 330px; overflow-y: auto; overscroll-behavior: contain; }
+
+/* 테마 투표 */
+.votecard h2 { font-size: 15px; text-align: center; margin-bottom: 4px; }
+.votecard .vote__meta { text-align: center; font-size: 11px; margin-bottom: 10px; }
+.votecard .vote__lead { text-align: center; font-size: 13px; color: var(--lantern); margin-bottom: 10px; }
+.vopt { display: flex; align-items: center; gap: 10px; padding: 10px; margin-top: 8px; background: rgba(20, 16, 14, .6); border: 1px solid rgba(201, 162, 75, .35); }
+.vopt--me { border-color: var(--lantern); box-shadow: 0 0 10px rgba(242, 180, 90, .2); }
+.vopt--win { border-color: #ffd36b; background: rgba(90, 60, 10, .45); }
+.vopt__img { width: 64px; height: 64px; flex: none; object-fit: cover; border: 1px solid rgba(201, 162, 75, .5); }
+.vopt__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.vopt__info b { font-size: 14px; color: var(--paper); font-weight: 400; }
+.vopt__crown { margin-left: 6px; padding: 1px 5px; font-size: 10px; color: #14100e; background: var(--lantern); }
+.vopt__desc { font-size: 11px; color: var(--muted); }
+.vopt__n { font-size: 10px; color: var(--muted); }
+.vbar { height: 8px; background: rgba(0, 0, 0, .5); border: 1px solid rgba(201, 162, 75, .3); }
+.vbar i { display: block; height: 100%; background: linear-gradient(90deg, var(--lacquer), var(--lantern)); transition: width .6s ease; }
+.vopt__btn { flex: none; min-width: 64px; min-height: 36px; padding: 0 8px; font-size: 12px; }
+.ideas p { margin: 0 0 8px; }
+.ideaform { display: flex; gap: 8px; }
+.ideaform .field { flex: 1; min-width: 0; }
+.ideaform .btn { flex: none; min-width: 64px; }
+.ideas .idea__cnt { margin: 6px 0 10px; font-size: 11px; text-align: right; }
+.ideas .idea__none { text-align: center; padding: 14px 0; }
+.idea { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid rgba(201, 162, 75, .2); }
+.idea .avatar { width: 34px; height: 34px; font-size: 14px; }
+.idea__txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 13px; color: var(--paper); word-break: break-all; }
+.idea__txt b { font-size: 11px; font-weight: 400; color: var(--gold); }
+.idea__txt b small { margin-left: 6px; color: var(--muted); font-size: 10px; }
+.idea--me .idea__txt b { color: var(--lantern); }
+.idea__del { flex: none; padding: 4px 8px; font: 700 10px 'Galmuri', sans-serif; color: var(--muted); background: transparent; border: 1px solid rgba(201, 162, 75, .3); cursor: pointer; }
