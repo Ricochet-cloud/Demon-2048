@@ -167,6 +167,8 @@
     if (ev && list) evClaimable = B.phase(ev) === 'ended' && B.mine(ev, list, C.uid).claimable;
     if (effective() === 'modes') refreshModes();
     refreshHomeEvent(ev, list);
+    // 지금 보여주는 이벤트가 아닌 앞 이벤트에서 이긴 보상이 남아 있으면 저절로 받아요 (새 이벤트가 시작돼도 놓치지 않게)
+    if (list && B.ready && A.enabled && C.enabled) B.claimOld(list, ev && ev.id).then((got) => { if (got.length) toastMsg(`지난 이벤트 보상! 골드 ${got.reduce((n, e) => n + e.reward, 0).toLocaleString('ko-KR')}을 받았어요`); }).catch(() => {});
   }
   // 홈의 이벤트 알림 카드: 진행 중(편 고르기·현재 상황) / 곧 시작 / 이긴 뒤 보상 받기 때만 나와요
   function refreshHomeEvent(ev, list) {
@@ -251,7 +253,7 @@
         b.addEventListener('click', async () => {
           if (!window.confirm(`${s.name} 편으로 정할까요?\n한 번 정하면 바꿀 수 없어요.`)) return;
           row.querySelectorAll('button').forEach((x) => { x.disabled = true; });
-          try { await B.join(ev, s.id); toastMsg(`${s.name} 편이 됐어요!`); }
+          try { const got = await B.join(ev, s.id); toastMsg(got && got.length ? `앞 이벤트 보상 골드 ${got.reduce((n, e) => n + e.reward, 0).toLocaleString('ko-KR')}을 받고, ${s.name} 편이 됐어요!` : `${s.name} 편이 됐어요!`); }
           catch (e) { toastMsg(e.user ? e.message : '정하지 못했어요. 인터넷 연결을 확인해 주세요.'); }
           refreshEvent();
         });

@@ -162,11 +162,34 @@
   });
 
   // ---------- 편 고르기 (한 번 고르면 못 바꿔요) ----------
+  // 끝난 이벤트 중 내가 이겼는데 아직 못 받은 보상을 모두 받아요 (skipId 는 건너뛸 이벤트). 받은 이벤트 목록을 돌려줘요
+  let claiming = false;
+  async function claimOld(list, skipId) {
+    if (claiming || !C.enabled || !C.loaded) return [];
+    claiming = true;
+    const got = [];
+    try {
+      for (const e of events) {
+        if (e.id === skipId || phase(e) !== 'ended') continue;
+        if (!mine(e, list, C.uid).claimable) continue;
+        try { await window.AppGold.claimEvent(e.id, e.reward); got.push(e); } catch (err) { if (!err.user) console.warn('이벤트 보상 받기 실패', err); }
+      }
+    } finally { claiming = false; }
+    return got;
+  }
+
+  // 새 이벤트에 참가하면 내 기록이 새 이벤트로 바뀌어요. 그 전에 앞 이벤트 보상이 남아 있으면 먼저 받아요
   async function join(ev, sideId) {
     if (!C.enabled) throw userError('로그인하면 참가할 수 있어요.');
     if (!C.loaded) throw needNet();
     if (phase(ev) === 'ended') throw userError('이미 끝난 이벤트예요.');
     if (!ev.sides.some((s) => s.id === sideId)) throw userError('없는 편이에요.');
+    let list;
+    try { list = await C.loadAll(); } catch (e) { throw needNet(); }   // 앞 이벤트 결과를 확인하지 못하면 참가하지 않아요
+    const got = await claimOld(list, ev.id);
+    const me = list.find((u) => u.uid === C.uid);
+    const prev = me && me.ev && me.ev.id !== ev.id ? events.find((e) => e.id === me.ev.id) : null;
+    if (prev && phase(prev) === 'ended' && !got.some((e) => e.id === prev.id) && mine(prev, list, C.uid).claimable) throw userError('앞 이벤트 보상을 먼저 받아야 해요. 잠시 뒤에 다시 해 주세요.');
     S.pending = 0; S.pid = ev.id; save();   // 참가하기 전에 얻은 점수는 세지 않아요
     try {
       await C.tx(async (t, ref) => {
@@ -175,8 +198,9 @@
         t.set(ref, { ev: { id: ev.id, side: sideId, s: 0 } }, { merge: true });
       });
     } catch (e) { if (e.user) throw e; console.warn('편 고르기 실패', e); throw needNet(); }
+    return got;
   }
 
-  window.AppBetting = { load, current, phase, leftText, period, tally, mine, join, flush, startsAt, endsAt,
+  window.AppBetting = { load, current, phase, leftText, period, tally, mine, join, claimOld, flush, startsAt, endsAt,
     get list() { return events; }, get ready() { return loadedOnce; } };
 })();
