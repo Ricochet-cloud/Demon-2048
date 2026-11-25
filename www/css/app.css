@@ -329,8 +329,8 @@
 @keyframes frneon { from { border-color: #ff4fd8; box-shadow: 0 0 0 1px #2a0a3a, 0 0 8px #ff4fd8, inset 0 0 6px rgba(79, 229, 255, .6); } to { border-color: #4fe5ff; box-shadow: 0 0 0 1px #0a2a3a, 0 0 16px #4fe5ff, inset 0 0 10px rgba(255, 79, 216, .7); } }
 .fr-starlight { border: 3px dashed #ffe9a0; box-shadow: 0 0 0 1px #4a3a10, 0 0 12px rgba(255, 233, 160, .8); animation: frstar 2s ease-in-out infinite alternate; }
 @keyframes frstar { from { box-shadow: 0 0 0 1px #4a3a10, 0 0 5px rgba(255, 233, 160, .5); } to { box-shadow: 0 0 0 1px #4a3a10, 0 0 18px rgba(255, 245, 200, 1); } }
-.fr-aurora { border: 3px solid transparent; background: linear-gradient(var(--depth), var(--depth)) padding-box, conic-gradient(#5dffb0, #4fb8ff, #b07bff, #5dffb0, #4fb8ff, #b07bff, #5dffb0) border-box; box-shadow: 0 0 14px rgba(110, 230, 200, .8); animation: fraurora 4s linear infinite; }
-@keyframes fraurora { to { filter: hue-rotate(60deg) brightness(1.1); } }
+.fr-aurora { border: 3px solid transparent; background: linear-gradient(var(--depth), var(--depth)) padding-box, linear-gradient(135deg, #5dffb0, #4fb8ff, #b07bff, #5dffb0, #4fb8ff, #b07bff, #5dffb0) border-box; background-size: 100% 100%, 200% 200%; box-shadow: 0 0 14px rgba(110, 230, 200, .8); animation: fraurora 5s linear infinite; }
+@keyframes fraurora { from { background-position: 0 0, 0 0; } to { background-position: 0 0, 100% 100%; } }
 @media (prefers-reduced-motion: reduce) { .fr-neon, .fr-starlight, .fr-aurora { animation: none; } }
 
 .bg-dusk { background: radial-gradient(circle at 70% 78%, rgba(255, 236, 160, .95) 0 6px, rgba(255, 150, 70, .45) 7px 22px, transparent 23px), linear-gradient(180deg, #2a1b4d, #a6406a 55%, #f08a4b); }
