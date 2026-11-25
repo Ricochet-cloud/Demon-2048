@@ -293,6 +293,35 @@ const api = {
     return { ok: true, log: [`이벤트 '${ev.title}' 삭제`, 'events.json 저장'], events: list };
   },
 
+  // ---- 홈 알림 카드 (www/events/alerts.json) — 목록 전체를 한 번에 저장해요. 사용자가 닫으면 id 로 기억해서 다시 안 보여요 ----
+  async 'GET /api/alerts'() { return { alerts: readAlerts() }; },
+  async 'POST /api/alerts/save'(req) {
+    const b = await readJson(req);
+    if (!Array.isArray(b.alerts) || b.alerts.length > 10) throw fail('알림은 10개까지예요.');
+    const types = ['theme', 'event', 'vote', 'update', 'info'], gos = ['home', 'modes', 'dex', 'shop', 'profile', 'settings', 'event', 'vote'];
+    const seenId = new Set();
+    const list = b.alerts.map((a, i) => {
+      const title = clean(a && a.title, 24);
+      if (!title) throw fail(`${i + 1}번 알림의 제목을 적어 주세요. (안 쓸 알림은 줄을 지워 주세요)`);
+      let id = String((a && a.id) || '');
+      if (!/^[a-z0-9_-]{1,24}$/.test(id)) id = 'a' + Date.now().toString(36) + i;
+      if (seenId.has(id)) throw fail(`${i + 1}번 알림의 id 가 겹쳐요.`);
+      seenId.add(id);
+      const r = { id, type: types.includes(a.type) ? a.type : 'info', title, on: !(a && a.on === false) };
+      const text = clean(a.text, 100); if (text) r.text = text;
+      if (gos.includes(a.go)) { r.go = a.go; const btn = clean(a.btn, 10); if (btn) r.btn = btn; }
+      const s = a.start || '', e = a.end || '';
+      if (s && !DAY_RE.test(s)) throw fail(`${i + 1}번 알림의 시작일이 이상해요.`);
+      if (e && !DAY_RE.test(e)) throw fail(`${i + 1}번 알림의 마감일이 이상해요.`);
+      if (s && e && dayNum(e) < dayNum(s)) throw fail(`${i + 1}번 알림의 마감일이 시작일보다 빠를 수 없어요.`);
+      if (s) r.start = s; if (e) r.end = e;
+      return r;
+    });
+    fs.mkdirSync(EV_DIR, { recursive: true });
+    fs.writeFileSync(path.join(EV_DIR, 'alerts.json'), JSON.stringify({ alerts: list }, null, 2) + '\n');
+    return { ok: true, log: [`알림 ${list.length}개 저장 (alerts.json)`], alerts: list };
+  },
+
   // ---- 공지 배너 (www/events/notices.json) — 목록 전체를 한 번에 저장해요 ----
   async 'GET /api/notices'() { return { notices: readNotices() }; },
   async 'POST /api/notices/save'(req) {
@@ -385,6 +414,7 @@ const dayNum = (k) => { const [y, m, d] = k.split('-').map(Number); return Date.
 const evImgOk = (n) => typeof n === 'string' && /^[\w-]{1,60}\.webp$/.test(n);
 const dataBuf = (v) => { const b = Buffer.from(String(v || '').replace(/^data:[^,]*,/, ''), 'base64'); if (b.length < 200) throw fail('이미지를 읽지 못했어요.'); return b; };
 const POLL_FILE = path.join(EV_DIR, 'polls.json');
+const readAlerts = () => { try { const j = JSON.parse(fs.readFileSync(path.join(EV_DIR, 'alerts.json'), 'utf8')); return Array.isArray(j.alerts) ? j.alerts : []; } catch (e) { return []; } };
 const readNotices = () => { try { const j = JSON.parse(fs.readFileSync(path.join(EV_DIR, 'notices.json'), 'utf8')); return Array.isArray(j.notices) ? j.notices : []; } catch (e) { return []; } };
 const readPolls = () => { try { const j = JSON.parse(fs.readFileSync(POLL_FILE, 'utf8')); return Array.isArray(j.polls) ? j.polls : []; } catch (e) { return []; } };
 function writePolls(list) { fs.mkdirSync(EV_DIR, { recursive: true }); fs.writeFileSync(POLL_FILE, JSON.stringify({ polls: list }, null, 2) + '\n'); }

@@ -53,6 +53,7 @@
     <button class="tab" data-tab="events">이벤트</button>
     <button class="tab" data-tab="polls">투표</button>
     <button class="tab" data-tab="notice">공지</button>
+    <button class="tab" data-tab="alerts">알림</button>
   </div>
 
   <!-- 시트 올리기 (두 탭 공용) -->
@@ -157,6 +158,16 @@
   </section>
 
   <!-- 공지 배너 -->
+  <section id="tab-alerts" class="hidden">
+    <div class="card">
+      <h2>홈 알림 카드</h2>
+      <p class="muted" style="margin:0 0 8px">앱 홈에 카드로 떠요. 사용자가 ✕ 나 버튼을 누르면 그 알림은 그 사람 기기에서 다시 안 나와요. 예) 새 타일 테마가 나왔을 때 "새 타일을 확인해 보세요" + 버튼으로 바로 이동. 시작일·마감일은 비워도 돼요. 이미 닫은 사람에게 같은 알림을 다시 보이게 하려면 "다시 띄우기"를 누르세요. 한 번에 최대 3개까지 보여요.</p>
+      <div id="alRows"></div>
+      <div style="margin-top:12px"><button id="alAdd">+ 알림 추가</button> <button id="alSave">저장</button></div>
+      <div id="alMsg"></div>
+    </div>
+  </section>
+
   <section id="tab-notice" class="hidden">
     <div class="card">
       <h2>홈 맨 위 공지</h2>
@@ -244,11 +255,13 @@
     $('tab-events').classList.toggle('hidden', tab !== 'events');
     $('tab-polls').classList.toggle('hidden', tab !== 'polls');
     $('tab-notice').classList.toggle('hidden', tab !== 'notice');
-    $('sheetCard').classList.toggle('hidden', tab === 'manage' || tab === 'events' || tab === 'polls' || tab === 'notice');
+    $('tab-alerts').classList.toggle('hidden', tab !== 'alerts');
+    $('sheetCard').classList.toggle('hidden', tab === 'manage' || tab === 'events' || tab === 'polls' || tab === 'notice' || tab === 'alerts');
     if (tab === 'manage') renderManage();
     if (tab === 'events') loadEvents();
     if (tab === 'polls') loadPolls();
     if (tab === 'notice') loadNotices();
+    if (tab === 'alerts') loadAlerts();
     showForms();
   }));
   function showForms() {
@@ -570,6 +583,43 @@
       msg($('nMsg'), 'ok', '<b>추가했어요!</b><br>' + r.log.map(esc).join('<br>') + gitBox('칭호 추가'));
     } catch (e) { msg($('nMsg'), 'bad', esc(e.message)); }
     $('nSave').disabled = false;
+  });
+  // ----- 홈 알림 카드 -----
+  let al = [];
+  const AL_TYPES = [['theme', '새 타일 테마'], ['event', '이벤트'], ['vote', '투표'], ['update', '업데이트'], ['info', '안내']];
+  const AL_GO = [['', '버튼 없음'], ['shop', '상점 (타일 테마)'], ['dex', '타일 도감'], ['event', '이벤트'], ['vote', '테마 투표'], ['profile', '프로필·순위'], ['modes', '게임 모드'], ['home', '홈']];
+  const newAlId = () => 'a' + Date.now().toString(36) + Math.floor(Math.random() * 36).toString(36);
+  const opts = (arr, cur) => arr.map(([v, t]) => `<option value="${v}" ${v === (cur || '') ? 'selected' : ''}>${esc(t)}</option>`).join('');
+  async function loadAlerts() { const r = await call('GET', '/api/alerts'); al = r.alerts; renderAlerts(); }
+  function renderAlerts() {
+    $('alRows').innerHTML = al.length ? al.map((a, i) => `<div style="border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:10px">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
+        <select data-af="type" data-i="${i}">${opts(AL_TYPES, a.type || 'info')}</select>
+        <input type="text" data-af="title" data-i="${i}" maxlength="24" value="${esc(a.title || '')}" placeholder="제목 (24글자까지) 예: 새 타일이 나왔어요!" style="flex:1 1 240px">
+      </div>
+      <input type="text" data-af="text" data-i="${i}" maxlength="100" value="${esc(a.text || '')}" placeholder="내용 (100글자까지, 비워도 돼요) 예: 군인 계급장 타일 테마를 확인해 보세요" style="width:100%;margin-bottom:6px">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <select data-af="go" data-i="${i}">${opts(AL_GO, a.go)}</select>
+        <input type="text" data-af="btn" data-i="${i}" maxlength="10" value="${esc(a.btn || '')}" placeholder="버튼 글자 (기본: 확인하러 가기)" style="width:200px">
+        <input type="date" data-af="start" data-i="${i}" value="${esc(a.start || '')}" title="시작일">~<input type="date" data-af="end" data-i="${i}" value="${esc(a.end || '')}" title="마감일">
+        <label style="white-space:nowrap"><input type="checkbox" data-af="on" data-i="${i}" ${a.on === false ? '' : 'checked'}> 켜기</label>
+        <button data-aredo="${i}" title="이미 닫은 사람에게도 다시 보여요">다시 띄우기</button>
+        <button data-adel="${i}">삭제</button>
+      </div></div>`).join('') : '<div class="muted">알림이 없어요. 지금은 홈에 알림 카드가 안 떠요.</div>';
+    $('alRows').querySelectorAll('[data-af]').forEach((el) => { const h = () => { const n = al[+el.dataset.i], f = el.dataset.af; n[f] = f === 'on' ? el.checked : el.value; }; el.addEventListener('input', h); el.addEventListener('change', h); });
+    $('alRows').querySelectorAll('[data-adel]').forEach((el) => el.addEventListener('click', () => { al.splice(+el.dataset.adel, 1); renderAlerts(); }));
+    $('alRows').querySelectorAll('[data-aredo]').forEach((el) => el.addEventListener('click', () => { al[+el.dataset.aredo].id = newAlId(); msg($('alMsg'), 'ok', '새 알림으로 바꿨어요. 저장하면 이미 닫은 사람에게도 다시 보여요.'); }));
+  }
+  $('alAdd').addEventListener('click', () => { al.push({ id: newAlId(), type: 'theme', title: '', text: '', go: 'shop', on: true }); renderAlerts(); });
+  $('alSave').addEventListener('click', async () => {
+    $('alSave').disabled = true;
+    try {
+      const r = await call('POST', '/api/alerts/save', { alerts: al });
+      al = r.alerts; renderAlerts();
+      msg($('alMsg'), 'ok', '<b>저장했어요!</b><br>' + r.log.map(esc).join('<br>') + gitBox('홈 알림 수정')
+        + '<div class="muted" style="margin-top:6px">push 하면 웹이 새로 배포돼요 (1~2분). 앱은 인터넷이 연결돼 있으면 새 APK 없이도 알림이 떠요.</div>');
+    } catch (e) { msg($('alMsg'), 'bad', esc(e.message)); }
+    $('alSave').disabled = false;
   });
   // ----- 공지 배너 -----
   let nt = [];

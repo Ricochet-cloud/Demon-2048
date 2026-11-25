@@ -593,3 +593,14 @@
 @keyframes kingflame { 0% { opacity: 0; transform: translateY(4px) scale(.5); } 25% { opacity: .95; } 100% { opacity: 0; transform: translateY(-6px) scale(1.05); } }
 .rank__name small.rank__king { padding: 0 5px; border: 1px solid #ff7a2a; border-radius: 3px; color: #ffd27a; background: rgba(160, 40, 10, .6); text-shadow: 0 0 6px #ff7a2a; }
 @media (prefers-reduced-motion: reduce) { .rank__item--king, .rank__item--king::after, .kingflames i { animation: none; } .kingflames i { opacity: .8; } }
+
+/* 홈 알림 카드 */
+#homeAlerts { display: grid; gap: 10px; margin: 0 0 14px; }
+#homeAlerts[hidden] { display: none; }
+.homealert { margin: 0; padding: 10px 12px; border-color: #d9a441; background: linear-gradient(180deg, rgba(80, 52, 14, .55), rgba(28, 20, 14, .8)); box-shadow: 0 0 10px rgba(217, 164, 65, .25); }
+.homealert__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.homealert__tag { padding: 0 6px; border: 1px solid #d9a441; border-radius: 3px; font-size: 10px; line-height: 16px; color: #ffd27a; background: rgba(160, 100, 10, .35); }
+.homealert__x { width: 28px; height: 28px; margin: -6px -8px -6px 0; padding: 0; border: 0; background: none; color: var(--muted); font-size: 14px; cursor: pointer; }
+.homealert h2 { margin: 0 0 4px; font-size: 14px; color: #ffe2a0; }
+.homealert p { margin: 0; font-size: 12px; line-height: 1.5; color: var(--paper); word-break: keep-all; }
+.homealert__btn { width: 100%; min-height: 34px; margin-top: 8px; padding: 0; font-size: 12px; }

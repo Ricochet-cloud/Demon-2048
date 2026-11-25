@@ -91,8 +91,16 @@
     draw(); NT.load().then(draw).catch(() => {});
   }
 
+  // 홈 알림 카드 (events/alerts.json) — 사용자가 닫으면 그 알림은 다시 안 나와요
+  function refreshAlerts() {
+    const AL = window.AppAlert; if (!AL) return;
+    const draw = () => AL.render($('homeAlerts'));
+    draw(); AL.load().then(draw).catch(() => {});
+  }
+
   function refreshHome() {
     refreshNotice();
+    refreshAlerts();
     // 로그인했는데 닉네임이 아직 없으면 안내
     $('homeHint').hidden = !(C.enabled && C.loaded && (!C.nickname || !(knownAvatar(C.avatar) || C.photo)));
     const th = T.dexTheme(), got = T.discovered(readSaved().bestTile, th).length;
