@@ -604,3 +604,37 @@
 .homealert h2 { margin: 0 0 4px; font-size: 14px; color: #ffe2a0; }
 .homealert p { margin: 0; font-size: 12px; line-height: 1.5; color: var(--paper); word-break: keep-all; }
 .homealert__btn { width: 100%; min-height: 34px; margin-top: 8px; padding: 0; font-size: 12px; }
+
+/* ===== 꾸미기 5차 묶음: 프레임 6 · 카드 배경 8 · 이름 효과 8 (색 바꾸기가 아니라 '재질·모양'이 다른 것들) ===== */
+/* 프레임 */
+.fr-film { border: 4px solid; border-image: repeating-linear-gradient(90deg, #0d0d0d 0 4px, #efe6cf 4px 7px) 4; box-shadow: 0 0 0 1px #000, 0 0 8px rgba(0, 0, 0, .6); }
+.fr-stamp { border: 4px dotted #1d140d; background: #f6eedb; box-shadow: 0 0 0 3px #f6eedb, 0 0 0 4px #bfae8a, 0 2px 8px rgba(0, 0, 0, .55); }
+.fr-rope { border: 4px solid; border-image: repeating-linear-gradient(60deg, #d9b878 0 3px, #8a6a3c 3px 6px) 4; box-shadow: 0 0 0 1px #3d2c14; }
+.fr-bulb { border: 4px dotted #ffd35a; box-shadow: 0 0 0 1px #4a2c00, 0 0 12px rgba(255, 200, 70, .8); animation: frbulb 1s steps(1) infinite; }
+@keyframes frbulb { 0% { border-color: #ffd35a; box-shadow: 0 0 0 1px #4a2c00, 0 0 12px rgba(255, 200, 70, .85); } 50% { border-color: #ff8a3d; box-shadow: 0 0 0 1px #4a2c00, 0 0 5px rgba(255, 130, 40, .4); } }
+.fr-double { border: 2px solid #d8b45a; outline: 2px solid #d8b45a; outline-offset: 2px; box-shadow: 0 0 0 2px #1a1209; }
+.fr-target { border: 2px solid #e63946; box-shadow: 0 0 0 2px #fff, 0 0 0 4px #e63946; }
+@media (prefers-reduced-motion: reduce) { .fr-bulb { animation: none; } }
+/* 카드 배경 */
+.bg-blueprint { background: linear-gradient(rgba(255, 255, 255, .16) 1px, transparent 1px) 0 0 / 100% 14px, linear-gradient(90deg, rgba(255, 255, 255, .16) 1px, transparent 1px) 0 0 / 14px 100%, linear-gradient(180deg, #123a73, #0b2650); }
+.bg-chalk { background: radial-gradient(ellipse at 20% 30%, rgba(255, 255, 255, .1), transparent 45%), radial-gradient(ellipse at 80% 70%, rgba(255, 255, 255, .08), transparent 40%), linear-gradient(180deg, #2c4a3d, #223a30); box-shadow: inset 0 0 0 3px #7a5a38; }
+.bg-diner { background: conic-gradient(#8a1c24 25%, #1c1010 0 50%, #8a1c24 0 75%, #1c1010 0) 0 0 / 28px 28px; }
+.bg-carbon { background: linear-gradient(135deg, rgba(255, 255, 255, .07) 25%, transparent 25% 50%, rgba(255, 255, 255, .07) 50% 75%, transparent 75%) 0 0 / 8px 8px, linear-gradient(180deg, #25272b, #15171a); }
+.bg-denim { background: repeating-linear-gradient(115deg, rgba(255, 255, 255, .07) 0 1px, transparent 1px 4px), linear-gradient(180deg, #2f4f7d, #223a5e); }
+.bg-crt { background: repeating-linear-gradient(180deg, rgba(0, 0, 0, .35) 0 2px, transparent 2px 4px), radial-gradient(ellipse at center, #11331f 0%, #06140c 80%); box-shadow: inset 0 0 18px rgba(0, 255, 120, .25); }
+.bg-vinyl { background: radial-gradient(circle at 90% 50%, #a82a2a 0 3.5%, #111 4% 5%, transparent 5.5%), repeating-radial-gradient(circle at 90% 50%, #101010 0 2px, #1b1b1b 2px 4px); }
+.bg-marble { background: linear-gradient(112deg, transparent 38%, rgba(255, 255, 255, .22) 39%, transparent 41%), linear-gradient(68deg, transparent 58%, rgba(255, 255, 255, .15) 59%, transparent 61%), linear-gradient(180deg, #2b2b30, #1a1a1e); }
+/* 이름 효과 */
+.nm-retro3d { color: #fff; text-shadow: 1px 1px 0 #ff5d8f, 2px 2px 0 #ff5d8f, 3px 3px 0 #6a3dff, 4px 4px 0 #6a3dff; }
+.nm-candycane, .nm-magma, .nm-horizon { -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; text-shadow: none !important; }
+.nm-candycane { background-image: repeating-linear-gradient(90deg, #ff4d5e 0 6px, #fff 6px 12px); background-size: 24px 100%; animation: nmcane 1.2s linear infinite; }
+@keyframes nmcane { to { background-position: 24px 0; } }
+.nm-magma { background-image: linear-gradient(180deg, #fff1a8 0%, #ffb02e 40%, #ff4a1c 75%, #8a1200 100%); filter: drop-shadow(0 0 3px rgba(255, 90, 20, .6)); }
+.nm-fog { color: #e8f0f7; animation: nmfog 2.4s ease-in-out infinite alternate; }
+@keyframes nmfog { from { opacity: .45; text-shadow: 0 0 8px rgba(200, 225, 255, .9); } to { opacity: 1; text-shadow: 0 0 2px rgba(200, 225, 255, .5); } }
+.nm-emboss { color: #d9c9a3; text-shadow: 0 -1px 0 #000, 0 1px 0 #fff4d2; }
+.nm-horizon { background-image: linear-gradient(180deg, #ffd08a 0 50%, #9a6bff 50% 100%); }
+.nm-marker { color: #fff; padding: 0 3px; background: linear-gradient(transparent 52%, rgba(255, 225, 40, .55) 52% 92%, transparent 92%); }
+.nm-squiggle { color: #fff; text-decoration: underline wavy #ff6b9d; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.rank__name .nm-candycane, .rank__name .nm-magma, .rank__name .nm-horizon { display: inline-block; }
+@media (prefers-reduced-motion: reduce) { .nm-candycane, .nm-fog { animation: none; } }
