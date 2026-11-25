@@ -1,1 +1,12 @@
-{ "alerts": [] }
+{
+  "alerts": [
+    {
+      "id": "amwws508z8",
+      "type": "theme",
+      "title": "새 타일이 나왔어요!",
+      "on": true,
+      "text": "포켓몬 타일테마를 확인해보세요!",
+      "go": "shop"
+    }
+  ]
+}
