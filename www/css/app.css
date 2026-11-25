@@ -666,3 +666,8 @@
 .pvres h2, .pvhead { margin: 0 0 8px; font-size: 14px; color: #ffe2a0; }
 .pvres .btn { width: 100%; margin-top: 10px; }
 .pvres .rank__item { margin-bottom: 6px; }
+
+/* 프로필 투표: 설명 문구 위아래 여백 */
+.screen--pvote .wrap { padding-top: 14px; }
+.screen--pvote #pvNote { margin: 0 0 18px; padding: 0 4px; line-height: 1.6; text-align: center; }
+.pvhead { margin: 20px 0 10px; }
