@@ -254,6 +254,7 @@ const api = {
       return { id: sid, name, color: String(s.color).toLowerCase() };
     });
     const ev = { id, title, start: b.start, end: b.end, reward, sides };
+    const desc = clean(b.desc, 80); if (desc) ev.desc = desc;   // 제목 아래에 보이는 대결 설명 (비우면 안 보여요)
     if (b.stake) {
       const mn = Number(b.stake.min), mx = Number(b.stake.max);
       if (!Number.isInteger(mn) || !Number.isInteger(mx) || mn < 1 || mx < mn || mx > 100000) throw fail('걸 수 있는 골드는 1 이상, 최소 ≤ 최대 (최대 100000)로 정해 주세요.');

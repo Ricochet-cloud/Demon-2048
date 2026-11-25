@@ -40,7 +40,7 @@
       color: /^#[0-9a-fA-F]{6}$/.test((s && s.color) || '') ? s.color : (i ? '#3b6fd4' : '#c0392b')
     }));
     if (!sides[0].id || !sides[1].id || sides[0].id === sides[1].id) return null;
-    const ev = { id: String(e.id), title: String(e.title || '이벤트').slice(0, 30), start: e.start, end: e.end, image: url(e.image), sides,
+    const ev = { id: String(e.id), title: String(e.title || '이벤트').slice(0, 30), desc: String(e.desc || '').replace(/[\r\n\t]+/g, ' ').trim().slice(0, 80), start: e.start, end: e.end, image: url(e.image), sides,
       reward: Math.max(0, Math.min(100000, Number.isInteger(e.reward) ? e.reward : 0)), stake: null };
     const st = e.stake;
     if (st && Number.isInteger(st.min) && Number.isInteger(st.max) && st.min >= 1 && st.max >= st.min && st.max <= 100000) { ev.stake = { min: st.min, max: st.max }; ev.reward = 0; }

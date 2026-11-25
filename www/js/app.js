@@ -221,6 +221,7 @@
     const card = el('div', 'card evcard');
     if (ev.image) { const i = document.createElement('img'); i.className = 'ev__banner'; i.src = ev.image; i.alt = ''; i.draggable = false; i.addEventListener('error', () => i.remove()); card.appendChild(i); }
     card.appendChild(el('h2', 'ev__title', ev.title));
+    if (ev.desc) card.appendChild(el('p', 'ev__desc', ev.desc));
     const left = B.leftText(ev);
     card.appendChild(el('p', 'ev__meta', `${B.period(ev)}${left ? ' · ' + left : ''}${ev.reward ? ' · 이긴 편 골드 ' + nf(ev.reward) : ''}${ev.stake ? ' · 골드 걸기 ' + nf(ev.stake.min) + '~' + nf(ev.stake.max) : ''}`));
 

@@ -416,6 +416,7 @@
 .evcard { padding: 14px; }
 .ev__banner { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; margin: 0 0 10px; border: 1px solid rgba(201, 162, 75, .35); }
 .ev__title { font-size: 16px; text-align: center; margin-bottom: 4px; }
+.ev__desc { margin: 0 0 6px; text-align: center; font-size: 12px; line-height: 1.5; color: var(--paper); opacity: .9; word-break: keep-all; }
 .evcard .ev__meta { text-align: center; font-size: 11px; margin-bottom: 14px; }
 .evvs { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
 .evvs__vs { align-self: center; font-size: 15px; color: var(--lantern); text-shadow: 0 0 8px rgba(242, 180, 90, .5); letter-spacing: 1px; }
