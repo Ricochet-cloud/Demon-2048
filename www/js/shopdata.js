@@ -94,7 +94,13 @@ window.SHOP = {
     { id: 'spark', name: '반짝', price: 190 },
     { id: 'ghost', name: '유령불', price: 210 },
     { id: 'scroll', name: '두루마리', price: 130 },
-    { id: 'glitch', name: '글리치', price: 240 }
+    { id: 'glitch', name: '글리치', price: 240 },
+    { id: 'film', name: '필름', price: 120 },
+    { id: 'stamp', name: '우표', price: 130 },
+    { id: 'rope', name: '밧줄', price: 110 },
+    { id: 'bulb', name: '전구', price: 190 },
+    { id: 'double', name: '액자', price: 150 },
+    { id: 'target', name: '과녁', price: 120 }
   ],
   titles: [
     { id: 'beginner', name: '귀살대 신입', price: 50, group: '일반' },
@@ -165,7 +171,15 @@ window.SHOP = {
     { id: 'mist', name: '안개 숲', price: 110 },
     { id: 'crystal', name: '수정 동굴', price: 150 },
     { id: 'kraft', name: '크래프트', price: 90 },
-    { id: 'tidal', name: '밀물', price: 120 }
+    { id: 'tidal', name: '밀물', price: 120 },
+    { id: 'blueprint', name: '청사진', price: 130 },
+    { id: 'chalk', name: '칠판', price: 110 },
+    { id: 'diner', name: '다이너 체크', price: 120 },
+    { id: 'carbon', name: '카본', price: 140 },
+    { id: 'denim', name: '데님', price: 100 },
+    { id: 'crt', name: '구형 모니터', price: 160 },
+    { id: 'vinyl', name: '레코드판', price: 170 },
+    { id: 'marble', name: '대리석', price: 180 }
   ],
   nameFx: [
     { id: 'gold', name: '금빛', price: 80 },
@@ -205,7 +219,15 @@ window.SHOP = {
     { id: 'holo', name: '홀로그램', price: 250 },
     { id: 'outline', name: '외곽선', price: 150 },
     { id: 'popfx', name: '입체', price: 170 },
-    { id: 'twinkle', name: '별빛', price: 180 }
+    { id: 'twinkle', name: '별빛', price: 180 },
+    { id: 'retro3d', name: '레트로 입체', price: 170 },
+    { id: 'candycane', name: '사탕 줄무늬', price: 200 },
+    { id: 'magma', name: '용암', price: 190 },
+    { id: 'fog', name: '안개', price: 150 },
+    { id: 'emboss', name: '양각', price: 120 },
+    { id: 'horizon', name: '수평선', price: 140 },
+    { id: 'marker', name: '형광펜', price: 130 },
+    { id: 'squiggle', name: '물결 밑줄', price: 100 }
   ],
   themes: [
     { id: 'default', name: '12귀월', desc: '십이귀월과 싸워 올라가요', cat: '기본', dir: './images/', full: false, max: 16384, bigName: '', ver: 1,
