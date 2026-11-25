@@ -660,3 +660,9 @@
 .homegift .homealert__tag { border-color: #7fd39a; color: #b9f0cb; background: rgba(40, 120, 70, .4); }
 .homegift h2 { color: #c8f5d6; }
 .homegift__err { margin-top: 6px !important; color: #ff9a9a !important; }
+
+/* 프로필 투표 */
+.pvres { margin: 0 0 14px; }
+.pvres h2, .pvhead { margin: 0 0 8px; font-size: 14px; color: #ffe2a0; }
+.pvres .btn { width: 100%; margin-top: 10px; }
+.pvres .rank__item { margin-bottom: 6px; }

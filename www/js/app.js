@@ -5,7 +5,7 @@
 (() => {
   'use strict';
 
-  const SCREENS = ['home', 'modes', 'game', 'profile', 'dex', 'shop', 'settings', 'event', 'vote', 'login'];
+  const SCREENS = ['home', 'modes', 'game', 'profile', 'dex', 'shop', 'settings', 'event', 'vote', 'pvote', 'login'];
   // 상점 물건(프로필 사진·프레임·칭호·배경·이름·테마)의 이름과 가격은 js/shopdata.js 에서 바꿔요.
   // 프로필 사진은 images/avatars/<id>.webp, price 가 있으면 상점에서 골드로 사야 쓸 수 있어요 (없으면 처음부터 무료)
   const SHOP = window.SHOP;   // 상점 물건 목록은 js/shopdata.js
@@ -24,12 +24,13 @@
   const CONDS = { win2048: () => best() >= 2048, dexHalf, dexFull };
   // 이벤트 전적 칭호 (shopdata.js 를 건드리지 않고 여기서 정해요). 조건은 AppBetting.stats() 로 확인해요
   const evStat = () => (window.AppBetting && window.AppBetting.stats ? window.AppBetting.stats() : { w: 0, l: 0, streak: 0, best: 0 });
-  Object.assign(CONDS, { evPlay1: () => { const s = evStat(); return s.w + s.l >= 1; }, evWin3: () => evStat().w >= 3, evWin10: () => evStat().w >= 10, evStreak3: () => evStat().best >= 3 });
+  Object.assign(CONDS, { evPlay1: () => { const s = evStat(); return s.w + s.l >= 1; }, evWin3: () => evStat().w >= 3, evWin10: () => evStat().w >= 10, evStreak3: () => evStat().best >= 3, bestWin1: () => G.ownedList().some((x) => String(x).startsWith('pw:')) });
   const EV_TITLES = [
     { id: 'evfirst', name: '첫 승부', cond: 'evPlay1', how: '이벤트에 한 번 참가하기 (결과가 나온 뒤)' },
     { id: 'evwin3', name: '예언가', cond: 'evWin3', how: '이벤트에서 3번 이기기' },
     { id: 'evstreak3', name: '연승 행진', cond: 'evStreak3', how: '이벤트 3연승' },
-    { id: 'evwin10', name: '승부사', cond: 'evWin10', how: '이벤트에서 10번 이기기' }
+    { id: 'evwin10', name: '승부사', cond: 'evWin10', how: '이벤트에서 10번 이기기' },
+    { id: 'bestprofile', name: '베스트 프로필', cond: 'bestWin1', how: '프로필 투표에서 1등 하기' }
   ];
   const TITLES = SHOP.titles.concat(EV_TITLES.filter((e) => !SHOP.titles.some((t) => t.id === e.id))).map((t) => (t.cond ? Object.assign({}, t, { when: CONDS[t.cond] || (() => false) }) : t));
   // 카드 배경 (우리 기록의 내 줄과 프로필 카드) — CSS 는 app.css 의 .bg-<id>
@@ -1226,8 +1227,98 @@ function drawEvent(ev, list) {
       sub: () => { const ev = modeEvent(); return ev ? `${ev.title} · ${B.period(ev)}` : ''; },
       tag: () => { const ev = modeEvent(); if (!ev) return ''; const ph = B.phase(ev); return ph === 'ended' ? (evClaimable ? '보상 받기' : '결과') : ph === 'live' ? '진행 중' : '곧 시작'; },
       start: () => go('event')
+    },
+    {
+      id: 'pvote', name: '프로필 투표', show: () => !!(A.enabled && A.user && C.enabled),
+      sub: () => (PV.mine(G.ownedList(), G.dayKey()) ? '오늘 투표했어요 · 내일 아침 6시에 결과' : '가장 잘 꾸민 프로필에 한 표'),
+      tag: () => (PV.mine(G.ownedList(), G.dayKey()) ? '' : '투표하세요'),
+      start: () => go('pvote')
     }
   ];
+
+  // ============ 프로필 투표 (매일 가장 잘 꾸민 프로필에 한 표) ============
+  const PV = window.AppPVote;
+  const pvCache = { t: 0, list: null };
+  async function pvUsers(force) {
+    if (!force && pvCache.list && Date.now() - pvCache.t < 60e3) return pvCache.list;   // 1분 안에는 다시 읽지 않아요
+    pvCache.list = await C.loadAll(); pvCache.t = Date.now();
+    return pvCache.list;
+  }
+  // 꾸민 사람만 후보예요: 프레임·배경·이름 효과·칭호·내 사진 중 하나라도 바꿨으면
+  const pvDecorated = (u) => !!(u.photo || fxOf(u.nameFx) || bgOf(u.bg) || titleOf(u.title) || (frameOf(u.frame) && frameOf(u.frame).price));
+
+  function pvCard(u, votes) {
+    const item = document.createElement('div');
+    item.className = 'rank__item' + (bgOf(u.bg) ? ' bg-' + u.bg : '');
+    const left = document.createElement('div'); left.className = 'rank__who';
+    left.appendChild(avatarEl(u.avatar, u.nickname, u.frame, u.photo));
+    const txt = document.createElement('div'); txt.className = 'rank__txt';
+    const nm = document.createElement('div'); nm.className = 'rank__name';
+    const nmt = document.createElement('span'); nmt.className = fxOf(u.nameFx) ? 'nm-' + u.nameFx : ''; nmt.textContent = u.nickname || '이름 없음'; nm.appendChild(nmt);
+    if (rankOf(SE.bestOf(u))) nm.appendChild(rankBadge(SE.bestOf(u)));
+    txt.appendChild(nm);
+    const tt = titleOf(u.title);
+    if (tt) { const e = document.createElement('span'); e.className = 'rank__title'; e.textContent = tt.name; txt.appendChild(e); }
+    if (u.bio) { const e = document.createElement('span'); e.className = 'rank__bio'; e.textContent = u.bio; txt.appendChild(e); }
+    left.appendChild(txt); item.appendChild(left);
+    if (votes != null) { const r = document.createElement('div'); r.className = 'rank__score'; const b = document.createElement('b'); b.textContent = votes; r.appendChild(b); r.appendChild(document.createTextNode('표')); item.appendChild(r); }
+    return item;
+  }
+
+  async function refreshPVote() {
+    const body = $('pvBody'), note = $('pvNote');
+    body.textContent = '';
+    if (!(A.enabled && A.user && C.enabled)) { note.textContent = '로그인하면 투표할 수 있어요.'; return; }
+    note.textContent = `가장 잘 꾸민 프로필에 하루 한 표! 내일 아침 6시에 결과가 나와요. 1등은 골드 ${PV.GOLD} + '베스트 프로필' 칭호를 받아요. 마감 전에는 다른 사람으로 바꿀 수 있어요.`;
+    const loading = document.createElement('p'); loading.className = 'foot'; loading.textContent = '불러오는 중…'; body.appendChild(loading);
+    let users;
+    try { users = await pvUsers(); } catch (e) { loading.textContent = '불러오지 못했어요. 잠시 뒤에 다시 열어 주세요.'; return; }
+    if (current() !== 'pvote') return;
+    body.textContent = '';
+    const today = G.dayKey(), byUid = new Map(users.map((u) => [u.uid, u]));
+
+    // 지난 결과 (어제)와 보상
+    const yday = PV.shift(today, -1), yw = PV.winners(users, yday);
+    const res = document.createElement('div'); res.className = 'card pvres';
+    const rh = document.createElement('h2'); rh.textContent = '어제의 베스트 프로필'; res.appendChild(rh);
+    if (yw.uids.length) {
+      yw.uids.forEach((id) => { const u = byUid.get(id); if (u) res.appendChild(pvCard(u, yw.count)); });
+    } else {
+      const p = document.createElement('p'); p.className = 'foot'; p.textContent = yw.total ? '표가 모자라서 1등이 없었어요.' : '어제는 투표가 없었어요.'; res.appendChild(p);
+    }
+    const claim = PV.claimable(users, C.uid, G.ownedList(), today);
+    if (claim) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn';
+      b.textContent = `베스트 프로필 보상 · 골드 ${PV.GOLD} 받기`;
+      b.addEventListener('click', async () => {
+        b.disabled = true;
+        try { await G.claimBest(claim, PV.GOLD); toastMsg(`베스트 프로필! 골드 ${PV.GOLD}을 받았어요`); refreshPVote(); }
+        catch (e) { b.disabled = false; showMsg(e && e.user ? e.message : '받지 못했어요. 잠시 뒤에 다시 눌러 주세요.'); }
+      });
+      res.appendChild(b);
+    }
+    body.appendChild(res);
+
+    // 오늘 후보 (나는 빼요 · 꾸민 사람만)
+    const cand = users.filter((u) => u.uid !== C.uid && pvDecorated(u));
+    const mineId = PV.mine(G.ownedList(), today);
+    const h = document.createElement('h2'); h.className = 'pvhead'; h.textContent = '오늘의 후보'; body.appendChild(h);
+    if (!cand.length) { const p = document.createElement('p'); p.className = 'foot'; p.textContent = '아직 프로필을 꾸민 사람이 없어요. 상점에서 프레임·배경·이름 꾸미기를 바꿔 보세요!'; body.appendChild(p); return; }
+    cand.forEach((u) => {
+      body.appendChild(pvCard(u, null));
+      const row = document.createElement('div'); row.className = 'cheerrow';
+      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn btn--sub cheerrow__btn';
+      const picked = mineId === u.uid;
+      btn.textContent = picked ? '✓ 내가 고른 프로필' : (mineId ? '이 프로필로 바꾸기' : '이 프로필에 투표');
+      btn.disabled = picked;
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        try { await G.castProfileVote(today, u.uid, PV.keepDays(today)); pvCache.list = null; showMsg(`${u.nickname || '이름 없음'}님에게 투표했어요!`); refreshPVote(); }
+        catch (e) { btn.disabled = false; showMsg(e && e.user ? e.message : '투표하지 못했어요. 잠시 뒤에 다시 눌러 주세요.'); }
+      });
+      row.appendChild(btn); body.appendChild(row);
+    });
+  }
 
   function refreshModes() {
     const box = $('modeList');
@@ -1264,6 +1355,7 @@ function drawEvent(ev, list) {
     if (name === 'shop') refreshShop();
     if (name === 'event') refreshEvent();
     if (name === 'vote') refreshVote();
+    if (name === 'pvote') refreshPVote();
     if (name === 'login') $('loginErr').textContent = '';
     window.dispatchEvent(new CustomEvent('screenchange', { detail: name }));   // 화면에 맞는 BGM 으로 바꿀 때 쓰여요
   }

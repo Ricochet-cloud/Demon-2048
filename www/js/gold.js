@@ -159,6 +159,7 @@
     dayKey,
     get gold() { return S.gold || 0; },
     owns(id) { return S.owned.includes(id); },
+    ownedList() { return [...S.owned]; },
     // 조커카드: 가진 개수 { undo, erase, shuffle, upgrade } / 가격표 / 사기 / 쓰기 (쓰면 개수가 하나 줄어요)
     jokers() { return normJk(S.jokers); },
     JOKER_PRICE,
@@ -238,6 +239,26 @@
         return Object.assign(cur, { gold: (cur.gold || 0) + reward, owned: [...cur.owned, mark] });
       });
       return reward;
+    },
+    // 프로필 투표: 오늘 한 표 (이미 고른 게 있으면 바꿔요). 지난 투표 표시는 같이 정리해요
+    async castProfileVote(day, targetUid, keep) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(day)) || !/^[A-Za-z0-9]{10,60}$/.test(String(targetUid)) || !Array.isArray(keep)) throw userError('투표할 수 없어요.');
+      if (targetUid === C.uid) throw userError('나에게는 투표할 수 없어요.');
+      await update((cur) => {
+        const owned = cur.owned.filter((x) => !String(x).startsWith('pv:') || (keep.includes(String(x).split(':')[1]) && !String(x).startsWith(`pv:${day}:`)));
+        owned.push(`pv:${day}:${targetUid}`);
+        return Object.assign(cur, { owned });
+      });
+    },
+    // 프로필 투표 1등 보상 (날짜마다 한 번): 받은 표시를 'pw:날짜' 로 남겨요. 칭호 '베스트 프로필'은 이 표시가 하나라도 있으면 열려요
+    async claimBest(day, amount) {
+      const mark = 'pw:' + day;
+      if (!/^pw:\d{4}-\d{2}-\d{2}$/.test(mark) || !Number.isInteger(amount) || amount < 1 || amount > 1000) throw userError('받을 수 없는 보상이에요.');
+      await update((cur) => {
+        if (cur.owned.includes(mark)) throw userError('이미 받았어요.');
+        return Object.assign(cur, { gold: (cur.gold || 0) + amount, owned: [...cur.owned, mark] });
+      });
+      return amount;
     },
     // 관리자가 보낸 골드 선물 (선물마다 한 번): 받았다는 표시를 산 물건 목록에 'gf:선물id' 로 남겨요
     async claimGift(giftId, amount) {
