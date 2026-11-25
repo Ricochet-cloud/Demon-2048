@@ -222,7 +222,31 @@
     return f;
   }
 
-  function drawEvent(ev, list) {
+    // 대결 바: 처음 들어오면 어느 쪽이 이기는지 바로 안 보이게 왔다 갔다 하다가 진짜 비율에 자리 잡고, 진행 중에는 계속 움찔움찔해요
+  let tugged = '';
+  window.addEventListener('hashchange', () => { if (location.hash !== '#event') tugged = ''; });
+  function barFight(bar, ba, bb, pa, tug, realText, leadEl, live) {
+    const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const set = (v) => { const x = Math.max(6, Math.min(94, v)); ba.style.width = x + '%'; bb.style.width = (100 - x) + '%'; };
+    let alive = true;
+    const later = (fn, ms) => setTimeout(() => { if (alive && bar.isConnected) fn(); else alive = false; }, ms);
+    const idle = () => {
+      if (!live || reduce) return;
+      const d = (Math.random() < .5 ? -1 : 1) * (1 + Math.random() * 1.6);
+      set(pa + d); later(() => { set(pa); later(idle, 1400 + Math.random() * 1800); }, 320);
+    };
+    if (!tug) { later(idle, 1200); return; }
+    bar.classList.add('evbar--tug'); set(50);
+    const P = [0, .08, .22, .4, .65, 1], A = [17, 15, 11, 8, 5, 0];
+    let k = 0;
+    const step = () => {
+      if (k >= P.length) { bar.classList.remove('evbar--tug'); leadEl.textContent = realText; later(idle, 1400); return; }
+      set(50 + (pa - 50) * P[k] + (k % 2 ? -1 : 1) * A[k]); k++; later(step, k === P.length ? 700 : 430);
+    };
+    later(step, 500);
+  }
+
+function drawEvent(ev, list) {
     const body = $('evBody'); body.textContent = '';
     const ph = B.phase(ev), t = B.tally(ev, list), my = B.mine(ev, list, C.uid), tot = t.a.total + t.b.total;
     const blind = !!ev.stake && ph !== 'ended' && !my.side;   // 골드 걸기는 참가하기 전까지 편별 점수·인원을 숨겨요 (골라서 건 뒤에는 보여요)
@@ -251,7 +275,9 @@
     const ba = el('i', 'evbar__a'), bb = el('i', 'evbar__b');
     ba.style.width = pa + '%'; ba.style.background = t.a.side.color; bb.style.width = (100 - pa) + '%'; bb.style.background = t.b.side.color;
     bar.appendChild(ba); bar.appendChild(bb); if (!blind) card.appendChild(bar);
-    const lead = blind && ph === 'live' ? `블라인드 이벤트예요. 참가 ${t.a.members.length + t.b.members.length}명 · 편을 고르고 골드를 걸면 현재 상황이 보여요`
+    const tug = !blind && tot > 0 && ph !== 'upcoming' && tugged !== ev.id && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    if (tug) tugged = ev.id;
+    const realLead = blind && ph === 'live' ? `블라인드 이벤트예요. 참가 ${t.a.members.length + t.b.members.length}명 · 편을 고르고 골드를 걸면 현재 상황이 보여요`
       : ev.stake && ph === 'ended' && !my.refunded && t.winners.length === 1 && t.a.gold && t.b.gold ? `${t.lead.side.name} 편이 이겼어요! 진 편이 잃은 골드의 절반을 이긴 편이 건 금액대로 나눠 가졌어요`
       : ev.stake && ph === 'ended' && (t.winners.length !== 1 || !t.a.gold || !t.b.gold) ? '무승부이거나 한쪽에만 걸어서, 건 골드를 모두 돌려받아요'
       : ph === 'upcoming' ? '아직 시작 전이에요. 시작하면 점수가 쌓여요'
@@ -259,7 +285,9 @@
       : !t.lead ? (ph === 'ended' ? '무승부! 두 편 모두 이겼어요' : '똑같아요! 팽팽해요')
       : ph === 'ended' ? `${t.lead.side.name} 편이 이겼어요!`
       : `${t.lead.side.name} 편이 ${nf(Math.abs(t.a.total - t.b.total))}점 앞서고 있어요`;
-    card.appendChild(el('p', 'ev__lead', lead));
+    const lead = tug ? '팽팽하게 겨루는 중…' : realLead;
+    const leadEl = el('p', 'ev__lead', lead); card.appendChild(leadEl);
+    if (!blind && tot > 0) barFight(bar, ba, bb, pa, tug, realLead, leadEl, ph === 'live');
 
     const act = el('div', 'evact');
     if (ph === 'ended') {

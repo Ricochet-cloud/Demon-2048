@@ -638,3 +638,6 @@
 .nm-squiggle { color: #fff; text-decoration: underline wavy #ff6b9d; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .rank__name .nm-candycane, .rank__name .nm-magma, .rank__name .nm-horizon { display: inline-block; }
 @media (prefers-reduced-motion: reduce) { .nm-candycane, .nm-fog { animation: none; } }
+
+.evbar--tug i { transition: width .38s cubic-bezier(.45, 0, .25, 1); }
+.evbar:not(.evbar--tug) i { transition: width .32s ease-in-out; }
