@@ -239,6 +239,17 @@
       });
       return reward;
     },
+    // 관리자가 보낸 골드 선물 (선물마다 한 번): 받았다는 표시를 산 물건 목록에 'gf:선물id' 로 남겨요
+    async claimGift(giftId, amount) {
+      const id = String(giftId || ''), mark = 'gf:' + id;
+      if (!/^[a-z0-9_-]{1,20}$/.test(id) || !Number.isInteger(amount) || amount < 1 || amount > 100000) throw userError('받을 수 없는 선물이에요.');
+      await update((cur) => {
+        if (cur.owned.includes(mark)) throw userError('이미 받았어요.');
+        if ((cur.gold || 0) + amount > 1000000) throw userError('골드가 너무 많아서 더 받을 수 없어요.');
+        return Object.assign(cur, { gold: (cur.gold || 0) + amount, owned: [...cur.owned, mark] });
+      });
+      return amount;
+    },
     // 이벤트 결과 기록 (골드는 없어요): 산 물건 목록에 'ew:이벤트'(이김) 또는 'el:이벤트'(짐) 표시를 남겨요. 전적과 칭호에 써요
     async recordEvent(eventId, win) {
       const id = String(eventId || '');

@@ -98,9 +98,22 @@
     draw(); AL.load().then(draw).catch(() => {});
   }
 
+  // 골드 선물 카드 (events/gifts.json) — 로그인한 사람에게만 보이고, 받기를 누르면 골드가 들어와요 (선물마다 한 번)
+  function refreshGifts() {
+    const GF = window.AppGift, box = $('homeGifts'); if (!GF || !box) return;
+    const env = {
+      uid: A.enabled && A.user && C.enabled ? A.user.uid : '',
+      owns: (k) => G.owns(k),
+      claim: (id, gold) => G.claimGift(id, gold),
+      done: (gold) => { toastMsg(`선물! 골드 ${gold.toLocaleString('ko-KR')}을 받았어요`); refreshHome(); }
+    };
+    GF.render(box, env); GF.load().then(() => GF.render(box, env)).catch(() => {});
+  }
+
   function refreshHome() {
     refreshNotice();
     refreshAlerts();
+    refreshGifts();
     // 로그인했는데 닉네임이 아직 없으면 안내
     $('homeHint').hidden = !(C.enabled && C.loaded && (!C.nickname || !(knownAvatar(C.avatar) || C.photo)));
     const th = T.dexTheme(), got = T.discovered(readSaved().bestTile, th).length;

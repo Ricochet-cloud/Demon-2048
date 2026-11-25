@@ -54,6 +54,7 @@
     <button class="tab" data-tab="polls">투표</button>
     <button class="tab" data-tab="notice">공지</button>
     <button class="tab" data-tab="alerts">알림</button>
+    <button class="tab" data-tab="gifts">선물</button>
   </div>
 
   <!-- 시트 올리기 (두 탭 공용) -->
@@ -158,6 +159,16 @@
   </section>
 
   <!-- 공지 배너 -->
+  <section id="tab-gifts" class="hidden">
+    <div class="card">
+      <h2>골드 선물</h2>
+      <p class="muted" style="margin:0 0 8px">앱 홈에 "선물이 도착했어요" 카드가 뜨고, 사용자가 "받기"를 누르면 골드가 들어와요. 선물 하나당 한 사람이 한 번만 받아요. 로그인한 사람에게만 보여요. 받는 사람을 비우면 <b>모든 사용자</b>에게 가고, 특정 사람에게만 주려면 그 사람의 UID(파이어베이스 콘솔 → Authentication → 사용자)를 한 줄에 하나씩 붙여넣으세요. 시작일·마감일은 비워도 돼요. 이미 받은 사람이 있는 선물의 골드를 고치면, 받은 사람에게는 반영되지 않아요. 한 번 더 주고 싶으면 새 선물을 만드세요.</p>
+      <div id="gfRows"></div>
+      <div style="margin-top:12px"><button id="gfAdd">+ 선물 추가</button> <button id="gfSave">저장</button></div>
+      <div id="gfMsg"></div>
+    </div>
+  </section>
+
   <section id="tab-alerts" class="hidden">
     <div class="card">
       <h2>홈 알림 카드</h2>
@@ -256,12 +267,14 @@
     $('tab-polls').classList.toggle('hidden', tab !== 'polls');
     $('tab-notice').classList.toggle('hidden', tab !== 'notice');
     $('tab-alerts').classList.toggle('hidden', tab !== 'alerts');
-    $('sheetCard').classList.toggle('hidden', tab === 'manage' || tab === 'events' || tab === 'polls' || tab === 'notice' || tab === 'alerts');
+    $('tab-gifts').classList.toggle('hidden', tab !== 'gifts');
+    $('sheetCard').classList.toggle('hidden', tab === 'manage' || tab === 'events' || tab === 'polls' || tab === 'notice' || tab === 'alerts' || tab === 'gifts');
     if (tab === 'manage') renderManage();
     if (tab === 'events') loadEvents();
     if (tab === 'polls') loadPolls();
     if (tab === 'notice') loadNotices();
     if (tab === 'alerts') loadAlerts();
+    if (tab === 'gifts') loadGifts();
     showForms();
   }));
   function showForms() {
@@ -583,6 +596,37 @@
       msg($('nMsg'), 'ok', '<b>추가했어요!</b><br>' + r.log.map(esc).join('<br>') + gitBox('칭호 추가'));
     } catch (e) { msg($('nMsg'), 'bad', esc(e.message)); }
     $('nSave').disabled = false;
+  });
+  // ----- 골드 선물 -----
+  let gf = [];
+  const newGfId = () => 'g' + Date.now().toString(36) + Math.floor(Math.random() * 36).toString(36);
+  async function loadGifts() { const r = await call('GET', '/api/gifts'); gf = r.gifts; renderGifts(); }
+  function renderGifts() {
+    $('gfRows').innerHTML = gf.length ? gf.map((g, i) => `<div style="border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:10px">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
+        <input type="text" data-gf="title" data-i="${i}" maxlength="24" value="${esc(g.title || '')}" placeholder="제목 (24글자까지) 예: 오픈 기념 선물" style="flex:1 1 220px">
+        <label style="white-space:nowrap">골드 <input type="number" data-gf="gold" data-i="${i}" min="1" max="100000" value="${esc(g.gold || '')}" style="width:100px"></label>
+      </div>
+      <input type="text" data-gf="text" data-i="${i}" maxlength="100" value="${esc(g.text || '')}" placeholder="내용 (100글자까지, 비워도 돼요) 예: 와 줘서 고마워요!" style="width:100%;margin-bottom:6px">
+      <textarea data-gf="to" data-i="${i}" rows="2" placeholder="받는 사람 UID (비우면 전체, 여러 명이면 한 줄에 하나)" style="width:100%;margin-bottom:6px">${esc(g.to || '')}</textarea>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <input type="date" data-gf="start" data-i="${i}" value="${esc(g.start || '')}" title="시작일">~<input type="date" data-gf="end" data-i="${i}" value="${esc(g.end || '')}" title="마감일">
+        <label style="white-space:nowrap"><input type="checkbox" data-gf="on" data-i="${i}" ${g.on === false ? '' : 'checked'}> 켜기</label>
+        <button data-gdel="${i}">삭제</button>
+      </div></div>`).join('') : '<div class="muted">선물이 없어요.</div>';
+    $('gfRows').querySelectorAll('[data-gf]').forEach((el) => { const h = () => { const n = gf[+el.dataset.i], f = el.dataset.gf; n[f] = f === 'on' ? el.checked : el.value; }; el.addEventListener('input', h); el.addEventListener('change', h); });
+    $('gfRows').querySelectorAll('[data-gdel]').forEach((el) => el.addEventListener('click', () => { gf.splice(+el.dataset.gdel, 1); renderGifts(); }));
+  }
+  $('gfAdd').addEventListener('click', () => { gf.push({ id: newGfId(), title: '', gold: 100, text: '', to: '', on: true }); renderGifts(); });
+  $('gfSave').addEventListener('click', async () => {
+    $('gfSave').disabled = true;
+    try {
+      const r = await call('POST', '/api/gifts/save', { gifts: gf });
+      gf = r.gifts.map((g) => Object.assign({}, g, { to: Array.isArray(g.to) ? g.to.join('\n') : '' })); renderGifts();
+      msg($('gfMsg'), 'ok', '<b>저장했어요!</b><br>' + r.log.map(esc).join('<br>') + gitBox('골드 선물 수정')
+        + '<div class="muted" style="margin-top:6px">push 하면 웹이 새로 배포돼요 (1~2분). 앱은 인터넷이 연결돼 있으면 새 APK 없이도 선물이 떠요.</div>');
+    } catch (e) { msg($('gfMsg'), 'bad', esc(e.message)); }
+    $('gfSave').disabled = false;
   });
   // ----- 홈 알림 카드 -----
   let al = [];

@@ -322,6 +322,39 @@ const api = {
     return { ok: true, log: [`알림 ${list.length}개 저장 (alerts.json)`], alerts: list };
   },
 
+  // ---- 골드 선물 (www/events/gifts.json) — 목록 전체를 한 번에 저장해요. 받는 사람은 선물 id 로 한 번만 받아요 ----
+  async 'GET /api/gifts'() { return { gifts: readGifts() }; },
+  async 'POST /api/gifts/save'(req) {
+    const b = await readJson(req);
+    if (!Array.isArray(b.gifts) || b.gifts.length > 30) throw fail('선물은 30개까지예요.');
+    const seenId = new Set();
+    const list = b.gifts.map((g, i) => {
+      const n = i + 1, title = clean(g && g.title, 24);
+      if (!title) throw fail(`${n}번 선물의 제목을 적어 주세요. (안 쓸 선물은 줄을 지워 주세요)`);
+      const gold = Number(g.gold);
+      if (!Number.isInteger(gold) || gold < 1 || gold > 100000) throw fail(`${n}번 선물의 골드는 1~100000 사이 정수로 적어 주세요.`);
+      let id = String(g.id || '');
+      if (!/^[a-z0-9_-]{1,20}$/.test(id)) id = 'g' + Date.now().toString(36) + i;
+      if (seenId.has(id)) throw fail(`${n}번 선물의 id 가 겹쳐요.`);
+      seenId.add(id);
+      const r = { id, title, gold, on: !(g && g.on === false) };
+      const text = clean(g.text, 100); if (text) r.text = text;
+      const to = String(g.to || '').split(/[\s,]+/).filter(Boolean);
+      if (to.length > 50) throw fail(`${n}번 선물의 받는 사람은 50명까지예요.`);
+      if (to.some((u) => !/^[A-Za-z0-9]{10,60}$/.test(u))) throw fail(`${n}번 선물의 받는 사람(uid)이 이상해요. 파이어베이스 Authentication 의 사용자 UID 를 그대로 붙여넣어 주세요.`);
+      if (to.length) r.to = to;
+      const s = g.start || '', e = g.end || '';
+      if (s && !DAY_RE.test(s)) throw fail(`${n}번 선물의 시작일이 이상해요.`);
+      if (e && !DAY_RE.test(e)) throw fail(`${n}번 선물의 마감일이 이상해요.`);
+      if (s && e && dayNum(e) < dayNum(s)) throw fail(`${n}번 선물의 마감일이 시작일보다 빠를 수 없어요.`);
+      if (s) r.start = s; if (e) r.end = e;
+      return r;
+    });
+    fs.mkdirSync(EV_DIR, { recursive: true });
+    fs.writeFileSync(path.join(EV_DIR, 'gifts.json'), JSON.stringify({ gifts: list }, null, 2) + '\n');
+    return { ok: true, log: [`선물 ${list.length}개 저장 (gifts.json)`], gifts: list };
+  },
+
   // ---- 공지 배너 (www/events/notices.json) — 목록 전체를 한 번에 저장해요 ----
   async 'GET /api/notices'() { return { notices: readNotices() }; },
   async 'POST /api/notices/save'(req) {
@@ -414,6 +447,7 @@ const dayNum = (k) => { const [y, m, d] = k.split('-').map(Number); return Date.
 const evImgOk = (n) => typeof n === 'string' && /^[\w-]{1,60}\.webp$/.test(n);
 const dataBuf = (v) => { const b = Buffer.from(String(v || '').replace(/^data:[^,]*,/, ''), 'base64'); if (b.length < 200) throw fail('이미지를 읽지 못했어요.'); return b; };
 const POLL_FILE = path.join(EV_DIR, 'polls.json');
+const readGifts = () => { try { const j = JSON.parse(fs.readFileSync(path.join(EV_DIR, 'gifts.json'), 'utf8')); return Array.isArray(j.gifts) ? j.gifts.map((g) => Object.assign({}, g, { to: Array.isArray(g.to) ? g.to.join('\n') : '' })) : []; } catch (e) { return []; } };
 const readAlerts = () => { try { const j = JSON.parse(fs.readFileSync(path.join(EV_DIR, 'alerts.json'), 'utf8')); return Array.isArray(j.alerts) ? j.alerts : []; } catch (e) { return []; } };
 const readNotices = () => { try { const j = JSON.parse(fs.readFileSync(path.join(EV_DIR, 'notices.json'), 'utf8')); return Array.isArray(j.notices) ? j.notices : []; } catch (e) { return []; } };
 const readPolls = () => { try { const j = JSON.parse(fs.readFileSync(POLL_FILE, 'utf8')); return Array.isArray(j.polls) ? j.polls : []; } catch (e) { return []; } };
