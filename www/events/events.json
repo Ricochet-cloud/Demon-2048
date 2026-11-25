@@ -24,6 +24,29 @@
         "max": 200
       },
       "image": "first11-mwub0gn2.webp"
+    },
+    {
+      "id": "electric",
+      "title": "키르아 vs 사스케",
+      "start": "2026-11-30",
+      "end": "2026-12-06",
+      "reward": 300,
+      "sides": [
+        {
+          "id": "a",
+          "name": "키르아",
+          "color": "#ffffff",
+          "image": "electric-a-mwvqesq9.webp"
+        },
+        {
+          "id": "b",
+          "name": "사스케",
+          "color": "#7cddfe",
+          "image": "electric-b-mwvqest3.webp"
+        }
+      ],
+      "desc": "신속의 칸무루와 천둥의 치도리, 번개의 정점은 누구의 것인가",
+      "image": "electric-mwvqes5u.webp"
     }
   ]
 }
