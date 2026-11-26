@@ -41,7 +41,7 @@
     }));
     if (!sides[0].id || !sides[1].id || sides[0].id === sides[1].id) return null;
     const ev = { id: String(e.id), title: String(e.title || '이벤트').slice(0, 30), desc: String(e.desc || '').replace(/[\r\n\t]+/g, ' ').trim().slice(0, 80), start: e.start, end: e.end, image: url(e.image), sides,
-      reward: Math.max(0, Math.min(100000, Number.isInteger(e.reward) ? e.reward : 0)), stake: null };
+      reward: Math.max(0, Math.min(100000, Number.isInteger(e.reward) ? e.reward : 0)), stake: null, avg: e.avg === true };
     const st = e.stake;
     if (st && Number.isInteger(st.min) && Number.isInteger(st.max) && st.min >= 1 && st.max >= st.min && st.max <= 100000) { ev.stake = { min: st.min, max: st.max }; ev.reward = 0; }
     return endsAt(ev) > startsAt(ev) ? ev : null;
@@ -108,9 +108,10 @@
       out[e.side].total += s; out[e.side].gold += g; out[e.side].members.push({ user: u, score: s, gold: g });
     });
     const a = out[ev.sides[0].id], b = out[ev.sides[1].id];
-    [a, b].forEach((x) => x.members.sort((p, q) => q.score - p.score));
-    const winners = a.total + b.total === 0 ? [] : a.total === b.total ? [a.side.id, b.side.id] : [a.total > b.total ? a.side.id : b.side.id];
-    return { a, b, winners, lead: a.total === b.total ? null : a.total > b.total ? a : b };
+    // val: 겨루는 점수. 평균 대결(ev.avg)이면 편 점수 합 ÷ 인원 (인원이 달라도 공평하게), 아니면 합계
+    [a, b].forEach((x) => { x.members.sort((p, q) => q.score - p.score); x.val = ev.avg ? (x.members.length ? Math.round(x.total / x.members.length) : 0) : x.total; });
+    const winners = a.val + b.val === 0 ? [] : a.val === b.val ? [a.side.id, b.side.id] : [a.val > b.val ? a.side.id : b.side.id];
+    return { a, b, winners, lead: a.val === b.val ? null : a.val > b.val ? a : b };
   }
   // 내 상태: { side: 내 편 id 또는 '', score, win: 이겼는지, claimed: 이미 받았는지 }
   function mine(ev, list, uid) {

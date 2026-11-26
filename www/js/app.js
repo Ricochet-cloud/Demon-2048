@@ -262,14 +262,14 @@
 
 function drawEvent(ev, list) {
     const body = $('evBody'); body.textContent = '';
-    const ph = B.phase(ev), t = B.tally(ev, list), my = B.mine(ev, list, C.uid), tot = t.a.total + t.b.total;
+    const ph = B.phase(ev), t = B.tally(ev, list), my = B.mine(ev, list, C.uid), tot = t.a.val + t.b.val;
     const blind = !!ev.stake && ph !== 'ended' && !my.side;   // 골드 걸기는 참가하기 전까지 편별 점수·인원을 숨겨요 (골라서 건 뒤에는 보여요)
     const card = el('div', 'card evcard');
     if (ev.image) { const i = document.createElement('img'); i.className = 'ev__banner'; i.src = ev.image; i.alt = ''; i.draggable = false; i.addEventListener('error', () => i.remove()); card.appendChild(i); }
     card.appendChild(el('h2', 'ev__title', ev.title));
     if (ev.desc) card.appendChild(el('p', 'ev__desc', ev.desc));
     const left = B.leftText(ev);
-    card.appendChild(el('p', 'ev__meta', `${B.period(ev)}${left ? ' · ' + left : ''}${ev.reward ? ' · 이긴 편 골드 ' + nf(ev.reward) : ''}${ev.stake ? ' · 골드 걸기 ' + nf(ev.stake.min) + '~' + nf(ev.stake.max) : ''}`));
+    card.appendChild(el('p', 'ev__meta', `${B.period(ev)}${left ? ' · ' + left : ''}${ev.avg ? ' · 평균 점수 대결' : ''}${ev.reward ? ' · 이긴 편 골드 ' + nf(ev.reward) : ''}${ev.stake ? ' · 골드 걸기 ' + nf(ev.stake.min) + '~' + nf(ev.stake.max) : ''}`));
 
     const vs = el('div', 'evvs');
     [t.a, t.b].forEach((x, i) => {
@@ -277,7 +277,7 @@ function drawEvent(ev, list) {
       s.style.setProperty('--c', x.side.color);
       s.appendChild(sideFace(x.side));
       s.appendChild(el('b', 'evside__name', x.side.name));
-      s.appendChild(el('span', 'evside__score', blind ? '비공개' : `${nf(x.total)}점`));
+      s.appendChild(el('span', 'evside__score', blind ? '비공개' : `${ev.avg ? '평균 ' : ''}${nf(x.val)}점`));
       s.appendChild(el('small', 'evside__n', `${blind ? '' : x.members.length + '명'}${!blind && ev.stake ? ' · 건 골드 ' + nf(x.gold) : ''}${my.side === x.side.id ? (blind ? '내 편' : ' · 내 편') : ''}`));
       vs.appendChild(s);
       if (!i) vs.appendChild(el('div', 'evvs__vs', 'VS'));
@@ -285,7 +285,7 @@ function drawEvent(ev, list) {
     card.appendChild(vs);
 
     const bar = el('div', 'evbar');
-    const pa = tot ? Math.max(6, Math.min(94, t.a.total / tot * 100)) : 50;
+    const pa = tot ? Math.max(6, Math.min(94, t.a.val / tot * 100)) : 50;
     const ba = el('i', 'evbar__a'), bb = el('i', 'evbar__b');
     ba.style.width = pa + '%'; ba.style.background = t.a.side.color; bb.style.width = (100 - pa) + '%'; bb.style.background = t.b.side.color;
     bar.appendChild(ba); bar.appendChild(bb); if (!blind) card.appendChild(bar);
@@ -298,7 +298,7 @@ function drawEvent(ev, list) {
       : !tot ? '아직 아무도 점수를 모으지 못했어요'
       : !t.lead ? (ph === 'ended' ? '무승부! 두 편 모두 이겼어요' : '똑같아요! 팽팽해요')
       : ph === 'ended' ? `${t.lead.side.name} 편이 이겼어요!`
-      : `${t.lead.side.name} 편이 ${nf(Math.abs(t.a.total - t.b.total))}점 앞서고 있어요`;
+      : `${t.lead.side.name} 편이 ${nf(Math.abs(t.a.val - t.b.val))}점 앞서고 있어요`;
     const lead = tug ? '팽팽하게 겨루는 중…' : realLead;
     const leadEl = el('p', 'ev__lead', lead); card.appendChild(leadEl);
     if (!blind && tot > 0) barFight(bar, ba, bb, pa, tug, realLead, leadEl, ph === 'live');

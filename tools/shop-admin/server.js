@@ -254,6 +254,7 @@ const api = {
       return { id: sid, name, color: String(s.color).toLowerCase() };
     });
     const ev = { id, title, start: b.start, end: b.end, reward, sides };
+    if (b.avg === true) ev.avg = true;   // 평균 점수 대결 (편 점수 합 ÷ 인원으로 겨뤄요)
     const desc = clean(b.desc, 80); if (desc) ev.desc = desc;   // 제목 아래에 보이는 대결 설명 (비우면 안 보여요)
     if (b.stake) {
       const mn = Number(b.stake.min), mx = Number(b.stake.max);
