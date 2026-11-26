@@ -687,3 +687,8 @@ a.btn--link { display: flex; align-items: center; justify-content: center; margi
 /* 홈 TOP3: 눌러서 우리 기록으로 간다는 안내 */
 .homerank h2 { display: flex; align-items: center; }
 .homemore { margin-left: auto; font-size: 11px; font-weight: 400; letter-spacing: 0; color: var(--lantern); }
+
+/* 프로필 타일 탭: 가진 테마 격자 */
+#tilePick { margin-top: 0; }
+#tilePick .themecell.on { border-color: var(--lantern); box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .35), 0 0 12px rgba(255, 207, 128, .3); }
+#tilePick .themecell .tag { align-self: center; }

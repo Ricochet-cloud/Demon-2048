@@ -1195,9 +1195,9 @@ function drawEvent(ev, list) {
     $('nickCard').hidden = !online;
     $('avatarCard').hidden = !online;
     $('boardCard').hidden = !online;
-    ['meCard', 'frameCard', 'titleCard', 'bioCard', 'bgCard', 'nameCard'].forEach((id) => { $(id).hidden = !online; });
+    ['meCard', 'frameCard', 'titleCard', 'bioCard', 'bgCard', 'nameCard', 'tileCard'].forEach((id) => { $(id).hidden = !online; });
     if (online) {
-      renderMe(); renderFramePicker(); renderTitlePicker();
+      renderMe(); renderFramePicker(); renderTitlePicker(); renderTilePicker();
       renderStylePicker('bgPick', BGS, ownsBg, C.bg, 'bg', true); renderStylePicker('namePick', NAMEFX, ownsFx, C.nameFx, 'fx', false);
       if (document.activeElement !== $('bioInput')) $('bioInput').value = C.bio;
       renderAvatarPicker();
@@ -1208,6 +1208,25 @@ function drawEvent(ev, list) {
     $('boardGuest').hidden = online;
     $('pfTabs').hidden = !online;
     applyPfTab();
+  }
+
+  // 프로필의 '타일' 탭: 가진 타일 테마를 보고 바로 바꿔요 (사는 건 상점)
+  function renderTilePicker() {
+    const box = $('tilePick'); box.textContent = '';
+    const cur = T.get();
+    T.list.filter((t) => !t.off && (t.id === cur.id || ownsTheme(t))).forEach((t) => {
+      const on = t.id === cur.id;
+      const cell = document.createElement('div'); cell.className = 'card themecell' + (on ? ' on' : '');
+      const nm = document.createElement('b'); nm.textContent = t.name;
+      cell.appendChild(themePreview(t, [2, 512])); cell.appendChild(nm);
+      if (on) { const tag = document.createElement('em'); tag.className = 'tag'; tag.textContent = '사용 중'; cell.appendChild(tag); }
+      else {
+        const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn themecell__btn'; btn.textContent = '바꾸기';
+        btn.addEventListener('click', () => { T.set(t.id); dexThemeId = null; refreshProfile(); });
+        cell.appendChild(btn);
+      }
+      box.appendChild(cell);
+    });
   }
 
   // 프로필 꾸미기 탭 (사진 / 프레임 / 칭호 / 배경 / 이름 / 정보). 카드의 hidden 은 로그인 여부로 따로 정해져요

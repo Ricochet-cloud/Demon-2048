@@ -248,6 +248,7 @@
         <button type="button" class="chip on" data-tab="avatar">사진</button>
         <button type="button" class="chip" data-tab="frame">프레임</button>
         <button type="button" class="chip" data-tab="title">칭호</button>
+        <button type="button" class="chip" data-tab="tile">타일</button>
         <button type="button" class="chip" data-tab="bg">배경</button>
         <button type="button" class="chip" data-tab="name">이름</button>
         <button type="button" class="chip" data-tab="info">정보</button>
@@ -269,6 +270,11 @@
         <div class="pick pick--scroll" id="avatarPick"></div>
         <p class="pickcount" id="avatarCount" aria-live="polite"></p>
         <p class="form-err" id="avatarMsg" role="status"></p>
+      </div>
+      <div class="card deco" data-tab="tile" id="tileCard" hidden>
+        <h2>타일 테마</h2>
+        <div class="themegrid" id="tilePick"></div>
+        <button type="button" class="btn btn--sub btn--wide" data-go="shop">상점에서 더 보기</button>
       </div>
       <div class="card deco" data-tab="frame" id="frameCard" hidden>
         <h2>프레임</h2>
