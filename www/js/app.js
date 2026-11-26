@@ -269,7 +269,7 @@ function drawEvent(ev, list) {
     card.appendChild(el('h2', 'ev__title', ev.title));
     if (ev.desc) card.appendChild(el('p', 'ev__desc', ev.desc));
     const left = B.leftText(ev);
-    card.appendChild(el('p', 'ev__meta', `${B.period(ev)}${left ? ' · ' + left : ''}${ev.avg ? ' · 평균 점수 대결' : ''}${ev.reward ? ' · 이긴 편 골드 ' + nf(ev.reward) : ''}${ev.stake ? ' · 골드 걸기 ' + nf(ev.stake.min) + '~' + nf(ev.stake.max) : ''}`));
+    card.appendChild(el('p', 'ev__meta', `${B.period(ev)}${left ? ' · ' + left : ''}${ev.reward ? ' · 이긴 편 골드 ' + nf(ev.reward) : ''}`));
 
     const vs = el('div', 'evvs');
     [t.a, t.b].forEach((x, i) => {
