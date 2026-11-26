@@ -675,3 +675,11 @@
 /* 공식 채팅방 링크 (a 태그인데 버튼처럼 보이게) */
 a.menu__btn, a.btn { text-decoration: none; box-sizing: border-box; }
 a.btn--link { display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+
+/* 프로필 꾸미기: 탭으로 한 칸씩 보여줘요 */
+.pftabs { flex-wrap: wrap; margin-top: 14px; }
+.pftabs .chip { flex: 1 1 30%; }
+.pftabs[hidden] { display: none; }
+.screen--profile .deco { display: none; margin-top: 12px; }
+.screen--profile .deco.on { display: block; }
+.screen--profile .deco[hidden] { display: none; }

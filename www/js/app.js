@@ -5,7 +5,7 @@
 (() => {
   'use strict';
 
-  const SCREENS = ['home', 'modes', 'game', 'profile', 'dex', 'shop', 'settings', 'event', 'vote', 'pvote', 'login'];
+  const SCREENS = ['home', 'modes', 'game', 'profile', 'dex', 'shop', 'settings', 'event', 'vote', 'pvote', 'board', 'login'];
   // 상점 물건(프로필 사진·프레임·칭호·배경·이름·테마)의 이름과 가격은 js/shopdata.js 에서 바꿔요.
   // 프로필 사진은 images/avatars/<id>.webp, price 가 있으면 상점에서 골드로 사야 쓸 수 있어요 (없으면 처음부터 무료)
   const SHOP = window.SHOP;   // 상점 물건 목록은 js/shopdata.js
@@ -389,7 +389,7 @@ function drawEvent(ev, list) {
       note.hidden = true; drawEvent(ev, list); refreshEventBtn(list);
     } catch (e) { console.warn('이벤트 불러오기 실패', e); if (seq === evSeq) say('이벤트를 불러오지 못했어요. 잠시 뒤에 다시 열어 주세요'); }
   }
-  window.addEventListener('events:ready', () => { const n = effective(); if (n === 'home') refreshHomeRank(); if (n === 'modes') refreshModes(); if (n === 'profile') refreshProfile(); });
+  window.addEventListener('events:ready', () => { const n = effective(); if (n === 'home') refreshHomeRank(); if (n === 'modes') refreshModes(); if (n === 'profile' || n === 'board') refreshProfile(); });
 
 
   // ---------- 테마 투표 ----------
@@ -1205,7 +1205,18 @@ function drawEvent(ev, list) {
       refreshRank();
     }
     $('guestCard').hidden = online;   // 로그인 없이 쓰는 중일 때만 안내 문구
+    $('boardGuest').hidden = online;
+    $('pfTabs').hidden = !online;
+    applyPfTab();
   }
+
+  // 프로필 꾸미기 탭 (사진 / 프레임 / 칭호 / 배경 / 이름 / 정보). 카드의 hidden 은 로그인 여부로 따로 정해져요
+  let pfTab = 'avatar';
+  function applyPfTab() {
+    document.querySelectorAll('#pfTabs .chip').forEach((b) => b.classList.toggle('on', b.dataset.tab === pfTab));
+    document.querySelectorAll('.screen--profile .deco').forEach((c) => c.classList.toggle('on', c.dataset.tab === pfTab));
+  }
+  document.querySelectorAll('#pfTabs .chip').forEach((b) => b.addEventListener('click', () => { pfTab = b.dataset.tab; applyPfTab(); }));
 
   // 게임 모드 목록 — 새 모드는 여기에 { id, name, sub(), tag(), start() } 한 덩어리만 추가하면 돼요
   // (start 에서 window.Game2048.setMode('모드 id') 를 부르고 go('game') 으로 게임 화면으로 가요. 모드 규칙은 game.js 의 setMode 쪽에 추가해요)
@@ -1349,7 +1360,7 @@ function drawEvent(ev, list) {
     window.scrollTo(0, 0);
     if (name === 'home') refreshHome();
     if (name === 'modes') refreshModes();
-    if (name === 'profile') refreshProfile();
+    if (name === 'profile' || name === 'board') refreshProfile();
     if (name === 'settings') refreshSettings();
     if (name === 'dex') { dexThemeId = null; dexCat = null; dexCatAuto = true; refreshDex(); }
     if (name === 'shop') refreshShop();
@@ -1380,7 +1391,7 @@ function drawEvent(ev, list) {
   // 오늘의 도전
   window.addEventListener('game2048:exit', () => { if (effective() === 'game') back(); });
   // 골드·미션이 바뀌면 지금 보는 화면을 새로 그려요
-  window.addEventListener('gold:change', () => { const n = effective(); if (n === 'home') refreshHome(); if (n === 'shop') refreshShop(); if (n === 'profile') refreshProfile(); if (n === 'event') refreshEvent(); if (n === 'vote') refreshVote(); });
+  window.addEventListener('gold:change', () => { const n = effective(); if (n === 'home') refreshHome(); if (n === 'shop') refreshShop(); if (n === 'profile' || n === 'board') refreshProfile(); if (n === 'event') refreshEvent(); if (n === 'vote') refreshVote(); });
   A.onChange(render);
 
   // ---------- 로그인 / 로그아웃 ----------
@@ -1533,8 +1544,8 @@ function drawEvent(ev, list) {
   });
 
   // 클라우드 기록을 다 받아오면 지금 보고 있는 화면을 새로 그려요
-  window.addEventListener('cloud:failed', () => { if (effective() === 'profile') refreshProfile(); });
-  window.addEventListener('cloud:ready', () => { const n = effective(); if (n === 'home') refreshHome(); if (n === 'profile') refreshProfile(); if (n === 'dex') refreshDex(); if (n === 'event') refreshEvent(); if (n === 'vote') refreshVote(); });
+  window.addEventListener('cloud:failed', () => { if (effective() === 'profile' || effective() === 'board') refreshProfile(); });
+  window.addEventListener('cloud:ready', () => { const n = effective(); if (n === 'home') refreshHome(); if (n === 'profile' || n === 'board') refreshProfile(); if (n === 'dex') refreshDex(); if (n === 'event') refreshEvent(); if (n === 'vote') refreshVote(); });
 
   $('copyChatBtn').addEventListener('click', async () => {
     const url = $('copyChatBtn').dataset.url;

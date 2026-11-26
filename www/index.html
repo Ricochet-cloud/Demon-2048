@@ -76,7 +76,7 @@
         <h2 id="homeEvTitle">이벤트</h2>
         <p id="homeEvText"></p>
       </button>
-      <button class="card homerank" id="homeRank" data-go="profile" aria-label="TOP3 자세히 보기" hidden>
+      <button class="card homerank" id="homeRank" data-go="board" aria-label="우리 기록 전체 보기" hidden>
         <h2>TOP3 <small class="seasontag" id="homeSeason"></small></h2>
         <div class="rank" id="homeRankList"></div>
       </button>
@@ -194,6 +194,37 @@
   </section>
 
   <!-- 프로필 (내 기록 포함) -->
+  <!-- 우리 기록 (홈의 TOP3 를 누르면 와요. 순위와 내 기록) -->
+  <section class="screen screen--board" data-screen="board">
+    <div class="topbar">
+      <button class="topbar__back" data-back>홈</button>
+      <div class="topbar__title">우리 기록</div>
+      <button class="sound-btn" data-sound-toggle aria-label="소리 켜기 끄기"></button>
+    </div>
+    <div class="wrap">
+      <div class="card" id="boardCard" hidden>
+        <h2>우리 기록 <small class="seasontag" id="boardSeason"></small></h2>
+        <div class="chips" id="rankTabs"></div>
+        <div class="rank" id="rankList"></div>
+        <p class="dex__note" id="weekNote" hidden></p>
+        <p id="rankMsg"></p>
+      </div>
+      <div class="card">
+        <h2>내 기록</h2>
+        <p class="seasonline" id="seasonLine"></p>
+        <div class="rows">
+          <div class="row">이번 시즌 최고 점수<b id="pfBest">-</b></div>
+          <div class="row" id="pfPastRow" hidden>지난 시즌 최고 점수<b id="pfPast">-</b></div>
+          <div class="row">최고 타일<b id="pfTile">-</b></div>
+          <div class="row">플레이 횟수<b id="pfPlays">-</b></div>
+        </div>
+      </div>
+      <div class="card" id="boardGuest" hidden>
+        <p>로그인하면 서로의 순위를 볼 수 있어요. 지금 기록은 이 기기 안에만 저장돼요.</p>
+      </div>
+    </div>
+  </section>
+
   <section class="screen screen--profile" data-screen="profile">
     <div class="topbar">
       <button class="topbar__back" data-back>홈</button>
@@ -213,7 +244,15 @@
           </div>
         </div>
       </div>
-      <div class="card" id="avatarCard" hidden>
+      <div class="chips pftabs" id="pfTabs" hidden>
+        <button type="button" class="chip on" data-tab="avatar">사진</button>
+        <button type="button" class="chip" data-tab="frame">프레임</button>
+        <button type="button" class="chip" data-tab="title">칭호</button>
+        <button type="button" class="chip" data-tab="bg">배경</button>
+        <button type="button" class="chip" data-tab="name">이름</button>
+        <button type="button" class="chip" data-tab="info">정보</button>
+      </div>
+      <div class="card deco on" data-tab="avatar" id="avatarCard" hidden>
         <h2>프로필 사진</h2>
         <div class="photorow">
           <div id="photoPrev"></div>
@@ -231,27 +270,27 @@
         <p class="pickcount" id="avatarCount" aria-live="polite"></p>
         <p class="form-err" id="avatarMsg" role="status"></p>
       </div>
-      <div class="card" id="frameCard" hidden>
+      <div class="card deco" data-tab="frame" id="frameCard" hidden>
         <h2>프레임</h2>
         <div class="framepick" id="framePick"></div>
         <p class="form-err" id="frameMsg" role="status"></p>
       </div>
-      <div class="card" id="titleCard" hidden>
+      <div class="card deco" data-tab="title" id="titleCard" hidden>
         <h2>칭호</h2>
         <div class="titlepick" id="titlePick"></div>
         <p class="form-err" id="titleMsg" role="status"></p>
       </div>
-      <div class="card" id="bgCard" hidden>
+      <div class="card deco" data-tab="bg" id="bgCard" hidden>
         <h2>카드 배경</h2>
         <div class="bgpick" id="bgPick"></div>
         <p class="form-err" id="bgMsg" role="status"></p>
       </div>
-      <div class="card" id="nameCard" hidden>
+      <div class="card deco" data-tab="name" id="nameCard" hidden>
         <h2>이름 꾸미기</h2>
         <div class="bgpick" id="namePick"></div>
         <p class="form-err" id="nameMsg" role="status"></p>
       </div>
-      <div class="card" id="nickCard" hidden>
+      <div class="card deco" data-tab="info" id="nickCard" hidden>
         <h2>닉네임</h2>
         <form id="nickForm" novalidate>
           <input class="field" id="nickInput" type="text" maxlength="10" autocomplete="off" placeholder="서로에게 보일 이름 (5글자까지)">
@@ -259,7 +298,7 @@
           <button class="btn btn--wide" id="nickBtn" type="submit">저장</button>
         </form>
       </div>
-      <div class="card" id="bioCard" hidden>
+      <div class="card deco" data-tab="info" id="bioCard" hidden>
         <h2>상태 메시지</h2>
         <form id="bioForm" novalidate>
           <input class="field" id="bioInput" type="text" maxlength="20" autocomplete="off" placeholder="한 줄로 남겨 보세요 (20글자까지)">
@@ -267,25 +306,9 @@
           <button class="btn btn--wide" id="bioBtn" type="submit">저장</button>
         </form>
       </div>
-      <div class="card">
-        <h2>내 기록</h2>
-        <p class="seasonline" id="seasonLine"></p>
-        <div class="rows">
-          <div class="row">이번 시즌 최고 점수<b id="pfBest">-</b></div>
-          <div class="row" id="pfPastRow" hidden>지난 시즌 최고 점수<b id="pfPast">-</b></div>
-          <div class="row">최고 타일<b id="pfTile">-</b></div>
-          <div class="row">플레이 횟수<b id="pfPlays">-</b></div>
-        </div>
-      </div>
-      <div class="card" id="boardCard" hidden>
-        <h2>우리 기록 <small class="seasontag" id="boardSeason"></small></h2>
-        <div class="chips" id="rankTabs"></div>
-        <div class="rank" id="rankList"></div>
-        <p class="dex__note" id="weekNote" hidden></p>
-        <p id="rankMsg"></p>
-      </div>
       <div class="card" id="guestCard">
         <p>로그인하면 사진과 닉네임을 정하고 서로의 기록을 볼 수 있게 돼요. 지금 기록은 이 기기 안에만 저장돼요.</p>
+        <button class="btn btn--sub btn--wide" data-go="board" type="button">내 기록 보기</button>
       </div>
     </div>
   </section>
