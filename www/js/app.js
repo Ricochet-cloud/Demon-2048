@@ -121,7 +121,7 @@
     $('homeDex').textContent = `${got} / ${th.values.length}`;
     $('homeGold').textContent = G.gold;
     $('homeShopTag').hidden = G.claimable() === 0;
-    $('homeChallengeTag').hidden = window.Game2048.challengeState().done;   // 오늘의 도전을 아직 안 했으면 표시
+    refreshStartTag();   // 이벤트 보상·참여, 없으면 오늘의 도전
     refreshSeasonReward();
     refreshHomeRank();
   }
@@ -210,21 +210,22 @@
     // 지금 보여주는 이벤트가 아닌 앞 이벤트에서 이긴 보상이 남아 있으면 저절로 받아요 (새 이벤트가 시작돼도 놓치지 않게)
     if (list && B.ready && A.enabled && C.enabled) B.claimOld(list, ev && ev.id).then((got) => { if (got.length) toastMsg(`지난 이벤트 보상! 골드 ${got.reduce((n, e) => n + e.reward, 0).toLocaleString('ko-KR')}을 받았어요`); }).catch(() => {});
   }
-  // 홈의 이벤트 알림 카드: 진행 중(편 고르기·현재 상황) / 곧 시작 / 이긴 뒤 보상 받기 때만 나와요
+  // 홈 '게임 시작' 옆 표시: 이벤트 보상이 있거나 편을 아직 안 골랐으면 그걸 먼저, 아니면 오늘의 도전
+  let homeEvTag = '';
+  function refreshStartTag() {
+    const t = homeEvTag || (window.Game2048.challengeState().done ? '' : '오늘의 도전');
+    const tag = $('homeChallengeTag');
+    tag.hidden = !t; tag.textContent = t;
+  }
   function refreshHomeEvent(ev, list) {
-    const card = $('homeEvCard');
-    let text = '';
+    let t = '';
     if (ev && list) {
-      const ph = B.phase(ev), my = B.mine(ev, list, C.uid), left = B.leftText(ev);
-      if (ph === 'live' && !my.side) text = ev.stake ? `골드를 걸고 편을 골라 보세요! (${left})` : `지금 진행 중이에요! 편을 골라 보세요 (${left})`;
-      else if (ph === 'live') {
-        const t = B.tally(ev, list), mine = ev.sides.find((s) => s.id === my.side);
-        text = `내 편: ${mine.name}${ev.stake ? ' · 건 골드 ' + my.stake.toLocaleString('ko-KR') : ''} · ${!t.lead ? '팽팽해요' : t.lead.side.id === my.side ? '앞서고 있어요' : '뒤지고 있어요'} (${left})`;
-      } else if (ph === 'upcoming') text = `곧 시작해요 (${left})`;
-      else if (my.claimable) text = ev.stake ? `정산이 끝났어요! 골드 ${my.payout.toLocaleString('ko-KR')}을 받아 가세요` : `이겼어요! 보상 골드 ${ev.reward.toLocaleString('ko-KR')}을 받아 가세요`;
+      const ph = B.phase(ev), my = B.mine(ev, list, C.uid);
+      if (my.claimable) t = '이벤트 보상';
+      else if (ph === 'live' && !my.side) t = '이벤트 참여';
     }
-    card.hidden = !text;
-    if (text) { $('homeEvTitle').textContent = ev.title; $('homeEvText').textContent = text; }
+    homeEvTag = t;
+    refreshStartTag();
   }
   const modeEvent = () => (B.ready && A.enabled && C.enabled ? B.current() : null);
 
