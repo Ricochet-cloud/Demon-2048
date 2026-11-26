@@ -683,3 +683,7 @@ a.btn--link { display: flex; align-items: center; justify-content: center; margi
 .screen--profile .deco { display: none; margin-top: 12px; }
 .screen--profile .deco.on { display: block; }
 .screen--profile .deco[hidden] { display: none; }
+
+/* 홈 TOP3: 눌러서 우리 기록으로 간다는 안내 */
+.homerank h2 { display: flex; align-items: center; }
+.homemore { margin-left: auto; font-size: 11px; font-weight: 400; letter-spacing: 0; color: var(--lantern); }
