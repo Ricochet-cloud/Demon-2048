@@ -3,17 +3,17 @@
 .hint { margin: 0 0 12px; font-size: 11px; color: var(--muted); }
 
 .hud { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; }
-.hud__box { background: rgba(43, 29, 22, .9); border: 2px solid var(--gold); padding: 6px 4px; font-size: 10px; color: var(--muted); box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .35), 2px 2px 0 rgba(0, 0, 0, .4); }
+.hud__box { background: rgba(90, 64, 48, .9); border: 2px solid var(--gold); padding: 6px 4px; font-size: 10px; color: var(--muted); box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .35), 2px 2px 0 rgba(0, 0, 0, .4); }
 .hud__box b { display: block; margin-top: 2px; font-size: 16px; color: var(--lantern); }
 
 .board {
   --gap: 8px; position: relative; padding: var(--gap); background: var(--wood-d);
-  border: 2px solid var(--gold); box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .4), 0 0 22px rgba(242, 180, 90, .15), 3px 3px 0 rgba(0, 0, 0, .5);
+  border: 2px solid var(--gold); box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .4), 0 0 22px rgba(255, 207, 128, .15), 3px 3px 0 rgba(0, 0, 0, .5);
   touch-action: none; margin-bottom: 12px;
 }
 .board__inner { position: relative; width: 100%; aspect-ratio: 1; }
 .board__cells { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap); }
-.cell { background: rgba(232, 220, 192, .07); border: 1px solid rgba(201, 162, 75, .12); }
+.cell { background: rgba(232, 220, 192, .07); border: 1px solid rgba(240, 185, 90, .12); }
 .board__tiles { position: absolute; inset: 0; }
 .tile {
   position: absolute; left: 0; top: 0; z-index: 1;
@@ -42,7 +42,7 @@
 .tile[data-v="256"] span { background: #c9a24b; color: #1a0f0a; }
 .tile[data-v="512"] span { background: #d9b45a; color: #1a0f0a; }
 .tile[data-v="1024"] span { background: #e6c46a; color: #1a0f0a; }
-.tile[data-v="2048"] span { background: var(--lantern); color: #1a0f0a; box-shadow: 0 0 12px rgba(242, 180, 90, .9), 2px 2px 0 rgba(0, 0, 0, .45); }
+.tile[data-v="2048"] span { background: var(--lantern); color: #1a0f0a; box-shadow: 0 0 12px rgba(255, 207, 128, .9), 2px 2px 0 rgba(0, 0, 0, .45); }
 .tile[data-v="big"] span { background: var(--depth); color: var(--lantern); }
 /* 그림 타일: 위쪽은 그림, 아래쪽 띠에 숫자 */
 .tile.has-img[data-v] span {
@@ -69,7 +69,7 @@
 
 .modal { position: fixed; inset: 0; background: rgba(8, 5, 4, .72); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 10; }
 .modal.show { display: flex; }
-.modal__card { background: var(--wood-d); border: 2px solid var(--gold); padding: 22px 20px; width: 100%; max-width: 320px; text-align: center; box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .4), 0 0 26px rgba(242, 180, 90, .25); }
+.modal__card { background: var(--wood-d); border: 2px solid var(--gold); padding: 22px 20px; width: 100%; max-width: 320px; text-align: center; box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .4), 0 0 26px rgba(255, 207, 128, .25); }
 .modal__card h2 { margin: 0 0 12px; font-size: 20px; color: var(--gold); }
 .modal__stats { margin: 0 0 12px; font-size: 12px; line-height: 1.7; color: var(--paper); }
 .modal__stats b { color: var(--lantern); }
@@ -94,8 +94,8 @@
 [data-theme="plain"] .tile[data-v="256"] span, .theme-card__prev .tilepv[data-v="256"] span { background: #c8232c; color: #fff3e6; }
 [data-theme="plain"] .tile[data-v="512"] span, .theme-card__prev .tilepv[data-v="512"] span { background: #d9408f; color: #fff0f7; }
 [data-theme="plain"] .tile[data-v="1024"] span, .theme-card__prev .tilepv[data-v="1024"] span { background: #8a4cc8; color: #f7eeff; }
-[data-theme="plain"] .tile[data-v="2048"] span, .theme-card__prev .tilepv[data-v="2048"] span { background: #3d72e6; color: #f4f8ff; box-shadow: 0 0 12px rgba(242, 180, 90, .95), 2px 2px 0 rgba(0, 0, 0, .45); border-color: var(--lantern); }
-[data-theme="plain"] .tile[data-v="big"] span { background: #120c0a; color: var(--lantern); border-color: var(--lantern); box-shadow: 0 0 10px rgba(242, 180, 90, .6), 2px 2px 0 rgba(0, 0, 0, .45); }
+[data-theme="plain"] .tile[data-v="2048"] span, .theme-card__prev .tilepv[data-v="2048"] span { background: #3d72e6; color: #f4f8ff; box-shadow: 0 0 12px rgba(255, 207, 128, .95), 2px 2px 0 rgba(0, 0, 0, .45); border-color: var(--lantern); }
+[data-theme="plain"] .tile[data-v="big"] span { background: #120c0a; color: var(--lantern); border-color: var(--lantern); box-shadow: 0 0 10px rgba(255, 207, 128, .6), 2px 2px 0 rgba(0, 0, 0, .45); }
 
 /* 조커카드 */
 .jokers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }

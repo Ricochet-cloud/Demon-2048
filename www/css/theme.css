@@ -1,18 +1,18 @@
-/* 무한성 테마 — 색과 배경은 전부 여기서 바꿔요 */
+/* 카페 테마 — 색과 배경은 전부 여기서 바꿔요 */
 @font-face { font-family: 'Galmuri'; src: url('../fonts/Galmuri-11.subset.ttf') format('truetype'); }
 
 :root {
-  --bg: #14100e;          /* 먹갈색 밤 */
-  --depth: #1f1a2e;       /* 복도 끝 남보라 어둠 */
-  --wood-d: #2b1d16;      /* 검은 목재 */
-  --wood-m: #4a2e22;      /* 마루·기둥 */
-  --lacquer: #a3261f;     /* 붉은 옻칠 */
-  --lacquer-d: #7a1b16;
-  --gold: #c9a24b;        /* 낡은 금박 */
-  --lantern: #f2b45a;     /* 등불 호박색 */
-  --paper: #e8dcc0;       /* 장지문 종이 */
-  --muted: #9a8a6c;
-  --line: rgba(201, 162, 75, .08);   /* 장지문 격자선 */
+  --bg: #3b2a1f;          /* 진한 에스프레소 갈색 */
+  --depth: #4d3628;       /* 라떼 그늘 */
+  --wood-d: #5a4030;      /* 짙은 원목 */
+  --wood-m: #8a6244;      /* 원목 테이블 */
+  --lacquer: #c8662a;     /* 캐러멜 오렌지 */
+  --lacquer-d: #9c4a1c;
+  --gold: #f0b95a;        /* 꿀빛 */
+  --lantern: #ffcf80;     /* 따뜻한 조명 */
+  --paper: #fff3df;       /* 크림 */
+  --muted: #cdb08c;
+  --line: rgba(255, 220, 170, .07);   /* 바탕 격자선 */
 }
 
 /* ---------- 화면별 배경 ----------
@@ -37,10 +37,10 @@ body {
 .screen::before {
   content: ''; position: fixed; inset: 0; z-index: -1;
   background:
-    linear-gradient(rgba(10, 7, 6, var(--veil, 0)), rgba(10, 7, 6, var(--veil, 0))),
+    linear-gradient(rgba(40, 28, 20, var(--veil, 0)), rgba(40, 28, 20, var(--veil, 0))),
     var(--bg-img, none) center / cover no-repeat,
-    radial-gradient(ellipse 90% 45% at 50% -8%, rgba(242, 180, 90, .24), transparent 70%),
-    linear-gradient(180deg, transparent 45%, rgba(31, 26, 46, .85) 100%),
+    radial-gradient(ellipse 90% 45% at 50% -8%, rgba(255, 207, 128, .24), transparent 70%),
+    linear-gradient(180deg, transparent 45%, rgba(77, 54, 40, .85) 100%),
     linear-gradient(var(--line) 1px, transparent 1px) 0 0 / 44px 44px,
     linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0 / 44px 44px,
     var(--bg);

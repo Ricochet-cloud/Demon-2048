@@ -19,6 +19,6 @@
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
         <!-- 안드로이드 12 이상의 시스템 시작 화면: 어두운 배경에 앱 아이콘 -->
-        <item name="windowSplashScreenBackground">#14100e</item>
+        <item name="windowSplashScreenBackground">#3b2a1f</item>
     </style>
 </resources>
