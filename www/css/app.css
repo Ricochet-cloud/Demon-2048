@@ -696,3 +696,10 @@ a.btn--link { display: flex; align-items: center; justify-content: center; margi
 /* 홈 맨 위 제목 아래의 작은 공식 채팅방 링크 */
 .chatlink { display: inline-block; margin-top: 8px; padding: 3px 12px; font: 400 11px 'Galmuri', sans-serif; letter-spacing: 0; color: var(--lantern); text-decoration: none; background: rgba(59, 42, 31, .7); border: 1px solid rgba(240, 185, 90, .5); border-radius: 12px; }
 .chatlink:active { transform: translateY(1px); }
+
+/* 순위 이름 줄: 닉네임·랭크·나·패왕·1등이 한 줄에 다 안 들어가면 아래 줄로 넘겨요 (잘리지 않게. 점수가 길어져도 안전) */
+.rank__name { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 6px; overflow: visible; text-overflow: clip; white-space: normal; }
+.rank__name > * { margin-left: 0 !important; flex: none; }
+.rank__name > span:first-child { flex: 0 1 auto; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.homerank .rank__name { flex-wrap: nowrap; overflow: hidden; }
+.homerank .rank__name > span:first-child { flex: 0 1 auto; min-width: 0; }
