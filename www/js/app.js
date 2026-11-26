@@ -1536,6 +1536,15 @@ function drawEvent(ev, list) {
   window.addEventListener('cloud:failed', () => { if (effective() === 'profile') refreshProfile(); });
   window.addEventListener('cloud:ready', () => { const n = effective(); if (n === 'home') refreshHome(); if (n === 'profile') refreshProfile(); if (n === 'dex') refreshDex(); if (n === 'event') refreshEvent(); if (n === 'vote') refreshVote(); });
 
+  $('copyChatBtn').addEventListener('click', async () => {
+    const url = $('copyChatBtn').dataset.url;
+    try { await navigator.clipboard.writeText(url); toastMsg('링크를 복사했어요. 카카오톡에 붙여 넣어 열어 주세요'); }
+    catch (e) {
+      const t = document.createElement('textarea'); t.value = url; t.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(t); t.select();
+      let ok = false; try { ok = document.execCommand('copy'); } catch (e2) { /* 복사를 못 해요 */ }
+      t.remove(); toastMsg(ok ? '링크를 복사했어요. 카카오톡에 붙여 넣어 열어 주세요' : url);
+    }
+  });
   $('logoutBtn').addEventListener('click', async () => {
     if (!window.confirm('로그아웃할까요?')) return;
     try { await A.signOut(); } catch (e) { /* 실패해도 화면은 그대로 */ }

@@ -671,3 +671,7 @@
 .screen--pvote .wrap { padding-top: 14px; }
 .screen--pvote #pvNote { margin: 0 0 18px; padding: 0 4px; line-height: 1.6; text-align: center; }
 .pvhead { margin: 20px 0 10px; }
+
+/* 공식 채팅방 링크 (a 태그인데 버튼처럼 보이게) */
+a.menu__btn, a.btn { text-decoration: none; box-sizing: border-box; }
+a.btn--link { display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
