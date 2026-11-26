@@ -394,11 +394,13 @@ function drawEvent(ev, list) {
 
   // ---------- 테마 투표 ----------
   const V = window.AppVote;
-  // 홈의 '테마 투표' 줄: 진행 중인 투표가 있는데 아직 안 했으면 표시
+  // 진행 중인 투표가 있는데 아직 안 했으면 게임 모드 목록에 표시
+  const voteInfo = { sub: '', tag: false };   // 게임 모드 목록의 '테마 투표' 줄에 쓸 값
   function refreshVoteTag(list) {
     const p = V.ready && A.enabled && C.enabled ? V.current() : null;
-    $('homeVoteSub').textContent = p ? p.title : '';
-    $('homeVoteTag').hidden = !(p && list && V.phase(p) === 'live' && !V.mineOf(p, list, C.uid));
+    voteInfo.sub = p ? p.title : '';
+    voteInfo.tag = !!(p && list && V.phase(p) === 'live' && !V.mineOf(p, list, C.uid));
+    if (effective() === 'modes') refreshModes();
   }
 
   function drawVote(poll, users, ideaList) {
@@ -1263,6 +1265,12 @@ function drawEvent(ev, list) {
       sub: () => (PV.mine(G.ownedList(), G.dayKey()) ? '오늘 투표했어요 · 내일 아침 6시에 결과' : '가장 잘 꾸민 프로필에 한 표'),
       tag: () => (PV.mine(G.ownedList(), G.dayKey()) ? '' : '투표하세요'),
       start: () => go('pvote')
+    },
+    {
+      id: 'tilevote', name: '테마 투표',
+      sub: () => voteInfo.sub || '다음 타일 테마를 투표로 정해요',
+      tag: () => (voteInfo.tag ? '투표하세요' : ''),
+      start: () => go('vote')
     }
   ];
 
