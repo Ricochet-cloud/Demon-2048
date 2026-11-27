@@ -102,6 +102,30 @@
     </div>
   </section>
 
+  <!-- 게임 잘하는 법 (꿀팁 카드. 내용은 js/tips.js) -->
+  <section class="screen screen--tips" data-screen="tips">
+    <div class="topbar">
+      <button class="topbar__back" data-back>게임 모드</button>
+      <div class="topbar__title">게임 잘하는 법</div>
+      <button class="sound-btn" data-sound-toggle aria-label="소리 켜기 끄기"></button>
+    </div>
+    <div class="wrap">
+      <div class="card tipcard" id="tipCard">
+        <p class="tipcard__step" id="tipStep"></p>
+        <h2 id="tipTitle"></h2>
+        <div class="board board--mini" id="tipBoard"></div>
+        <div class="tipcard__jk" id="tipJokers" hidden></div>
+        <p class="tipcard__cap" id="tipCap"></p>
+        <p class="tipcard__desc" id="tipDesc"></p>
+      </div>
+      <div class="tipnav">
+        <button type="button" class="btn btn--sub" id="tipPrev">이전</button>
+        <div class="tipdots" id="tipDots"></div>
+        <button type="button" class="btn" id="tipNext">다음</button>
+      </div>
+    </div>
+  </section>
+
   <!-- 게임 -->
   <section class="screen screen--game" data-screen="game" id="screen-game">
     <div class="topbar">
@@ -411,6 +435,7 @@
   <script src="./js/alert.js"></script>
   <script src="./js/gift.js"></script>
   <script src="./js/pvote.js"></script>
+  <script src="./js/tips.js"></script>
   <script src="./js/challenge.js"></script>
   <script src="./js/sound.js"></script>
   <script src="./js/app.js"></script>

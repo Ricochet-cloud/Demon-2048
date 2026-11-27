@@ -5,7 +5,7 @@
 (() => {
   'use strict';
 
-  const SCREENS = ['home', 'modes', 'game', 'profile', 'dex', 'shop', 'settings', 'event', 'vote', 'pvote', 'board', 'login'];
+  const SCREENS = ['home', 'modes', 'game', 'profile', 'dex', 'shop', 'settings', 'event', 'vote', 'pvote', 'board', 'tips', 'login'];
   // 상점 물건(프로필 사진·프레임·칭호·배경·이름·테마)의 이름과 가격은 js/shopdata.js 에서 바꿔요.
   // 프로필 사진은 images/avatars/<id>.webp, price 가 있으면 상점에서 골드로 사야 쓸 수 있어요 (없으면 처음부터 무료)
   const SHOP = window.SHOP;   // 상점 물건 목록은 js/shopdata.js
@@ -1272,6 +1272,12 @@ function drawEvent(ev, list) {
       sub: () => voteInfo.sub || '다음 타일 테마를 투표로 정해요',
       tag: () => (voteInfo.tag ? '투표하세요' : ''),
       start: () => go('vote')
+    },
+    {
+      id: 'tips', name: '게임 잘하는 법',
+      sub: () => `2048 꿀팁 ${window.AppTips.TIPS.length}가지`,
+      tag: () => '',
+      start: () => go('tips')
     }
   ];
 
@@ -1375,6 +1381,45 @@ function drawEvent(ev, list) {
     });
   }
 
+  // 게임 잘하는 법: 꿀팁을 한 장씩 넘겨 봐요 (카드마다 작은 보드가 움직여요)
+  let tipIdx = 0, tipStop = null;
+  function showTip(i) {
+    const TP = window.AppTips.TIPS;
+    tipIdx = (i + TP.length) % TP.length;
+    const t = TP[tipIdx];
+    if (tipStop) { tipStop(); tipStop = null; }
+    $('tipStep').textContent = `꿀팁 ${tipIdx + 1} / ${TP.length}`;
+    $('tipTitle').textContent = t.title;
+    $('tipDesc').textContent = t.desc;
+    $('tipCap').textContent = '';
+    $('tipBoard').hidden = !!t.jokers;
+    const jk = $('tipJokers'); jk.hidden = !t.jokers; jk.textContent = '';
+    if (t.jokers) {
+      JOKER_INFO.forEach((x, n) => {
+        const d = document.createElement('div'); d.className = 'tipjk'; d.style.animationDelay = `${n * 120}ms`;
+        const im = document.createElement('img'); im.src = `./images/jokers/${x.id}.webp`; im.alt = ''; im.draggable = false;
+        const b = document.createElement('b'); b.textContent = x.name;
+        const sm = document.createElement('small'); sm.textContent = x.desc;
+        d.appendChild(im); d.appendChild(b); d.appendChild(sm); jk.appendChild(d);
+      });
+    } else {
+      $('tipBoard').textContent = '';
+      const inner = document.createElement('div'); inner.className = 'board__inner'; $('tipBoard').appendChild(inner);
+      tipStop = window.AppTips.play(inner, t.frames, $('tipCap'));
+    }
+    const dots = $('tipDots'); dots.textContent = '';
+    TP.forEach((_, n) => { const d = document.createElement('i'); if (n === tipIdx) d.className = 'on'; dots.appendChild(d); });
+    const card = $('tipCard'); card.classList.remove('tipcard--in'); void card.offsetWidth; card.classList.add('tipcard--in');
+  }
+  $('tipPrev').addEventListener('click', () => showTip(tipIdx - 1));
+  $('tipNext').addEventListener('click', () => showTip(tipIdx + 1));
+  (function () {
+    let x0 = null;
+    const card = $('tipCard');
+    card.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; }, { passive: true });
+    card.addEventListener('touchend', (e) => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 50) showTip(tipIdx + (dx < 0 ? 1 : -1)); }, { passive: true });
+  })();
+
   function refreshSettings() {
     const online = A.enabled && !!A.user;
     $('stAccount').textContent = online ? `로그인: ${A.user.email}` : '로그인 없이 이 기기에서만 쓰는 중이에요.';
@@ -1388,6 +1433,7 @@ function drawEvent(ev, list) {
     window.scrollTo(0, 0);
     if (name === 'home') refreshHome();
     if (name === 'modes') refreshModes();
+    if (name === 'tips') showTip(0); else if (tipStop) { tipStop(); tipStop = null; }
     if (name === 'profile' || name === 'board') refreshProfile();
     if (name === 'settings') refreshSettings();
     if (name === 'dex') { dexThemeId = null; dexCat = null; dexCatAuto = true; refreshDex(); }

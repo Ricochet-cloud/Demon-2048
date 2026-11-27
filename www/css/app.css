@@ -703,3 +703,30 @@ a.btn--link { display: flex; align-items: center; justify-content: center; margi
 .rank__name > span:first-child { flex: 0 1 auto; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .homerank .rank__name { flex-wrap: nowrap; overflow: hidden; }
 .homerank .rank__name > span:first-child { flex: 0 1 auto; min-width: 0; }
+
+/* 게임 잘하는 법 (꿀팁 카드) */
+.tipcard { text-align: center; }
+.tipcard__step { margin: 0 0 4px; font-size: 11px; color: var(--muted); }
+.tipcard h2 { margin: 0 0 12px; }
+.board--mini { --gap: 5px; width: 210px; margin: 0 auto 8px; }
+.board--mini .tile { transition: transform 520ms ease-in-out; }
+.board--mini .tile span { font-size: 17px; }
+.board--mini .tile.long span { font-size: 12px; }
+.tip-gone { opacity: 0; transition: opacity 320ms; }
+.tipcard__cap { min-height: 18px; margin: 0 0 10px; font-size: 12px; color: var(--lantern); }
+.tipcard__desc { margin: 0; font-size: 13px; line-height: 1.7; color: var(--paper); word-break: keep-all; }
+.tipcard--in { animation: tipin 320ms ease-out; }
+@keyframes tipin { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.tipcard__jk { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 12px; }
+.tipcard__jk[hidden], .board--mini[hidden] { display: none; }
+.tipjk { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 6px; background: rgba(59, 42, 31, .6); border: 1px solid rgba(240, 185, 90, .35); animation: tipjk 420ms ease-out both; }
+.tipjk img { width: 44px; height: 44px; object-fit: cover; border: 2px solid var(--gold); }
+.tipjk b { font-size: 12px; color: var(--lantern); }
+.tipjk small { font-size: 10px; line-height: 1.4; color: var(--muted); word-break: keep-all; }
+@keyframes tipjk { from { opacity: 0; transform: scale(.8); } to { opacity: 1; transform: none; } }
+.tipnav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
+.tipnav .btn { flex: 0 0 76px; }
+.tipdots { display: flex; gap: 6px; }
+.tipdots i { width: 8px; height: 8px; background: rgba(240, 185, 90, .25); transform: rotate(45deg); }
+.tipdots i.on { background: var(--lantern); }
+@media (prefers-reduced-motion: reduce) { .board--mini .tile { transition: none; } .tipcard--in, .tipjk { animation: none; } }
