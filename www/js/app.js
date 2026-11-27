@@ -1289,7 +1289,7 @@ function drawEvent(ev, list) {
     pvCache.list = await C.loadAll(); pvCache.t = Date.now();
     return pvCache.list;
   }
-  // 꾸민 사람만 후보예요: 프레임·배경·이름 효과·칭호·내 사진 중 하나라도 바꿨으면
+  // 꾸몄는지 (프레임·배경·이름 효과·칭호·내 사진 중 하나라도 바꿨으면). 후보 순서를 정할 때만 써요
   const pvDecorated = (u) => !!(u.photo || fxOf(u.nameFx) || bgOf(u.bg) || titleOf(u.title) || (frameOf(u.frame) && frameOf(u.frame).price));
 
   function pvCard(u, votes) {
@@ -1344,11 +1344,12 @@ function drawEvent(ev, list) {
     }
     body.appendChild(res);
 
-    // 오늘 후보 (나는 빼요 · 꾸민 사람만)
-    const cand = users.filter((u) => u.uid !== C.uid && pvDecorated(u));
+    // 오늘 후보: 나만 빼고 모두예요. 아직 안 꾸민 사람(새로 들어온 친구)도 보이고, 꾸민 사람이 앞에 와요
+    const cand = users.filter((u) => u.uid !== C.uid && u.nickname)
+      .map((u, i) => ({ u, i, d: pvDecorated(u) ? 0 : 1 })).sort((a, b) => a.d - b.d || a.i - b.i).map((x) => x.u);
     const mineId = PV.mine(G.ownedList(), today);
     const h = document.createElement('h2'); h.className = 'pvhead'; h.textContent = '오늘의 후보'; body.appendChild(h);
-    if (!cand.length) { const p = document.createElement('p'); p.className = 'foot'; p.textContent = '아직 프로필을 꾸민 사람이 없어요. 상점에서 프레임·배경·이름 꾸미기를 바꿔 보세요!'; body.appendChild(p); return; }
+    if (!cand.length) { const p = document.createElement('p'); p.className = 'foot'; p.textContent = '아직 투표할 친구가 없어요.'; body.appendChild(p); return; }
     cand.forEach((u) => {
       body.appendChild(pvCard(u, null));
       const row = document.createElement('div'); row.className = 'cheerrow';
