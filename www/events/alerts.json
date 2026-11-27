@@ -1,11 +1,11 @@
 {
   "alerts": [
     {
-      "id": "amwxc1tmui",
+      "id": "amwyllwllx",
       "type": "theme",
-      "title": "새 타일이 나왔어요!",
+      "title": "새 타일들 추가!!",
       "on": true,
-      "text": "리그오브레전트 테마를 확인해보세요",
+      "text": "강연금, 별의커비 타일 추가!",
       "go": "shop"
     }
   ]
