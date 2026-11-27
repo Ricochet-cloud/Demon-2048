@@ -1172,6 +1172,7 @@ function drawEvent(ev, list) {
       if (rankTab === 'week') await W.flush();   // 방금 얻은 점수까지 올린 뒤에 불러와요
       const list = await C.loadAll();
       renderRank(list, $('rankList'), false, rankTab);
+      renderRuns(list);
       msg.textContent = '';
       note.hidden = rankTab === 'best';
       if (rankTab === 'ch') note.textContent = `하루 한 판, 모두 같은 시작 배치예요. 끝내면 ${window.AppChallenge.rewardDone}골드, 전날 1등은 다음 날 ${window.AppChallenge.rewardWin}골드를 받아요.`;
@@ -1182,6 +1183,34 @@ function drawEvent(ev, list) {
           (top && top.s >= W.minScore ? ` 지난주 1등: ${top.n} (${top.s}점)` : '');
       }
     } catch (e) { msg.textContent = '기록을 불러오지 못했어요. 인터넷 연결이나 보안 규칙을 확인해 주세요.'; }
+  }
+
+  // 모드별 주간 TOP3 (타임어택 · 수 제한). 기록은 산 물건 목록의 'ta:주:점수' 표시에서 읽어요
+  let runTab = 'ta';
+  function renderRuns(list) {
+    const kinds = [{ id: 'ta', name: '타임어택' }, { id: 'ml', name: '수 제한' }];
+    const tabs = $('runTabs'); tabs.textContent = '';
+    kinds.forEach((k) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip' + (k.id === runTab ? ' on' : ''); b.textContent = k.name;
+      b.addEventListener('click', () => { runTab = k.id; renderRuns(list); });
+      tabs.appendChild(b);
+    });
+    const wk = W.key();
+    const rows = list.map((u) => ({ u, s: G.runOf(u.owned, runTab, wk) })).filter((x) => x.s > 0).sort((a, b) => b.s - a.s);
+    const box = $('runList'); box.textContent = '';
+    if (!rows.length) { const p = document.createElement('p'); p.className = 'foot'; p.textContent = '이번 주 기록이 아직 없어요. 게임 모드에서 첫 기록을 남겨 보세요!'; box.appendChild(p); }
+    rows.slice(0, 3).forEach((x, i) => {
+      const row = document.createElement('div'); row.className = 'runrow' + (x.u.uid === C.uid ? ' runrow--me' : '');
+      const n = document.createElement('b'); n.className = 'runrow__no'; n.textContent = ['🥇', '🥈', '🥉'][i];
+      const nm = document.createElement('span'); nm.className = 'runrow__nm'; nm.textContent = x.u.nickname || '이름 없음';
+      const sc = document.createElement('b'); sc.className = 'runrow__sc'; sc.textContent = `${x.s.toLocaleString('ko-KR')}점`;
+      row.appendChild(n); row.appendChild(avatarEl(x.u.avatar, x.u.nickname, x.u.frame, x.u.photo)); row.appendChild(nm); row.appendChild(sc);
+      box.appendChild(row);
+    });
+    const mi = rows.findIndex((x) => x.u.uid === C.uid);
+    if (mi >= 3) { const p = document.createElement('p'); p.className = 'foot'; p.textContent = `내 기록: ${rows[mi].s.toLocaleString('ko-KR')}점 · ${mi + 1}위`; box.appendChild(p); }
+    $('runNote').textContent = runTab === 'ta' ? '3분 타임어택 · 매주 월요일 오전 6시에 새로 시작해요.' : '100수 제한 · 매주 월요일 오전 6시에 새로 시작해요.';
   }
 
   function refreshProfile() {
@@ -1198,6 +1227,7 @@ function drawEvent(ev, list) {
     $('nickCard').hidden = !online;
     $('avatarCard').hidden = !online;
     $('boardCard').hidden = !online;
+    $('runCard').hidden = !online;
     ['meCard', 'frameCard', 'titleCard', 'bioCard', 'bgCard', 'nameCard', 'tileCard'].forEach((id) => { $(id).hidden = !online; });
     if (online) {
       renderMe(); renderFramePicker(); renderTitlePicker(); renderTilePicker();
@@ -1254,6 +1284,18 @@ function drawEvent(ev, list) {
       sub: () => { const c = window.Game2048.challengeState(); return c.done ? `완료 · ${c.score}점` : c.started ? `진행 중 · ${c.score}점` : '하루 한 판 · 모두 같은 판'; },
       tag: () => (window.Game2048.challengeState().done ? '' : '도전 가능'),
       start: () => { window.Game2048.setMode('challenge'); go('game'); }
+    },
+    {
+      id: 'timeattack', name: '타임어택',
+      sub: () => { const b = window.Game2048.runBest('ta'); return b ? `3분 안에 최고 점수 · 이번 주 내 최고 ${b.toLocaleString('ko-KR')}점` : '3분 안에 최고 점수 · 이번 주 순위'; },
+      tag: () => '',
+      start: () => { window.Game2048.setMode('timeattack'); go('game'); }
+    },
+    {
+      id: 'limit', name: '수 제한',
+      sub: () => { const b = window.Game2048.runBest('ml'); return b ? `딱 100수 · 이번 주 내 최고 ${b.toLocaleString('ko-KR')}점` : '딱 100수 안에 최고 점수 · 이번 주 순위'; },
+      tag: () => '',
+      start: () => { window.Game2048.setMode('limit'); go('game'); }
     },
     {
       id: 'event', name: '배팅 이벤트', show: () => !!modeEvent(),
@@ -1464,6 +1506,12 @@ function drawEvent(ev, list) {
   });
   window.addEventListener('popstate', render);
   // 오늘의 도전
+  // 타임어택·수 제한이 끝나면 이번 주 최고 기록을 올려요 (더 높을 때만 써요)
+  window.addEventListener('game2048:run', (e) => {
+    const d = e.detail || {};
+    if (!C.enabled || !C.loaded) return;
+    G.saveRun(d.kind, d.week, d.score).catch((err) => console.warn('모드 기록 저장 실패', err));
+  });
   window.addEventListener('game2048:exit', () => { if (effective() === 'game') back(); });
   // 골드·미션이 바뀌면 지금 보는 화면을 새로 그려요
   window.addEventListener('gold:change', () => { const n = effective(); if (n === 'home') refreshHome(); if (n === 'shop') refreshShop(); if (n === 'profile' || n === 'board') refreshProfile(); if (n === 'event') refreshEvent(); if (n === 'vote') refreshVote(); });

@@ -155,8 +155,30 @@
   });
 
   // ============ 밖으로 열어 두는 것 ============
+  // 타임어택('ta')·수 제한('ml') 주간 최고 기록: 산 물건 목록에 'ta:주시작일:점수' 표시 하나로 남겨요 (규칙을 안 바꿔도 돼요. 지난주 표시는 새로 올릴 때 지워져요)
+  const RUN_KINDS = ['ta', 'ml'];
+  function runOf(owned, kind, week) {
+    let best = 0;
+    (owned || []).forEach((x) => {
+      const m = /^(ta|ml):(\d{4}-\d{2}-\d{2}):(\d{1,7})$/.exec(String(x));
+      if (m && m[1] === kind && m[2] === week) best = Math.max(best, +m[3]);
+    });
+    return best;
+  }
+
   window.AppGold = {
     dayKey,
+    runOf,
+    async saveRun(kind, week, score) {
+      if (!RUN_KINDS.includes(kind) || !/^\d{4}-\d{2}-\d{2}$/.test(String(week)) || !Number.isInteger(score) || score < 1 || score > 9999999) return false;
+      if (score <= runOf(S.owned, kind, week)) return false;   // 이번 주 최고가 아니면 쓰지 않아요
+      await update((cur) => {
+        const owned = cur.owned.filter((x) => !String(x).startsWith(kind + ':'));
+        owned.push(`${kind}:${week}:${score}`);
+        return Object.assign(cur, { owned });
+      });
+      return true;
+    },
     get gold() { return S.gold || 0; },
     owns(id) { return S.owned.includes(id); },
     ownedList() { return [...S.owned]; },

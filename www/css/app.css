@@ -730,3 +730,15 @@ a.btn--link { display: flex; align-items: center; justify-content: center; margi
 .tipdots i { width: 8px; height: 8px; background: rgba(240, 185, 90, .25); transform: rotate(45deg); }
 .tipdots i.on { background: var(--lantern); }
 @media (prefers-reduced-motion: reduce) { .board--mini .tile { transition: none; } .tipcard--in, .tipjk { animation: none; } }
+
+/* 모드별 주간 TOP3 */
+.runlist { margin-top: 8px; }
+.runrow { display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin-bottom: 6px; background: rgba(59, 42, 31, .55); border: 1px solid rgba(240, 185, 90, .25); }
+.runrow--me { border-color: var(--lantern); }
+.runrow__no { width: 22px; text-align: center; font-size: 16px; }
+.runrow .avatar { flex: none; width: 38px; height: 38px; }
+.runrow__nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.runrow__sc { color: var(--lantern); font-size: 15px; }
+/* 기록 도전 모드: 시간·수가 얼마 안 남았을 때 */
+.hud__box--low b { color: #ff7a5c; animation: hudlow .6s steps(2) infinite; }
+@keyframes hudlow { 50% { opacity: .45; } }

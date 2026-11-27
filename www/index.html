@@ -139,7 +139,7 @@
       <div class="hud">
         <div class="hud__box">점수<b id="score">0</b></div>
         <div class="hud__box">최고 타일<b id="maxTile">-</b></div>
-        <div class="hud__box">최고 점수<b id="best">-</b></div>
+        <div class="hud__box"><span id="bestLbl">최고 점수</span><b id="best">-</b></div>
       </div>
 
       <div class="board" id="board">
@@ -227,6 +227,12 @@
         <div class="rank" id="rankList"></div>
         <p class="dex__note" id="weekNote" hidden></p>
         <p id="rankMsg"></p>
+      </div>
+      <div class="card" id="runCard" hidden>
+        <h2>모드별 주간 TOP3</h2>
+        <div class="chips" id="runTabs"></div>
+        <div class="runlist" id="runList"></div>
+        <p class="dex__note" id="runNote"></p>
       </div>
       <div class="card">
         <h2>내 기록</h2>

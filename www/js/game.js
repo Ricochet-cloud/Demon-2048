@@ -16,7 +16,7 @@
   const $ = (id) => document.getElementById(id);
 
   // ============ 저장 ============
-  let saved = { best: 0, bestTile: 0, plays: 0, game: null, challenge: null };   // challenge: 오늘의 도전 { day, game, done, score, tile }
+  let saved = { best: 0, bestTile: 0, plays: 0, game: null, challenge: null, runs: {} };   // challenge: 오늘의 도전 { day, game, done, score, tile }
   // 기록이 바뀌면 알려줘요 (클라우드 저장 쪽에서 이 이벤트를 들어요)
   const emit = (name, detail) => { try { window.dispatchEvent(new CustomEvent(name, { detail })); } catch (e) { /* 무시 */ } };
   try { saved = Object.assign(saved, JSON.parse(localStorage.getItem(STORE_KEY) || '{}')); } catch (e) { /* 저장소를 못 써도 게임은 돼요 */ }
@@ -47,6 +47,12 @@
   let toastTimer = null;
   // 모드: 'normal' 평소 게임 / 'challenge' 오늘의 도전 (하루 한 판, 모두 같은 시작과 같은 새 타일 순서)
   let mode = 'normal', rngState = 0;
+  // 기록 도전 모드: 'timeattack' 3분 안에 최고 점수 / 'limit' 100수 안에 최고 점수. 조커 없이, 이어하기 없이 한 번에 끝나요
+  const RUN_SECONDS = 180, RUN_MOVES = 100;
+  const RUN_KIND = { timeattack: 'ta', limit: 'ml' };
+  const isRun = () => mode === 'timeattack' || mode === 'limit';
+  let runMoves = 0, runStart = 0, runTimer = null;
+  const weekNow = () => (window.AppWeekly ? window.AppWeekly.key() : today());
   const today = () => (window.AppGold ? window.AppGold.dayKey() : new Date().toISOString().slice(0, 10));
   function hashSeed(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   function rand() {
@@ -155,6 +161,7 @@
 
     if (!moved) return;
     undoSnap = before; locked = true;
+    if (isRun()) { runMoves++; if (mode === 'timeattack' && !runStart) startClock(); }
     emit('game2048:move');
     tiles.forEach(setPos);
     updateHud();
@@ -184,6 +191,7 @@
   }
 
   function afterMove() {
+    if (isRun()) { runAfterMove(); return; }
     emit('game2048:score', { score, gain: undoSnap ? Math.max(0, score - undoSnap.score) : 0 });
     recordBest();
     if (maxTile >= WIN_TILE && !winShown) { winShown = true; saveGame(); updateHud(); showModal('🎉 2048 달성!', true); emit('game2048:win'); return; }
@@ -205,6 +213,7 @@
   }
 
   function saveGame() {
+    if (isRun()) return;   // 기록 도전 판은 저장하지 않아요 (일반 판이 덮어써지면 안 돼요)
     // 끝난 판은 이어하지 않고 지워요 (다음에 켜면 새 판)
     const g = over ? null : { ...snapshot(), jk, winShown };
     if (mode === 'challenge') { if (saved.challenge) saved.challenge.game = g; }
@@ -216,7 +225,16 @@
   function updateHud() {
     $('score').textContent = score;
     $('maxTile').textContent = maxTile || '-';
-    $('best').textContent = Math.max(saved.best, score) || '-';
+    if (isRun()) {
+      const left = mode === 'timeattack' ? Math.max(0, RUN_SECONDS - (runStart ? Math.floor((Date.now() - runStart) / 1000) : 0)) : RUN_MOVES - runMoves;
+      $('bestLbl').textContent = mode === 'timeattack' ? '남은 시간' : '남은 수';
+      $('best').textContent = mode === 'timeattack' ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}` : String(left);
+      $('best').parentNode.classList.toggle('hud__box--low', mode === 'timeattack' ? left <= 10 : left <= 10);
+    } else {
+      $('bestLbl').textContent = '최고 점수';
+      $('best').textContent = Math.max(saved.best, score) || '-';
+      $('best').parentNode.classList.remove('hud__box--low');
+    }
     updateJokers();
   }
 
@@ -235,6 +253,14 @@
 
   function showModal(title, win) {
     $('modalTitle').textContent = title;
+    if (isRun()) {
+      const rb = (saved.runs[RUN_KIND[mode]] || {});
+      $('modalStats').innerHTML = `점수 <b>${score}</b> · 최고 타일 <b>${maxTile}</b><br>이번 주 내 최고 <b>${rb.w === weekNow() ? rb.s : score}</b>`;
+      $('modalNote').textContent = runNote;
+      $('continueBtn').style.display = 'none';
+      $('modal').classList.add('show');
+      return;
+    }
     $('modalStats').innerHTML = `점수 <b>${score}</b> · 최고 타일 <b>${maxTile}</b><br>최고 점수 <b>${Math.max(saved.best, score)}</b>${mode === 'normal' && jk ? '<br>(조커사용)' : ''}`;
     $('modalNote').textContent = mode === 'challenge' && over ? '오늘은 한 판만 도전할 수 있어요. 내일 오전 6시에 새 도전이 열려요.' : (win && maxTile >= WIN_TILE ? '계속해서 더 높이 도전할 수 있어요!' : '');
     $('continueBtn').style.display = win ? '' : 'none';
@@ -242,6 +268,7 @@
   }
 
   function newGame() {
+    if (isRun()) { startRun(); return; }
     $('modal').classList.remove('show');
     $('tiles').innerHTML = '';
     tiles = []; score = 0; maxTile = 0; over = false; locked = false; winShown = false;
@@ -322,6 +349,45 @@
     return true;
   }
 
+  // ============ 기록 도전 (타임어택 · 수 제한) ============
+  let runNote = '';
+  function stopClock() { clearInterval(runTimer); runTimer = null; }
+  function startClock() {
+    runStart = Date.now();
+    stopClock();
+    runTimer = setInterval(() => {
+      if (!$('screen-game').classList.contains('active')) { stopClock(); runStart = 0; return; }   // 화면을 나가면 그 판은 없던 일이에요
+      updateHud();
+      if (Date.now() - runStart >= RUN_SECONDS * 1000 && !locked) endRun();
+    }, 250);
+  }
+  function startRun() {
+    stopClock();
+    clearBoard();
+    runMoves = 0; runStart = 0;
+    addRandomTile(); addRandomTile();
+    updateHud();
+  }
+  function runAfterMove() {
+    updateHud();
+    if (mode === 'limit' && runMoves >= RUN_MOVES) { endRun(); return; }
+    if (mode === 'timeattack' && runStart && Date.now() - runStart >= RUN_SECONDS * 1000) { endRun(); return; }
+    if (!canMove()) endRun();
+  }
+  function endRun() {
+    if (over) return;
+    over = true; stopClock();
+    const kind = RUN_KIND[mode], wk = weekNow();
+    const cur = saved.runs[kind] && saved.runs[kind].w === wk ? saved.runs[kind].s : 0;
+    const isBest = score > cur;
+    if (isBest) { saved.runs[kind] = { w: wk, s: score }; save(); }
+    if (maxTile > saved.bestTile) { saved.bestTile = maxTile; save(); emit('game2048:record'); }
+    runNote = isBest ? '이번 주 새 기록이에요! 주간 순위는 \'우리 기록\'에서 볼 수 있어요.' : '주간 순위는 \'우리 기록\'에서 볼 수 있어요.';
+    emit('game2048:run', { kind, week: wk, score });
+    updateHud();
+    showModal(mode === 'timeattack' ? (Date.now() - runStart >= RUN_SECONDS * 1000 ? '시간 끝!' : '더 못 움직여요') : (runMoves >= RUN_MOVES ? '수를 다 썼어요!' : '더 못 움직여요'), false);
+  }
+
   // ============ 오늘의 도전 ============
   function endChallenge() {
     const ch = saved.challenge; if (!ch) return;
@@ -330,13 +396,13 @@
   }
   function clearBoard() { $('modal').classList.remove('show'); $('tiles').innerHTML = ''; tiles = []; score = 0; maxTile = 0; over = false; locked = false; winShown = false; undoSnap = null; jk = 0; picking = null; board().classList.remove('picking'); }
   function applyModeUI() {
-    const ch = mode === 'challenge';
+    const ch = mode === 'challenge', run = isRun();
     const title = document.querySelector('#screen-game .topbar__title'), hint = document.querySelector('#screen-game .hint');
-    if (title) title.textContent = ch ? '오늘의 도전' : '2048';
-    if (hint) hint.textContent = ch ? '오늘 하루 한 판만! 모두 같은 시작 배치로 겨뤄요.' : '밀어서 같은 숫자를 합쳐요. 2048 을 만들어 보세요!';
+    if (title) title.textContent = ch ? '오늘의 도전' : mode === 'timeattack' ? '타임어택' : mode === 'limit' ? '수 제한' : '2048';
+    if (hint) hint.textContent = ch ? '오늘 하루 한 판만! 모두 같은 시작 배치로 겨뤄요.' : mode === 'timeattack' ? `${RUN_SECONDS / 60}분 안에 최고 점수! 첫 수를 움직이면 시간이 시작돼요.` : mode === 'limit' ? `딱 ${RUN_MOVES}수! 수가 다 떨어지기 전에 최고 점수를 만들어요.` : '밀어서 같은 숫자를 합쳐요. 2048 을 만들어 보세요!';
     $('restartBtn').style.display = ch ? 'none' : '';
-    $('jokers').style.display = ch ? 'none' : ''; $('jkNote').style.display = ch ? 'none' : '';
-    $('againBtn').textContent = ch ? '홈으로' : '새 판';
+    $('jokers').style.display = ch || run ? 'none' : ''; $('jkNote').style.display = ch || run ? 'none' : '';
+    $('againBtn').textContent = ch ? '홈으로' : run ? '다시 하기' : '새 판';
   }
   function loadChallenge() {
     const day = today();
@@ -350,12 +416,14 @@
     saveGame(); updateHud();
   }
   function setMode(m) {
-    if (m !== 'challenge') m = 'normal';
+    if (!['challenge', 'timeattack', 'limit'].includes(m)) m = 'normal';
     if (m === mode && m === 'normal') return;
-    if (m === mode && saved.challenge && saved.challenge.day === today()) { if (saved.challenge.done) { updateHud(); showModal('오늘의 도전 완료', false); } return; }
+    if (m === 'challenge' && m === mode && saved.challenge && saved.challenge.day === today()) { if (saved.challenge.done) { updateHud(); showModal('오늘의 도전 완료', false); } return; }
     saveGame();
+    stopClock();
     mode = m;
     if (m === 'challenge') loadChallenge();
+    else if (isRun()) startRun();
     else { clearBoard(); if (!resume()) newGame(); }
     applyModeUI();
   }
@@ -410,6 +478,7 @@
     repaint() { tiles.forEach(paint); },
     setMode,
     get mode() { return mode; },
+    runBest(kind) { const r = saved.runs && saved.runs[kind]; return r && r.w === weekNow() ? r.s : 0; },
     // 오늘의 도전 상태 { done, started, score }
     challengeState() {
       const ch = saved.challenge && saved.challenge.day === today() ? saved.challenge : null;
