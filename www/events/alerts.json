@@ -1,11 +1,11 @@
 {
   "alerts": [
     {
-      "id": "amwyllwllx",
+      "id": "amx0c6afcb",
       "type": "theme",
-      "title": "새 타일들 추가!!",
+      "title": "라멘 타일이 나왔어요!",
       "on": true,
-      "text": "강연금, 별의커비 타일 추가!",
+      "text": "얼른 먹으러 갑시다!!",
       "go": "shop"
     }
   ]
