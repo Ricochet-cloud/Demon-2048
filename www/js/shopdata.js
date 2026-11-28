@@ -100,7 +100,13 @@ window.SHOP = {
     { id: 'rope', name: '밧줄', price: 110 },
     { id: 'bulb', name: '전구', price: 190 },
     { id: 'double', name: '액자', price: 150 },
-    { id: 'target', name: '과녁', price: 120 }
+    { id: 'target', name: '과녁', price: 120 },
+    { id: 'gem', name: '보석', price: 190 },
+    { id: 'lace', name: '레이스', price: 110 },
+    { id: 'chain', name: '사슬', price: 130 },
+    { id: 'wood', name: '나무 액자', price: 100 },
+    { id: 'tape', name: '주의 테이프', price: 120 },
+    { id: 'pearl', name: '진주', price: 170 }
   ],
   titles: [
     { id: 'beginner', name: '귀살대 신입', price: 50, group: '일반' },
@@ -199,7 +205,13 @@ window.SHOP = {
     { id: 'denim', name: '데님', price: 100 },
     { id: 'crt', name: '구형 모니터', price: 160 },
     { id: 'vinyl', name: '레코드판', price: 170 },
-    { id: 'marble', name: '대리석', price: 180 }
+    { id: 'marble', name: '대리석', price: 180 },
+    { id: 'latte', name: '라떼', price: 100 },
+    { id: 'notebook', name: '모눈 노트', price: 90 },
+    { id: 'cotton', name: '솜사탕 구름', price: 120 },
+    { id: 'comic', name: '만화 점무늬', price: 140 },
+    { id: 'picnic', name: '피크닉', price: 110 },
+    { id: 'tatami', name: '다다미', price: 100 }
   ],
   nameFx: [
     { id: 'gold', name: '금빛', price: 80 },
@@ -247,7 +259,13 @@ window.SHOP = {
     { id: 'emboss', name: '양각', price: 120 },
     { id: 'horizon', name: '수평선', price: 140 },
     { id: 'marker', name: '형광펜', price: 130 },
-    { id: 'squiggle', name: '물결 밑줄', price: 100 }
+    { id: 'squiggle', name: '물결 밑줄', price: 100 },
+    { id: 'cherry', name: '체리', price: 100 },
+    { id: 'jelly', name: '젤리', price: 180 },
+    { id: 'cream', name: '크림', price: 120 },
+    { id: 'sapphire', name: '사파이어', price: 200 },
+    { id: 'spotlight', name: '스포트라이트', price: 220 },
+    { id: 'matcha', name: '말차', price: 90 }
   ],
   themes: [
     { id: 'default', name: '12귀월', desc: '십이귀월과 싸워 올라가요', cat: '기본', dir: './images/', full: false, max: 16384, bigName: '', ver: 1,
